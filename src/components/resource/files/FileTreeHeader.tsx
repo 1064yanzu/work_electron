@@ -21,7 +21,7 @@ export function FileTreeHeader({
 }: FileTreeHeaderProps) {
 	return (
 		<div className="px-6 py-5 flex items-center justify-between shrink-0 mb-2 border-b border-border dark:border-white/[0.05]">
-			<h2 className="font-semibold text-[13px] text-text-muted uppercase tracking-widest">
+			<h2 className="font-semibold text-sm text-text-muted uppercase tracking-widest">
 				Files
 			</h2>
 			<div className="flex items-center gap-0.5">

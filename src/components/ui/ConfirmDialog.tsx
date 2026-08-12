@@ -70,7 +70,7 @@ function ConfirmDialogView({
 
 	const confirmButtonClass = (() => {
 		const base =
-			"rounded-xl px-5 py-2.5 text-[14px] font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
+			"rounded-xl px-5 py-2.5 text-sm font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
 		switch (type) {
 			case "danger":
 				return `${base} bg-error text-white hover:bg-error shadow-red-500/20`;
@@ -127,7 +127,7 @@ function ConfirmDialogView({
 							</h3>
 							<p
 								id="confirm-message"
-								className="mt-1.5 whitespace-pre-wrap text-[14px] text-text-secondary leading-relaxed"
+								className="mt-1.5 whitespace-pre-wrap text-sm text-text-secondary leading-relaxed"
 							>
 								{message}
 							</p>
@@ -138,7 +138,7 @@ function ConfirmDialogView({
 						<button
 							type="button"
 							onClick={() => close(false)}
-							className="rounded-xl px-5 py-2.5 text-[14px] font-medium text-text-secondary transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/5 dark:hover:bg-white/5"
+							className="rounded-xl px-5 py-2.5 text-sm font-medium text-text-secondary transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/5 dark:hover:bg-white/5"
 						>
 							{cancelText}
 						</button>

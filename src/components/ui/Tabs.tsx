@@ -36,11 +36,11 @@ export interface TabsProps<T extends string = string> {
 
 const sizeStyles: Record<TabsSize, { trigger: string; container: string }> = {
 	sm: {
-		trigger: "h-7 px-2.5 text-[12px] gap-1.5",
+		trigger: "h-7 px-2.5 text-xs gap-1.5",
 		container: "p-0.5",
 	},
 	md: {
-		trigger: "h-8 px-3 text-[13px] gap-2",
+		trigger: "h-8 px-3 text-sm gap-2",
 		container: "p-1",
 	},
 	lg: {

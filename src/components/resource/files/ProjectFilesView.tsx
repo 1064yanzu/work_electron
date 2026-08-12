@@ -539,7 +539,7 @@ export function ProjectFilesView() {
 		editing,
 	);
 
-	const ROW_HEIGHT = 32; // px per row，和 py-1.5 + text-[13px] 匹配
+	const ROW_HEIGHT = 32; // px per row，和 py-1.5 + text-sm 匹配
 
 	// 虚拟化 — 只渲染可视区域的行
 	const virtualizer = useVirtualizer({

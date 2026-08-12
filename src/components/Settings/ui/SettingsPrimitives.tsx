@@ -97,7 +97,7 @@ export function SettingsSectionTitle({
 	return (
 		<h2
 			className={cn(
-				"mb-3.5 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-text-primary",
+				"mb-3.5 text-base font-semibold leading-snug tracking-[-0.01em] text-text-primary",
 				className,
 			)}
 		>
@@ -129,18 +129,18 @@ export function SettingsRow({
 			)}
 		>
 			<div className="min-w-0 flex-1">
-				<div className="text-[14px] font-medium leading-snug text-text-primary">
+				<div className="text-sm font-medium leading-snug text-text-primary">
 					{label}
 				</div>
 				{description && (
-					<div className="mt-1.5 text-[12.5px] leading-relaxed text-text-secondary">
+					<div className="mt-1.5 text-xs leading-relaxed text-text-secondary">
 						{description}
 					</div>
 				)}
 			</div>
 			<div className="flex shrink-0 items-center gap-3">
 				{value && (
-					<div className="text-[13px] text-text-secondary">{value}</div>
+					<div className="text-sm text-text-secondary">{value}</div>
 				)}
 				{action}
 			</div>
@@ -217,11 +217,11 @@ export function SettingsHeader({
 			)}
 		>
 			<div className="min-w-0 flex-1">
-				<h3 className="text-[14px] font-semibold leading-snug text-text-primary">
+				<h3 className="text-sm font-semibold leading-snug text-text-primary">
 					{title}
 				</h3>
 				{description && (
-					<p className="mt-1 text-[12.5px] leading-relaxed text-text-muted">
+					<p className="mt-1 text-xs leading-relaxed text-text-muted">
 						{description}
 					</p>
 				)}
@@ -268,13 +268,13 @@ export function SettingsField({
 				<div className="w-[160px] shrink-0">
 					<label
 						htmlFor={htmlFor}
-						className="block text-[13px] font-medium text-text-primary"
+						className="block text-sm font-medium text-text-primary"
 					>
 						{label}
 						{required && <span className="ml-0.5 text-error">*</span>}
 					</label>
 					{hint && (
-						<p className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+						<p className="mt-0.5 text-xs leading-relaxed text-text-muted">
 							{hint}
 						</p>
 					)}
@@ -282,7 +282,7 @@ export function SettingsField({
 				<div className="min-w-0 flex-1">
 					{children}
 					{error && (
-						<p className="mt-1 text-[11.5px] leading-relaxed text-error">
+						<p className="mt-1 text-xs leading-relaxed text-error">
 							{error}
 						</p>
 					)}
@@ -295,17 +295,17 @@ export function SettingsField({
 		<div className={cn("space-y-1.5 py-3", className)}>
 			<label
 				htmlFor={htmlFor}
-				className="block text-[13px] font-medium text-text-primary"
+				className="block text-sm font-medium text-text-primary"
 			>
 				{label}
 				{required && <span className="ml-0.5 text-error">*</span>}
 			</label>
 			{hint && (
-				<p className="text-[11.5px] leading-relaxed text-text-muted">{hint}</p>
+				<p className="text-xs leading-relaxed text-text-muted">{hint}</p>
 			)}
 			<div>{children}</div>
 			{error && (
-				<p className="text-[11.5px] leading-relaxed text-error">{error}</p>
+				<p className="text-xs leading-relaxed text-error">{error}</p>
 			)}
 		</div>
 	);
@@ -333,12 +333,12 @@ export function SettingsFieldGroup({
 			{(title || description) && (
 				<div className="mb-3">
 					{title && (
-						<h5 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+						<h5 className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 							{title}
 						</h5>
 					)}
 					{description && (
-						<p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+						<p className="mt-1 text-xs leading-relaxed text-text-muted">
 							{description}
 						</p>
 					)}
@@ -354,7 +354,7 @@ export function SettingsFieldGroup({
  * 调用方传入 className，用 cn 合并即可。
  */
 export const settingsInputClass = cn(
-	"w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] text-text-primary",
+	"w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary",
 	"placeholder:text-text-light",
 	"focus:outline-none focus:border-warm-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)]",
 	"transition-[border-color,box-shadow] duration-150",
@@ -412,7 +412,7 @@ export function SettingsSlider({
 				<div className="flex items-baseline justify-between gap-3">
 					<div className="min-w-0 flex-1">
 						{label && (
-							<div className="text-[12.5px] font-medium leading-snug text-text-primary">
+							<div className="text-xs font-medium leading-snug text-text-primary">
 								{label}
 							</div>
 						)}
@@ -465,7 +465,7 @@ export function SettingsSlider({
 				/>
 			</div>
 			{(minLabel || maxLabel) && (
-				<div className="flex justify-between text-[10.5px] tabular-nums text-text-light">
+				<div className="flex justify-between text-[11px] tabular-nums text-text-light">
 					<span>{minLabel}</span>
 					<span>{maxLabel}</span>
 				</div>
@@ -531,8 +531,8 @@ export function SettingsChipGroup<T extends string = string>({
 						className={cn(
 							"relative inline-flex items-center justify-center gap-1.5 rounded-full transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 							size === "sm"
-								? "px-3 py-1 text-[11.5px]"
-								: "px-3.5 py-1.5 text-[12.5px]",
+								? "px-3 py-1 text-xs"
+								: "px-3.5 py-1.5 text-xs",
 							active
 								? "font-semibold shadow-bai-card"
 								: "text-text-secondary hover:text-text-primary",
@@ -593,14 +593,14 @@ export function SettingsStat({
 				className,
 			)}
 		>
-			<div className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-text-muted">
+			<div className="text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted">
 				{label}
 			</div>
-			<div className="text-[15px] font-semibold leading-tight tabular-nums text-text-primary">
+			<div className="text-base font-semibold leading-tight tabular-nums text-text-primary">
 				{value}
 			</div>
 			{hint && (
-				<div className="text-[10.5px] leading-relaxed text-text-light">
+				<div className="text-[11px] leading-relaxed text-text-light">
 					{hint}
 				</div>
 			)}
@@ -658,7 +658,7 @@ export function SettingsCardSection({
 						</SettingsSectionTitle>
 					)}
 					{description && (
-						<p className="mt-1.5 max-w-[62ch] text-[12.5px] leading-relaxed text-text-muted">
+						<p className="mt-1.5 max-w-[62ch] text-xs leading-relaxed text-text-muted">
 							{description}
 						</p>
 					)}

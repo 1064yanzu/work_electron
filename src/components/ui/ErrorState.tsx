@@ -21,17 +21,17 @@ const sizeStyles = {
 		container: "py-6 gap-2",
 		iconWrapper: "w-9 h-9 rounded-xl",
 		icon: "w-[18px] h-[18px]",
-		title: "text-[13px]",
-		detail: "text-[11.5px] max-w-[320px]",
-		button: "text-[12px] px-3 py-1.5",
+		title: "text-sm",
+		detail: "text-xs max-w-[320px]",
+		button: "text-xs px-3 py-1.5",
 	},
 	md: {
 		container: "py-12 gap-3",
 		iconWrapper: "w-12 h-12 rounded-2xl",
 		icon: "w-5 h-5",
-		title: "text-[14.5px]",
-		detail: "text-[12.5px] max-w-[400px]",
-		button: "text-[12.5px] px-3.5 py-2",
+		title: "text-sm",
+		detail: "text-xs max-w-[400px]",
+		button: "text-xs px-3.5 py-2",
 	},
 };
 

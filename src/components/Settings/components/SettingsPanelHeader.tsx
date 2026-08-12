@@ -38,7 +38,7 @@ export function SettingsPanelHeader({
 						{title}
 					</h1>
 					{description && (
-						<p className="mt-2.5 max-w-[56ch] text-[13.5px] leading-relaxed text-text-muted">
+						<p className="mt-2.5 max-w-[56ch] text-sm leading-relaxed text-text-muted">
 							{description}
 						</p>
 					)}

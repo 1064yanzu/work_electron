@@ -90,7 +90,7 @@ function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 				<div className="font-medium text-text-primary mb-0.5 flex items-center gap-1.5">
 					{axis.name}
 					{axis.constancy && (
-						<span className="text-[9px] px-1 py-0.5 rounded bg-cream-200 dark:bg-cream-700 text-text-muted">
+						<span className="text-[11px] px-1 py-0.5 rounded bg-cream-200 dark:bg-cream-700 text-text-muted">
 							{constancyLabel[axis.constancy]}
 						</span>
 					)}
@@ -426,7 +426,7 @@ function RelationalSection({
 										{anchors.constancy_variance.variables.map((v, i) => (
 											<div key={i}>
 												<div className="font-medium">{v.dimension}</div>
-												<div className="text-[9px] pl-2">{v.range}</div>
+												<div className="text-[11px] pl-2">{v.range}</div>
 											</div>
 										))}
 									</div>

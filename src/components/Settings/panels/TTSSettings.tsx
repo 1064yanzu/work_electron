@@ -180,7 +180,7 @@ export function TTSSettings() {
 				<SettingsStat
 					label="默认 Provider"
 					value={
-						<span className="block truncate text-[12.5px]">
+						<span className="block truncate text-xs">
 							{defaultProvider?.name || "未设置"}
 						</span>
 					}
@@ -235,7 +235,7 @@ export function TTSSettings() {
 				<div className="rounded-2xl border border-border bg-cream-50 p-4">
 					<div className="flex items-center justify-between gap-3">
 						<div className="min-w-0">
-							<div className="text-[12.5px] font-medium text-text-primary">
+							<div className="text-xs font-medium text-text-primary">
 								自动播报
 							</div>
 							<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
@@ -265,7 +265,7 @@ export function TTSSettings() {
 			>
 				<div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_1fr]">
 					<div className="rounded-2xl border border-border bg-cream-50 p-4">
-						<div className="mb-2 text-[12.5px] font-medium text-text-primary">
+						<div className="mb-2 text-xs font-medium text-text-primary">
 							播报内容
 						</div>
 						<Select
@@ -284,10 +284,10 @@ export function TTSSettings() {
 					</div>
 					<div className="rounded-2xl border border-border bg-cream-50 p-4">
 						<div className="mb-2 flex items-baseline justify-between gap-2">
-							<div className="text-[12.5px] font-medium text-text-primary">
+							<div className="text-xs font-medium text-text-primary">
 								播报类型
 							</div>
-							<div className="text-[10.5px] text-text-muted">
+							<div className="text-[11px] text-text-muted">
 								选中的类型才会朗读
 							</div>
 						</div>
@@ -306,7 +306,7 @@ export function TTSSettings() {
 												: [...settings.scene_pet_filter, opt.value];
 											void patch({ scene_pet_filter: next });
 										}}
-										className={`rounded-full border px-2.5 py-0.5 text-[11.5px] transition-colors ${
+										className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
 											active
 												? "border-primary bg-primary/10 text-primary"
 												: "border-border bg-surface text-text-muted hover:border-cream-500"
@@ -331,7 +331,7 @@ export function TTSSettings() {
 				<div className="rounded-2xl border border-border bg-cream-50 p-4">
 					<div className="flex items-center justify-between gap-3">
 						<div className="min-w-0">
-							<div className="text-[12.5px] font-medium text-text-primary">
+							<div className="text-xs font-medium text-text-primary">
 								让桌宠说一句
 							</div>
 							<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
@@ -356,7 +356,7 @@ export function TTSSettings() {
 									);
 								}
 							}}
-							className="rounded-full border border-border bg-surface px-3 py-1.5 text-[11.5px] font-medium text-text-primary transition hover:border-primary hover:text-primary"
+							className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition hover:border-primary hover:text-primary"
 						>
 							试讲一句
 						</button>
@@ -373,7 +373,7 @@ export function TTSSettings() {
 						<button
 							type="button"
 							onClick={() => setShowAddMenu((v) => !v)}
-							className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11.5px] font-semibold text-primary-foreground transition hover:opacity-90"
+							className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
 						>
 							<Plus className="h-3 w-3" strokeWidth={1.8} />
 							添加 Provider
@@ -400,7 +400,7 @@ export function TTSSettings() {
 												onClick={() => handleAddProvider(tpl.type)}
 												className="block w-full border-b border-border px-3.5 py-2.5 text-left transition hover:bg-cream-50 disabled:opacity-40 last:border-0"
 											>
-												<div className="flex items-center gap-2 text-[12.5px] font-semibold text-text-primary">
+												<div className="flex items-center gap-2 text-xs font-semibold text-text-primary">
 													{tpl.label}
 													{exists && (
 														<span className="rounded-full bg-cream-200 px-1.5 py-0.5 text-[11px] font-medium text-text-muted">
@@ -408,7 +408,7 @@ export function TTSSettings() {
 														</span>
 													)}
 												</div>
-												<div className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+												<div className="mt-1 text-xs leading-relaxed text-text-muted">
 													{tpl.description}
 												</div>
 											</button>
@@ -422,7 +422,7 @@ export function TTSSettings() {
 				bodyClassName="px-5 py-5 space-y-4"
 			>
 				{settings.providers.length === 0 ? (
-					<div className="rounded-2xl border border-dashed border-border bg-cream-50 px-5 py-10 text-center text-[12.5px] text-text-muted">
+					<div className="rounded-2xl border border-dashed border-border bg-cream-50 px-5 py-10 text-center text-xs text-text-muted">
 						暂未配置 Provider，点击右上角「添加 Provider」开始
 					</div>
 				) : (

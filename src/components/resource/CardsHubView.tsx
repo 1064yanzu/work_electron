@@ -76,7 +76,7 @@ function TabUnderline({ active, label, onClick }: TabUnderlineProps) {
 			onClick={onClick}
 			className={[
 				// -mb-px 让下划线压在容器的 border-b 上，两条线合成一条
-				"relative -mb-px py-2 text-[12.5px] font-medium transition-colors duration-150",
+				"relative -mb-px py-2 text-xs font-medium transition-colors duration-150",
 				active
 					? "text-text-primary"
 					: "text-text-muted hover:text-text-secondary",

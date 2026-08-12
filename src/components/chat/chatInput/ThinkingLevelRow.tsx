@@ -92,7 +92,7 @@ export function ThinkingLevelRow() {
 						思考程度
 					</span>
 				</div>
-				<span className="text-[9.5px] text-text-muted/60 font-mono">
+				<span className="text-[11px] text-text-muted/60 font-mono">
 					effort
 				</span>
 			</div>

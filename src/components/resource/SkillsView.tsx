@@ -180,7 +180,7 @@ export function SkillsView(_props: SkillsViewProps) {
 			<div className="px-5 pt-6 pb-3 shrink-0">
 				<div className="flex items-start justify-between gap-2">
 					<div className="min-w-0">
-						<div className="text-[9.5px] font-semibold tracking-[0.22em] text-text-light uppercase">
+						<div className="text-[11px] font-semibold tracking-[0.22em] text-text-light uppercase">
 							Agent Skills
 						</div>
 						<h2 className="font-serif text-[20px] leading-[1.15] text-text-primary mt-1.5 tracking-tight">
@@ -266,7 +266,7 @@ export function SkillsView(_props: SkillsViewProps) {
 
 			{/* Error */}
 			{error && (
-				<div className="mx-5 mt-3 px-3 py-2 rounded-lg bg-error/8 dark:bg-error/15 border border-error/20 text-[11.5px] text-error flex items-center justify-between gap-2 animate-fade-in">
+				<div className="mx-5 mt-3 px-3 py-2 rounded-lg bg-error/8 dark:bg-error/15 border border-error/20 text-xs text-error flex items-center justify-between gap-2 animate-fade-in">
 					<span className="truncate">{error}</span>
 					<button
 						type="button"
@@ -295,7 +295,7 @@ export function SkillsView(_props: SkillsViewProps) {
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								placeholder="搜索技能…"
-								className="w-full pl-9 pr-8 py-2 text-[12px] bg-surface dark:bg-cream-900/40 border border-cream-300/80 dark:border-cream-500/30 rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition"
+								className="w-full pl-9 pr-8 py-2 text-xs bg-surface dark:bg-cream-900/40 border border-cream-300/80 dark:border-cream-500/30 rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition"
 							/>
 							{searchQuery && (
 								<button
@@ -368,7 +368,7 @@ export function SkillsView(_props: SkillsViewProps) {
 													<div className="flex items-baseline gap-1.5 min-w-0">
 														<span
 															className={cn(
-																"text-[12.5px] font-medium truncate",
+																"text-xs font-medium truncate",
 																skill.enabled
 																	? "text-text-primary"
 																	: "text-text-muted",
@@ -378,7 +378,7 @@ export function SkillsView(_props: SkillsViewProps) {
 														</span>
 														{skill.modeClass === "design" && (
 															<span
-																className="shrink-0 px-1.5 py-px text-[9px] uppercase tracking-[0.12em] rounded-sm bg-primary/10 text-primary/80 leading-tight"
+																className="shrink-0 px-1.5 py-px text-[11px] uppercase tracking-[0.12em] rounded-sm bg-primary/10 text-primary/80 leading-tight"
 																title={
 																	skill.modeTag
 																		? `od.mode: ${skill.modeTag}`
@@ -391,7 +391,7 @@ export function SkillsView(_props: SkillsViewProps) {
 													</div>
 													<p
 														className={cn(
-															"text-[10.5px] truncate mt-0.5 leading-snug",
+															"text-[11px] truncate mt-0.5 leading-snug",
 															skill.enabled
 																? "text-text-light"
 																: "text-text-light/70",
@@ -421,7 +421,7 @@ export function SkillsView(_props: SkillsViewProps) {
 											{/* Expanded details */}
 											{isExpanded && (
 												<div className="px-3 pb-3 pt-0 ml-3.5 space-y-2.5 animate-fade-in">
-													<p className="text-[11.5px] text-text-secondary leading-relaxed whitespace-pre-wrap">
+													<p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
 														{skill.description || "（暂无描述）"}
 													</p>
 													<div className="flex items-center justify-between gap-2 pt-1 border-t border-cream-300/70 dark:border-cream-500/20">
@@ -435,7 +435,7 @@ export function SkillsView(_props: SkillsViewProps) {
 															<button
 																type="button"
 																onClick={() => handleReveal(skill.location)}
-																className="flex items-center gap-1 text-[10.5px] text-text-muted hover:text-text-secondary transition-colors px-2 py-1 rounded-md hover:bg-cream-200/70 dark:hover:bg-cream-800/40"
+																className="flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary transition-colors px-2 py-1 rounded-md hover:bg-cream-200/70 dark:hover:bg-cream-800/40"
 																title="在系统文件管理器中打开"
 															>
 																<FolderOpen className="w-3 h-3" />
@@ -444,7 +444,7 @@ export function SkillsView(_props: SkillsViewProps) {
 															<button
 																type="button"
 																onClick={() => handleDelete(skill.name)}
-																className="flex items-center gap-1 text-[10.5px] text-text-muted hover:text-error transition-colors px-2 py-1 rounded-md hover:bg-error/8"
+																className="flex items-center gap-1 text-[11px] text-text-muted hover:text-error transition-colors px-2 py-1 rounded-md hover:bg-error/8"
 															>
 																<Trash2 className="w-3 h-3" />
 																删除
@@ -518,7 +518,7 @@ function UnderlineTab({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"relative flex items-center gap-1.5 py-2.5 text-[12px] font-medium transition-colors -mb-px",
+				"relative flex items-center gap-1.5 py-2.5 text-xs font-medium transition-colors -mb-px",
 				active
 					? "text-text-primary"
 					: "text-text-muted hover:text-text-secondary",
@@ -527,12 +527,12 @@ function UnderlineTab({
 			{icon}
 			<span>{label}</span>
 			{typeof count === "number" && (
-				<span className="text-[10.5px] tabular-nums text-text-light/80">
+				<span className="text-[11px] tabular-nums text-text-light/80">
 					{count}
 				</span>
 			)}
 			{badge && badge > 0 ? (
-				<span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-amber-500/90 text-[8.5px] font-semibold text-white tabular-nums">
+				<span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-amber-500/90 text-[11px] font-semibold text-white tabular-nums">
 					{badge > 99 ? "99+" : badge}
 				</span>
 			) : null}
@@ -590,7 +590,7 @@ function EmptyState({
 			<div className="text-[32px] font-serif text-text-light/60 leading-none mb-3">
 				{searchQuery ? "—" : "∅"}
 			</div>
-			<p className="text-[12.5px] text-text-secondary font-medium">
+			<p className="text-xs text-text-secondary font-medium">
 				{searchQuery ? "没有匹配的技能" : "尚未安装任何技能"}
 			</p>
 			<p className="text-xs text-text-light mt-2 leading-relaxed">
@@ -603,7 +603,7 @@ function EmptyState({
 					<button
 						type="button"
 						onClick={onBrowse}
-						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[11.5px] font-medium hover:bg-primary-hover transition"
+						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary-hover transition"
 					>
 						<Store className="w-3 h-3" />
 						浏览市场
@@ -611,7 +611,7 @@ function EmptyState({
 					<button
 						type="button"
 						onClick={onImport}
-						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cream-200/80 text-text-secondary text-[11.5px] font-medium hover:bg-cream-300 transition"
+						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cream-200/80 text-text-secondary text-xs font-medium hover:bg-cream-300 transition"
 					>
 						<FolderOpen className="w-3 h-3" />
 						导入本地

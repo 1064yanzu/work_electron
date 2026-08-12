@@ -380,7 +380,7 @@ export const FileTypePreview = memo(function FileTypePreview({
 	if (isMarkdownPreviewFile(fileName)) {
 		const textClass =
 			density === "compact"
-				? "text-[14px] leading-[1.65]"
+				? "text-sm leading-[1.65]"
 				: "text-base leading-[1.75]";
 		return (
 			<article className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:text-text-secondary dark:prose-p:text-text-light prose-p:leading-[1.75] prose-li:text-text-secondary dark:prose-li:text-text-light prose-strong:text-text-primary dark:prose-strong:text-surface">

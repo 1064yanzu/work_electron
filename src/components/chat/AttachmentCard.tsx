@@ -154,7 +154,7 @@ export function AttachmentCard({
 				<div
 					className={cn(
 						"font-medium text-text-primary truncate",
-						variant === "chip" ? "text-[13px]" : "text-sm",
+						variant === "chip" ? "text-sm" : "text-sm",
 					)}
 				>
 					{file.title}

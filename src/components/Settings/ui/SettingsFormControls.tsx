@@ -28,16 +28,16 @@ import { cn } from "../../../lib/utils";
 
 const SIZE_CONFIG = {
 	sm: {
-		input: "px-2.5 py-1 text-[12px]",
-		text: "text-[12px]",
+		input: "px-2.5 py-1 text-xs",
+		text: "text-xs",
 	},
 	md: {
-		input: "px-3.5 py-2 text-[13px]",
-		text: "text-[13px]",
+		input: "px-3.5 py-2 text-sm",
+		text: "text-sm",
 	},
 	lg: {
-		input: "px-4 py-2.5 text-[13.5px]",
-		text: "text-[13.5px]",
+		input: "px-4 py-2.5 text-sm",
+		text: "text-sm",
 	},
 } as const;
 
@@ -318,7 +318,7 @@ export const SettingsTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
 					disabled: !!disabled,
 					className: cn(
 						"py-2.5 leading-relaxed",
-						mono && "font-mono text-[12.5px]",
+						mono && "font-mono text-xs",
 						resize === "none" && "resize-none",
 						resize === "y" && "resize-y",
 						resize === "both" && "resize",
@@ -561,7 +561,7 @@ export function SettingsCheckbox({
 				)}
 			</button>
 			<span className="min-w-0">
-				<span className="block text-[12.5px] font-medium leading-snug text-text-primary">
+				<span className="block text-xs font-medium leading-snug text-text-primary">
 					{label}
 				</span>
 				{hint && (

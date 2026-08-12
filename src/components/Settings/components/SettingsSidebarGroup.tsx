@@ -47,7 +47,7 @@ export function SettingsSidebarCategory({
 			    常规字号的浅灰更像「一句轻声的分隔」，扫读时自然跳过。 */}
 			<h3
 				id={`settings-cat-${category.id}`}
-				className="px-3 pb-1.5 pt-6 text-[12px] font-medium leading-none text-text-light first:pt-1"
+				className="px-3 pb-1.5 pt-6 text-xs font-medium leading-none text-text-light first:pt-1"
 			>
 				{category.label}
 			</h3>
@@ -64,7 +64,7 @@ export function SettingsSidebarCategory({
 						onFocus={() => onPrefetch?.(item.id)}
 						aria-current={isActive ? "page" : undefined}
 						className={cn(
-							"flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-[13.5px]",
+							"flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm",
 							"min-h-[34px]",
 							"transition-[background-color,color] duration-150 ease-out",
 							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",

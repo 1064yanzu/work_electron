@@ -203,7 +203,7 @@ export const ToolbarItem = forwardRef<HTMLButtonElement, ToolbarItemProps>(
 					{showValue && (
 						<>
 							<span
-								className="text-[13px] font-medium leading-none truncate"
+								className="text-sm font-medium leading-none truncate"
 								style={
 									valueMaxWidth ? { maxWidth: `${valueMaxWidth}px` } : undefined
 								}
@@ -211,7 +211,7 @@ export const ToolbarItem = forwardRef<HTMLButtonElement, ToolbarItemProps>(
 								{value}
 							</span>
 							{secondary && (
-								<span className="shrink-0 text-[13px] leading-none text-text-muted">
+								<span className="shrink-0 text-sm leading-none text-text-muted">
 									{secondary}
 								</span>
 							)}

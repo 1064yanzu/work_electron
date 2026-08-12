@@ -114,7 +114,7 @@ function ControlField({
 	return (
 		<div className="space-y-1.5 rounded-2xl border border-border bg-cream-50 p-4">
 			<div>
-				<div className="text-[12.5px] font-medium text-text-primary">
+				<div className="text-xs font-medium text-text-primary">
 					{label}
 				</div>
 				{hint && (

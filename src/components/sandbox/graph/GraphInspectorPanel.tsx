@@ -166,7 +166,7 @@ export function GraphInspectorPanel({
 							{title}
 						</div>
 						{subtitle ? (
-							<div className="text-[12px] text-text-muted mt-0.5 truncate">
+							<div className="text-xs text-text-muted mt-0.5 truncate">
 								{subtitle}
 							</div>
 						) : null}
@@ -315,7 +315,7 @@ export function GraphInspectorPanel({
 									<div className="px-3 py-2 text-xs font-medium text-text-muted border-b border-border/60">
 										路径
 									</div>
-									<div className="px-3 py-2 text-[12px] text-text-secondary dark:text-cream-200 break-words">
+									<div className="px-3 py-2 text-xs text-text-secondary dark:text-cream-200 break-words">
 										{selectedArtifact.url || "—"}
 									</div>
 								</div>
@@ -349,7 +349,7 @@ export function GraphInspectorPanel({
 								<div className="px-3 py-2 text-xs font-medium text-text-muted border-b border-border/60">
 									任务描述
 								</div>
-								<div className="px-3 py-2 text-[12px] text-text-secondary dark:text-cream-200 break-words">
+								<div className="px-3 py-2 text-xs text-text-secondary dark:text-cream-200 break-words">
 									{source.subtitle || "—"}
 								</div>
 							</div>

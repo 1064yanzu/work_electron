@@ -37,7 +37,7 @@ export function CopilotHeader({
 					className="w-8 h-8 rounded-full bai-avatar-glow shrink-0"
 				/>
 				<div>
-					<h2 className="font-semibold text-[13px] text-text-primary tracking-[-0.01em]">
+					<h2 className="font-semibold text-sm text-text-primary tracking-[-0.01em]">
 						AI 助手
 					</h2>
 					{isAgentExecuting ? (
@@ -76,7 +76,7 @@ export function CopilotHeader({
 								<button
 									type="button"
 									onClick={onOpenPromptLibrary}
-									className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-text-secondary hover:bg-cream-100 dark:hover:bg-cream-800 transition-colors cursor-pointer"
+									className="w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:bg-cream-100 dark:hover:bg-cream-800 transition-colors cursor-pointer"
 								>
 									<MessageSquare className="w-4 h-4" strokeWidth={1.5} />
 									<span>提示词仓库</span>

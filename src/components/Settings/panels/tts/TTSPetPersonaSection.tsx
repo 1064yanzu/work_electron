@@ -98,7 +98,7 @@ export function TTSPetPersonaSection({
 		<div className="rounded-2xl border border-border bg-cream-50 p-4">
 			<div className="flex items-center justify-between gap-3">
 				<div className="min-w-0">
-					<div className="flex items-center gap-1.5 text-[12.5px] font-medium text-text-primary">
+					<div className="flex items-center gap-1.5 text-xs font-medium text-text-primary">
 						<Sparkles
 							className="h-3.5 w-3.5 text-[color:var(--t-text-light,#9d9d98)]"
 							strokeWidth={1.6}

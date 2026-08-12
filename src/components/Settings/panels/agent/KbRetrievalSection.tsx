@@ -103,7 +103,7 @@ export function KbRetrievalSection({
 								<div className="flex items-center justify-between">
 									<span
 										className={cn(
-											"text-[13px] font-semibold",
+											"text-sm font-semibold",
 											active ? "text-primary" : "text-text-primary",
 										)}
 									>
@@ -111,7 +111,7 @@ export function KbRetrievalSection({
 									</span>
 									{active && <SettingsBadge tone="primary">当前</SettingsBadge>}
 								</div>
-								<p className="mt-1.5 text-[11.5px] leading-relaxed text-text-muted">
+								<p className="mt-1.5 text-xs leading-relaxed text-text-muted">
 									{opt.desc}
 								</p>
 							</button>
@@ -197,8 +197,8 @@ export function KbRetrievalSection({
 							索引状态
 						</div>
 						{kbStats ? (
-							<div className="mt-1.5 flex items-baseline gap-2 text-[12.5px] text-text-secondary">
-								<span className="text-[14px] font-semibold tabular-nums text-text-primary">
+							<div className="mt-1.5 flex items-baseline gap-2 text-xs text-text-secondary">
+								<span className="text-sm font-semibold tabular-nums text-text-primary">
 									{embedded}
 								</span>
 								<span className="text-text-light">/</span>
@@ -212,7 +212,7 @@ export function KbRetrievalSection({
 								)}
 							</div>
 						) : (
-							<div className="mt-1.5 text-[12px] text-text-muted">
+							<div className="mt-1.5 text-xs text-text-muted">
 								暂未获取向量索引统计
 							</div>
 						)}

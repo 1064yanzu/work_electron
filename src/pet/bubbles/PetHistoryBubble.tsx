@@ -66,7 +66,7 @@ export function PetHistoryBubble({
 		>
 			{/* 标题行 */}
 			<div className="flex items-center justify-between mb-2">
-				<span className="text-[12px] font-medium text-[color:var(--t-text-secondary,#6b6b68)]">
+				<span className="text-xs font-medium text-[color:var(--t-text-secondary,#6b6b68)]">
 					最近通知
 				</span>
 				<div className="flex items-center gap-1">
@@ -87,7 +87,7 @@ export function PetHistoryBubble({
 
 			{/* 列表 */}
 			{visible.length === 0 ? (
-				<div className="py-3 text-center text-[12px] text-[color:var(--t-text-light,#9d9d98)]">
+				<div className="py-3 text-center text-xs text-[color:var(--t-text-light,#9d9d98)]">
 					暂无记录
 				</div>
 			) : (
@@ -106,7 +106,7 @@ export function PetHistoryBubble({
 									<Icon className="h-[9px] w-[9px]" strokeWidth={2.8} />
 								</span>
 								<div className="flex-1 min-w-0">
-									<p className="text-[11.5px] leading-snug text-[color:var(--t-text-primary,#1a1a19)] line-clamp-2">
+									<p className="text-xs leading-snug text-[color:var(--t-text-primary,#1a1a19)] line-clamp-2">
 										{item.message}
 									</p>
 								</div>

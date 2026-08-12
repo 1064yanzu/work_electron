@@ -245,7 +245,7 @@ export function ProviderModelSection({
 							expanded={true}
 							onChange={setShowEndpointOverrides}
 						/>
-						<p className="pt-3 text-[11.5px] leading-relaxed text-text-muted">
+						<p className="pt-3 text-xs leading-relaxed text-text-muted">
 							展开后可为每个模型单独选择端点类型（兼容型 / Responses），
 							未单独配置的模型会继承服务商默认端点类型。
 						</p>

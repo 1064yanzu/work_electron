@@ -131,13 +131,13 @@ export function VoicePicker({
 			</div>
 
 			{loading && (
-				<div className="flex items-center gap-1.5 text-[11.5px] text-text-muted">
+				<div className="flex items-center gap-1.5 text-xs text-text-muted">
 					<Loader2 className="w-3 h-3 animate-spin" />
 					加载音色…
 				</div>
 			)}
 			{error && (
-				<div className="text-[11.5px] text-error">音色加载失败：{error}</div>
+				<div className="text-xs text-error">音色加载失败：{error}</div>
 			)}
 		</div>
 	);

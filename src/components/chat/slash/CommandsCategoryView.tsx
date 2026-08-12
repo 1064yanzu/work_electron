@@ -138,7 +138,7 @@ export function CommandsCategoryView({
 	if (items.length === 0) {
 		return (
 			<div className="px-4 py-8 text-center">
-				<p className="text-[13px] text-text-muted">
+				<p className="text-sm text-text-muted">
 					{SLASH_MESSAGES.empty.noMatch}
 				</p>
 			</div>
@@ -221,7 +221,7 @@ export function CommandsCategoryView({
 									<div className="flex-1 min-w-0">
 										<div className="flex items-baseline gap-1.5">
 											<span
-												className={`text-[13px] font-medium truncate transition-colors duration-120
+												className={`text-sm font-medium truncate transition-colors duration-120
                           ${
 														isSelected && !disabled
 															? "text-text-primary"

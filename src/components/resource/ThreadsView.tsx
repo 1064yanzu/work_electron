@@ -529,7 +529,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 									? `搜索 ${totalSessionCount} 条对话`
 									: "搜索对话"
 							}
-							className="h-8 w-full rounded-lg bg-transparent pl-8 pr-7 text-[13px] text-text-primary transition-colors duration-150 placeholder:text-text-light hover:bg-warm-200/45 focus:bg-warm-200/70 focus:outline-none dark:hover:bg-white/[0.04] dark:focus:bg-white/[0.07]"
+							className="h-8 w-full rounded-lg bg-transparent pl-8 pr-7 text-sm text-text-primary transition-colors duration-150 placeholder:text-text-light hover:bg-warm-200/45 focus:bg-warm-200/70 focus:outline-none dark:hover:bg-white/[0.04] dark:focus:bg-white/[0.07]"
 						/>
 						{searchQuery && (
 							<button
@@ -554,7 +554,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				</div>
 
 				{isSearching && (
-					<p className="mt-1.5 pl-8 text-[12px] text-text-light">
+					<p className="mt-1.5 pl-8 text-xs text-text-light">
 						{visibleSessions.length > 0
 							? `${visibleSessions.length} 条匹配`
 							: "没有匹配的对话"}
@@ -652,10 +652,10 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 				{folderGroups.length === 0 &&
 					(isSearching ? (
 						<div className="px-4 py-12 text-center">
-							<p className="text-[12.5px] text-text-muted">
+							<p className="text-xs text-text-muted">
 								没有找到「{searchQuery.trim()}」
 							</p>
-							<p className="mt-1.5 text-[11.5px] text-text-light">
+							<p className="mt-1.5 text-xs text-text-light">
 								换个关键词，或搜索对话正文中的原句
 							</p>
 						</div>
@@ -667,16 +667,16 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 									strokeWidth={1.5}
 								/>
 							</div>
-							<p className="text-[13px] font-medium text-text-secondary">
+							<p className="text-sm font-medium text-text-secondary">
 								还没有对话
 							</p>
-							<p className="mt-1.5 text-[11.5px] leading-relaxed text-text-light">
+							<p className="mt-1.5 text-xs leading-relaxed text-text-light">
 								在右侧开始提问，对话会按工作目录自动归档到这里
 							</p>
 							<button
 								type="button"
 								onClick={handleCreateThread}
-								className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
+								className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
 							>
 								<Plus className="h-3.5 w-3.5" strokeWidth={2} />
 								新建对话

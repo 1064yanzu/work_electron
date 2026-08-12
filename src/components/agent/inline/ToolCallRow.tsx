@@ -103,7 +103,7 @@ export const ToolCallRow = memo(function ToolCallRow({
 									技能已激活: {skillData.skillName}
 								</span>
 								{toolCall.status === "completed" && (
-									<span className="px-1.5 py-0.5 text-[9px] rounded font-medium bg-[rgba(74,124,89,0.08)] text-success">
+									<span className="px-1.5 py-0.5 text-[11px] rounded font-medium bg-[rgba(74,124,89,0.08)] text-success">
 										就绪
 									</span>
 								)}

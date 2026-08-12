@@ -348,13 +348,13 @@ export function AppUpdateCard() {
 							</span>
 							<div className="min-w-0">
 								<div className="flex flex-wrap items-center gap-2">
-									<h4 className="text-[14px] font-semibold leading-tight text-text-primary">
+									<h4 className="text-sm font-semibold leading-tight text-text-primary">
 										{headline.title || "应用更新"}
 									</h4>
 									{headline.badge}
 								</div>
 								{headline.subtitle && (
-									<p className="mt-1 text-[12.5px] leading-relaxed text-text-secondary">
+									<p className="mt-1 text-xs leading-relaxed text-text-secondary">
 										{headline.subtitle}
 									</p>
 								)}
@@ -417,7 +417,7 @@ export function AppUpdateCard() {
 				{/* 发布说明：仅在有内容且处于发现 / 已下载状态时展示 */}
 				{releaseNotes && (isAvailable || isDownloaded || isDownloading) && (
 					<details className="group rounded-xl border border-border bg-warm-50/40 px-3.5 py-2.5 open:bg-warm-50/70 dark:bg-cream-900/20">
-						<summary className="cursor-pointer list-none text-[12px] font-medium text-text-secondary transition-colors hover:text-text-primary">
+						<summary className="cursor-pointer list-none text-xs font-medium text-text-secondary transition-colors hover:text-text-primary">
 							<span className="inline-flex items-center gap-1.5">
 								<span className="select-none text-text-muted transition-transform group-open:rotate-90">
 									›
@@ -425,7 +425,7 @@ export function AppUpdateCard() {
 								更新内容
 							</span>
 						</summary>
-						<p className="mt-2 whitespace-pre-wrap text-[12px] leading-relaxed text-text-secondary">
+						<p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-text-secondary">
 							{releaseNotes}
 						</p>
 					</details>

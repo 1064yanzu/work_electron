@@ -1239,7 +1239,7 @@ function MenuButton({
 		<button
 			type="button"
 			onClick={onClick}
-			className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12.5px] transition-colors"
+			className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors"
 			style={{
 				color: danger ? "#D9694B" : "var(--t-text-primary, #1a1a19)",
 			}}

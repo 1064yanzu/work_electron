@@ -59,7 +59,7 @@ export function DataDangerSettings() {
 				icon={ShieldAlert}
 				title="清空全部数据将移除以下内容"
 			>
-				<ul className="mt-1 space-y-1 text-[11.5px] leading-relaxed">
+				<ul className="mt-1 space-y-1 text-xs leading-relaxed">
 					<li>• 所有资料、笔记与同步配置</li>
 					<li>• 所有工作流与输出文稿</li>
 					<li>• 所有模型服务商配置</li>
@@ -76,7 +76,7 @@ export function DataDangerSettings() {
 					<SettingsSectionTitle className="text-error">
 						清空全部数据
 					</SettingsSectionTitle>
-					<p className="text-[12.5px] leading-relaxed text-text-muted">
+					<p className="text-xs leading-relaxed text-text-muted">
 						请输入
 						<span className="mx-1 font-mono font-semibold text-error">
 							{CONFIRM_PHRASE}

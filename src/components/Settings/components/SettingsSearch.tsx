@@ -198,7 +198,7 @@ export function SettingsSearch({
 					autoComplete="off"
 					spellCheck={false}
 					className={cn(
-						"flex-1 bg-transparent text-[13px] text-text-primary outline-none",
+						"flex-1 bg-transparent text-sm text-text-primary outline-none",
 						"placeholder:text-text-light",
 					)}
 				/>
@@ -313,14 +313,14 @@ function SearchResultRow({
 					/>
 				)}
 				<span className="min-w-0 flex-1">
-					<span className="block text-[13px] font-medium leading-snug text-text-primary">
+					<span className="block text-sm font-medium leading-snug text-text-primary">
 						{field.label}
 					</span>
 					<span className="mt-0.5 flex items-center gap-1.5 text-xs text-text-muted">
 						<span className="truncate">{breadcrumb}</span>
 					</span>
 					{field.description && (
-						<span className="mt-0.5 block truncate text-[11.5px] leading-relaxed text-text-light">
+						<span className="mt-0.5 block truncate text-xs leading-relaxed text-text-light">
 							{field.description}
 						</span>
 					)}
@@ -333,12 +333,12 @@ function SearchResultRow({
 function EmptyState({ query }: { query: string }) {
 	return (
 		<div className="px-4 py-4">
-			<p className="text-[12.5px] leading-relaxed text-text-secondary">
+			<p className="text-xs leading-relaxed text-text-secondary">
 				没有找到与{" "}
 				<span className="font-medium text-text-primary">"{query}"</span>{" "}
 				相关的设置项。
 			</p>
-			<p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+			<p className="mt-1 text-xs leading-relaxed text-text-muted">
 				如果你觉得这是缺失，可以去 GitHub 反馈一下。
 			</p>
 			<a
@@ -347,7 +347,7 @@ function EmptyState({ query }: { query: string }) {
 				rel="noreferrer"
 				className={cn(
 					"mt-2 inline-flex items-center gap-1 rounded-full border border-border bg-cream-50 px-2.5 py-1",
-					"text-[11.5px] font-medium text-text-secondary",
+					"text-xs font-medium text-text-secondary",
 					"hover:border-cream-500 hover:bg-warm-50 hover:text-text-primary",
 					"transition-[background-color,border-color,color] duration-150",
 				)}

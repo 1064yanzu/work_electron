@@ -294,7 +294,7 @@ export function MemorySettings() {
 				) : !activeFile ? (
 					<div className="flex items-center justify-center py-16 text-text-light">
 						<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-						<span className="text-[13px]">加载中…</span>
+						<span className="text-sm">加载中…</span>
 					</div>
 				) : (
 					<div className="border-t border-border">
@@ -322,7 +322,7 @@ export function MemorySettings() {
 									fallback={
 										<div className="flex h-full items-center justify-center text-text-light">
 											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-											<span className="text-[12px]">加载编辑器…</span>
+											<span className="text-xs">加载编辑器…</span>
 										</div>
 									}
 								>
@@ -338,7 +338,7 @@ export function MemorySettings() {
 								</Suspense>
 							</div>
 							<div className="mt-3 flex items-center justify-between gap-3">
-								<div className="text-[11.5px] text-text-muted">
+								<div className="text-xs text-text-muted">
 									{dirty ? (
 										<span className="text-warning">● 有未保存的更改</span>
 									) : (
@@ -478,7 +478,7 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 			<div className="min-w-0">
 				<div
 					className={cn(
-						"text-[12.5px] font-semibold leading-tight",
+						"text-xs font-semibold leading-tight",
 						active ? "text-text-primary" : "text-text-secondary",
 					)}
 				>
@@ -531,7 +531,7 @@ function FileStatusBar({
 }) {
 	const style = MEMORY_FILE_STYLES[file.token as MemoryFileToken];
 	return (
-		<div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-cream-50/60 text-[11.5px]">
+		<div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-cream-50/60 text-xs">
 			<div className="flex items-center gap-1.5 text-text-muted">
 				<span className={cn("font-medium", style.accentText)}>
 					{style.subtitle}
@@ -557,7 +557,7 @@ function FileStatusBar({
 			{file.injectedInActiveSnapshot && (
 				<>
 					<div className="text-text-light">·</div>
-					<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10.5px] font-medium text-primary">
+					<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
 						<span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
 						已注入活动会话
 					</span>
@@ -577,7 +577,7 @@ function GlobalWarningBar() {
 				className="mt-0.5 h-3.5 w-3.5 shrink-0 text-error"
 				strokeWidth={1.8}
 			/>
-			<div className="text-[11.5px] leading-relaxed text-error">
+			<div className="text-xs leading-relaxed text-error">
 				这是全局用户级 <span className="font-mono">~/.claude/CLAUDE.md</span>
 				，会影响
 				<span className="font-semibold"> 所有 Claude Code 实例</span>
@@ -596,7 +596,7 @@ function EmptyProjectFileState({
 }) {
 	return (
 		<div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-cream-50 px-4 py-3">
-			<div className="text-[12px] leading-relaxed text-text-secondary">
+			<div className="text-xs leading-relaxed text-text-secondary">
 				<span className="font-semibold">{file.displayName}</span>{" "}
 				不存在。点击右侧按钮创建空文件，SDK 在下次 run 启动时会自动加载。
 			</div>
@@ -613,10 +613,10 @@ function ProjectUnavailableState() {
 			<div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-cream-50">
 				<FolderOpen className="h-5 w-5 text-text-light" strokeWidth={1.5} />
 			</div>
-			<p className="mt-3 text-[13px] font-medium text-text-secondary">
+			<p className="mt-3 text-sm font-medium text-text-secondary">
 				尚未选中对话
 			</p>
-			<p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+			<p className="mt-1 text-xs leading-relaxed text-text-muted">
 				项目级 CLAUDE.md / AGENTS.md
 				跟随当前对话的工作目录。请先在左栏选中一条对话。
 			</p>
@@ -634,11 +634,11 @@ function GlobalConfirmDialog({
 	return (
 		<div className="flex items-start justify-between gap-3 rounded-2xl border border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)] px-4 py-3 animate-in slide-in-from-top-2 duration-150">
 			<div>
-				<div className="flex items-center gap-2 text-[13px] font-semibold text-error">
+				<div className="flex items-center gap-2 text-sm font-semibold text-error">
 					<AlertTriangle className="h-4 w-4" strokeWidth={1.8} />
 					确认写入 ~/.claude/CLAUDE.md
 				</div>
-				<div className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+				<div className="mt-1 text-xs leading-relaxed text-text-muted">
 					该文件是全局级别的 Claude Code 配置，会影响所有 Claude Code
 					实例。请确认你确实希望修改全局配置。
 				</div>
@@ -668,10 +668,10 @@ function ClearConfirmDialog({
 	return (
 		<div className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)] px-4 py-3 animate-in slide-in-from-top-2 duration-150">
 			<div>
-				<div className="text-[13px] font-medium text-error">
+				<div className="text-sm font-medium text-error">
 					确认清空 USER 与 MEMORY（共 {total} 字符）
 				</div>
-				<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+				<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
 					SOUL 不受影响。此操作不可恢复，Agent
 					将失去所有积累的用户偏好与环境事实。
 				</div>

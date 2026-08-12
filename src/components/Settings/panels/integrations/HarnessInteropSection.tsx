@@ -136,7 +136,7 @@ export function HarnessInteropSection() {
 
 	if (!settings) {
 		return (
-			<div className="flex items-center gap-2 py-8 text-[12.5px] text-text-light">
+			<div className="flex items-center gap-2 py-8 text-xs text-text-light">
 				<Loader2 className="h-3.5 w-3.5 animate-spin" />
 				正在读取互通配置…
 			</div>
@@ -282,7 +282,7 @@ export function HarnessInteropSection() {
 											key={item.label}
 											className="flex items-center gap-2 rounded-lg border border-border bg-cream-50 px-3 py-2 dark:bg-cream-900/40"
 										>
-											<span className="w-[86px] shrink-0 text-[11.5px] text-text-muted">
+											<span className="w-[86px] shrink-0 text-xs text-text-muted">
 												{item.label}
 											</span>
 											<code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs text-text-secondary">
@@ -312,10 +312,10 @@ export function HarnessInteropSection() {
 								<ul className="space-y-1">
 									{mcp.tools.map((tool) => (
 										<li key={tool.name} className="flex items-start gap-2">
-											<code className="mt-px shrink-0 rounded bg-warm-200/70 px-1.5 py-0.5 font-mono text-[10.5px] text-text-secondary dark:bg-cream-800/50">
+											<code className="mt-px shrink-0 rounded bg-warm-200/70 px-1.5 py-0.5 font-mono text-[11px] text-text-secondary dark:bg-cream-800/50">
 												{tool.name}
 											</code>
-											<span className="text-[11.5px] leading-relaxed text-text-muted">
+											<span className="text-xs leading-relaxed text-text-muted">
 												{tool.summary}
 											</span>
 										</li>
@@ -388,11 +388,11 @@ export function HarnessInteropSection() {
 													className="h-3.5 w-3.5 text-text-light"
 													strokeWidth={1.6}
 												/>
-												<span className="text-[13.5px] font-medium text-text-primary">
+												<span className="text-sm font-medium text-text-primary">
 													{capability.label}
 												</span>
 											</div>
-											<p className="mt-1 text-[12px] leading-relaxed text-text-secondary">
+											<p className="mt-1 text-xs leading-relaxed text-text-secondary">
 												{capability.description}
 											</p>
 										</div>
@@ -454,7 +454,7 @@ export function HarnessInteropSection() {
 											</span>
 										))}
 										{!rule?.harnesses.length && (
-											<span className="text-[11.5px] text-text-light">
+											<span className="text-xs text-text-light">
 												（未配置任何入口）
 											</span>
 										)}
@@ -522,7 +522,7 @@ export function HarnessInteropSection() {
 													strokeWidth={1.8}
 												/>
 											)}
-											<span className="text-[13px] font-medium text-text-primary">
+											<span className="text-sm font-medium text-text-primary">
 												{quota.harness}
 											</span>
 											{quota.manual_blocked && (
@@ -582,7 +582,7 @@ export function HarnessInteropSection() {
 										</div>
 									</div>
 
-									<div className="mt-1.5 space-y-0.5 text-[11.5px] text-text-muted">
+									<div className="mt-1.5 space-y-0.5 text-xs text-text-muted">
 										<div>检测到限额：{formatWhen(quota.limit_hit_at)}</div>
 										<div>
 											恢复时间：
@@ -597,7 +597,7 @@ export function HarnessInteropSection() {
 											<summary className="cursor-pointer text-xs text-text-light hover:text-text-secondary">
 												查看判定依据
 											</summary>
-											<p className="mt-1 rounded-lg bg-cream-50 px-2.5 py-2 font-mono text-[10.5px] leading-relaxed text-text-secondary dark:bg-cream-900/40">
+											<p className="mt-1 rounded-lg bg-cream-50 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-text-secondary dark:bg-cream-900/40">
 												{quota.evidence}
 											</p>
 										</details>
@@ -642,9 +642,9 @@ function TimeoutInput({
 					}
 					onCommit(Math.round(Math.min(900, seconds) * 1000));
 				}}
-				className="w-[72px] rounded-lg border border-border bg-surface px-2.5 py-1 text-right text-[12.5px] tabular-nums text-text-secondary focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/8 dark:bg-cream-900/40"
+				className="w-[72px] rounded-lg border border-border bg-surface px-2.5 py-1 text-right text-xs tabular-nums text-text-secondary focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/8 dark:bg-cream-900/40"
 			/>
-			<span className="text-[12px] text-text-light">秒</span>
+			<span className="text-xs text-text-light">秒</span>
 		</div>
 	);
 }

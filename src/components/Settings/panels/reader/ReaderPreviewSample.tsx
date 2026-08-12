@@ -43,7 +43,7 @@ export function ReaderPreviewSample({ settings }: ReaderPreviewSampleProps) {
 				style={previewStyle}
 			>
 				<div
-					className="flex items-center justify-between gap-3 border-b px-6 py-3 text-[10.5px] uppercase tracking-[0.2em]"
+					className="flex items-center justify-between gap-3 border-b px-6 py-3 text-[11px] uppercase tracking-[0.2em]"
 					style={{
 						borderColor: tokens["--reader-border"],
 						color: tokens["--reader-fg-light"],
@@ -72,7 +72,7 @@ export function ReaderPreviewSample({ settings }: ReaderPreviewSampleProps) {
 					</h2>
 					<p
 						style={{ color: tokens["--reader-fg-muted"] }}
-						className="text-[12px] leading-relaxed"
+						className="text-xs leading-relaxed"
 					>
 						—— 一段示意，会随排版设置实时调整。
 					</p>
@@ -101,7 +101,7 @@ export function ReaderPreviewSample({ settings }: ReaderPreviewSampleProps) {
 				</div>
 
 				<div
-					className="absolute inset-x-6 bottom-3 flex items-center justify-between text-[10.5px]"
+					className="absolute inset-x-6 bottom-3 flex items-center justify-between text-[11px]"
 					style={{ color: tokens["--reader-fg-light"] }}
 				>
 					<span>{theme.label}</span>

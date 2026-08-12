@@ -59,7 +59,7 @@ export function ProviderList({
 
 			<div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3">
 				{filtered.length === 0 ? (
-					<p className="px-3 py-6 text-center text-[12px] text-text-light">
+					<p className="px-3 py-6 text-center text-xs text-text-light">
 						没有匹配的服务商
 					</p>
 				) : (

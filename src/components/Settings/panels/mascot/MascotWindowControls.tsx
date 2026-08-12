@@ -198,11 +198,11 @@ function ControlCard({
 					{icon}
 				</span>
 				<div className="min-w-0 flex-1">
-					<div className="text-[13px] font-semibold leading-snug text-text-primary">
+					<div className="text-sm font-semibold leading-snug text-text-primary">
 						{label}
 					</div>
 					{hint && (
-						<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+						<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
 							{hint}
 						</div>
 					)}
@@ -222,7 +222,7 @@ interface DndTimePairProps {
 
 function DndTimePair({ start, end, onChange, disabled }: DndTimePairProps) {
 	const inputClass =
-		"h-8 w-[100px] rounded-lg border border-border bg-surface px-2.5 text-[12.5px] tabular-nums text-text-primary outline-none transition focus:border-cream-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)] disabled:opacity-50";
+		"h-8 w-[100px] rounded-lg border border-border bg-surface px-2.5 text-xs tabular-nums text-text-primary outline-none transition focus:border-cream-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)] disabled:opacity-50";
 	return (
 		<div className="flex items-center gap-2">
 			<input
@@ -233,7 +233,7 @@ function DndTimePair({ start, end, onChange, disabled }: DndTimePairProps) {
 				className={inputClass}
 				aria-label="勿扰开始时间"
 			/>
-			<span className="text-[11.5px] text-text-muted">至</span>
+			<span className="text-xs text-text-muted">至</span>
 			<input
 				type="time"
 				value={end}

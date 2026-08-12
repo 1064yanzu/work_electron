@@ -108,7 +108,7 @@ export function PetNotificationBubble({
 					>
 						<Icon className="h-3 w-3" strokeWidth={2.6} />
 					</span>
-					<div className="flex-1 text-[13.5px] font-medium leading-snug text-[color:var(--t-text-primary,#1a1a19)]">
+					<div className="flex-1 text-sm font-medium leading-snug text-[color:var(--t-text-primary,#1a1a19)]">
 						{prefix ? (
 							<>
 								<span style={{ color: style.tone }}>{prefix}</span>{" "}
@@ -124,7 +124,7 @@ export function PetNotificationBubble({
 				{message && (
 					<div
 						data-bubble-row
-						className="mt-1 pl-7 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-3"
+						className="mt-1 pl-7 text-xs leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-3"
 					>
 						{message}
 					</div>
@@ -135,7 +135,7 @@ export function PetNotificationBubble({
 						<button
 							type="button"
 							onClick={onAction}
-							className="text-[12px] font-medium transition-opacity hover:opacity-80"
+							className="text-xs font-medium transition-opacity hover:opacity-80"
 							style={{ color: style.tone }}
 						>
 							去看看
@@ -144,7 +144,7 @@ export function PetNotificationBubble({
 							<button
 								type="button"
 								onClick={onDismiss}
-								className="text-[12px] text-[color:var(--t-text-light,#9d9d98)] transition-colors hover:text-[color:var(--t-text-secondary,#6b6b68)]"
+								className="text-xs text-[color:var(--t-text-light,#9d9d98)] transition-colors hover:text-[color:var(--t-text-secondary,#6b6b68)]"
 							>
 								稍后
 							</button>

@@ -64,7 +64,7 @@ export function RuntimePanel({
 
 	if (loading) {
 		return (
-			<div className="flex items-center justify-center h-full text-[11.5px] text-text-light">
+			<div className="flex items-center justify-center h-full text-xs text-text-light">
 				正在读取运行状态…
 			</div>
 		);
@@ -74,8 +74,8 @@ export function RuntimePanel({
 		return (
 			<div className="flex flex-col items-center justify-center h-full gap-2 px-8 text-center">
 				<CircleSlash className="w-5 h-5 text-text-light" strokeWidth={1.5} />
-				<p className="text-[12px] text-text-muted">当前没有正在运行的 AI</p>
-				<p className="text-[10.5px] text-text-light leading-relaxed">
+				<p className="text-xs text-text-muted">当前没有正在运行的 AI</p>
+				<p className="text-[11px] text-text-light leading-relaxed">
 					从 Hub 接力启动的 CLI、后台桥接调用、自动化任务都会出现在这里，
 					并实时显示它们是在干活、在等输入，还是报错卡住了。
 				</p>
@@ -86,7 +86,7 @@ export function RuntimePanel({
 	return (
 		<div className="flex flex-col h-full min-h-0">
 			<div className="flex items-center justify-between px-5 pt-3.5 pb-2 shrink-0">
-				<span className="text-[10.5px] text-text-light">
+				<span className="text-[11px] text-text-light">
 					{active.length} 个正在运行
 					{finished.length > 0 && ` · ${finished.length} 个刚结束`}
 				</span>
@@ -148,7 +148,7 @@ function RuntimeCard({
 				/>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-						<span className="text-[12px] font-medium text-text-secondary truncate">
+						<span className="text-xs font-medium text-text-secondary truncate">
 							{runtime.label}
 						</span>
 						<span className={cn("text-[11px] shrink-0", meta.text)}>
@@ -196,14 +196,14 @@ function RuntimeCard({
 							className="w-3 h-3 text-error shrink-0"
 							strokeWidth={1.8}
 						/>
-						<span className="text-[10.5px] font-medium text-error">
+						<span className="text-[11px] font-medium text-error">
 							{failureMeta.label}
 						</span>
-						<span className="text-[9.5px] text-text-light">
+						<span className="text-[11px] text-text-light">
 							{failureMeta.retryable ? "可自动重试" : "重试无效"}
 						</span>
 					</div>
-					<pre className="mt-1.5 text-[9.5px] leading-relaxed text-text-muted font-mono whitespace-pre-wrap break-all max-h-20 overflow-y-auto scrollbar-hide">
+					<pre className="mt-1.5 text-[11px] leading-relaxed text-text-muted font-mono whitespace-pre-wrap break-all max-h-20 overflow-y-auto scrollbar-hide">
 						{runtime.failure.evidence}
 					</pre>
 				</div>
@@ -211,7 +211,7 @@ function RuntimeCard({
 
 			{/* 输出尾巴：让人一眼看出它现在在干嘛 */}
 			{!runtime.failure && runtime.tail.trim() && (
-				<pre className="mt-2 text-[9.5px] leading-relaxed text-text-light font-mono whitespace-pre-wrap break-all max-h-16 overflow-hidden">
+				<pre className="mt-2 text-[11px] leading-relaxed text-text-light font-mono whitespace-pre-wrap break-all max-h-16 overflow-hidden">
 					{runtime.tail.trim().split("\n").slice(-3).join("\n")}
 				</pre>
 			)}

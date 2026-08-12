@@ -227,7 +227,7 @@ export function CommandPalette({
 								setActiveIndex(0);
 							}}
 							placeholder="搜索命令、项目、设置…"
-							className="flex-1 bg-transparent text-[14px] text-text-primary placeholder:text-text-light focus:outline-none"
+							className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-light focus:outline-none"
 							aria-label="命令面板输入框"
 							aria-autocomplete="list"
 							aria-controls="command-palette-list"
@@ -270,7 +270,7 @@ export function CommandPalette({
 											<button
 												type="button"
 												onClick={() => commandPaletteStore.clearRecent()}
-												className="normal-case tracking-normal font-normal text-[10.5px] text-text-light hover:text-text-secondary transition-colors"
+												className="normal-case tracking-normal font-normal text-[11px] text-text-light hover:text-text-secondary transition-colors"
 											>
 												清除
 											</button>
@@ -315,7 +315,7 @@ export function CommandPalette({
 												<div className="flex-1 min-w-0">
 													<div
 														className={cn(
-															"text-[13px] font-medium truncate",
+															"text-sm font-medium truncate",
 															isActive ? "text-text-primary" : "",
 														)}
 													>
@@ -325,7 +325,7 @@ export function CommandPalette({
 														/>
 													</div>
 													{item.description && (
-														<div className="text-[11.5px] text-text-muted truncate">
+														<div className="text-xs text-text-muted truncate">
 															{item.description}
 														</div>
 													)}
@@ -358,7 +358,7 @@ export function CommandPalette({
 
 					{/* 底部 hint */}
 					<div className="flex items-center justify-between px-5 py-2.5 border-t border-border bg-warm-50/50">
-						<div className="flex items-center gap-3 text-[10.5px] text-text-muted">
+						<div className="flex items-center gap-3 text-[11px] text-text-muted">
 							<span className="flex items-center gap-1">
 								<kbd className="px-1.5 py-0.5 rounded text-[11px] bg-warm-200">
 									↑↓
@@ -378,7 +378,7 @@ export function CommandPalette({
 								<span>关闭</span>
 							</span>
 						</div>
-						<div className="text-[10.5px] text-text-light">
+						<div className="text-[11px] text-text-light">
 							{flatList.length} / {commands.length}
 						</div>
 					</div>

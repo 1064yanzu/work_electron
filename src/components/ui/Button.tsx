@@ -99,7 +99,7 @@ const sizeStyles = {
 	pill: {
 		sm: "h-7 px-3 text-xs gap-1.5 rounded-full",
 		md: "h-9 px-4 text-sm gap-2 rounded-full",
-		lg: "h-11 px-5 text-[15px] gap-2.5 rounded-full",
+		lg: "h-11 px-5 text-base gap-2.5 rounded-full",
 	},
 	rounded: {
 		sm: "h-8 px-3 text-xs gap-1.5 rounded-xl",

@@ -105,7 +105,7 @@ export function ReaderImmersionControls({
 					/>
 				}
 			>
-				<p className="mt-1 text-[10.5px] leading-relaxed text-text-light">
+				<p className="mt-1 text-[11px] leading-relaxed text-text-light">
 					系统级提醒不受影响。
 				</p>
 			</TileCard>
@@ -191,7 +191,7 @@ export function ReaderImmersionControls({
 					/>
 				}
 			>
-				<p className="mt-1 text-[10.5px] leading-relaxed text-text-light">
+				<p className="mt-1 text-[11px] leading-relaxed text-text-light">
 					关闭后卡片仅作浏览，不再排期。
 				</p>
 			</TileCard>
@@ -258,11 +258,11 @@ function TileCard({
 						</span>
 					)}
 					<div className="min-w-0">
-						<div className="text-[13px] font-semibold leading-snug text-text-primary">
+						<div className="text-sm font-semibold leading-snug text-text-primary">
 							{label}
 						</div>
 						{hint && (
-							<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+							<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
 								{hint}
 							</div>
 						)}

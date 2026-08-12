@@ -68,17 +68,17 @@ export function ProviderApiBaseSection({
 						>
 							{provider.apiBase && apiPreviewUrl && (
 								<div>
-									<label className="mb-2 block text-[12px] font-medium text-text-secondary">
+									<label className="mb-2 block text-xs font-medium text-text-secondary">
 										请求预览
 									</label>
-									<p className="break-all rounded-lg border border-border/70 bg-warm-50/60 px-3 py-2 font-mono text-[11.5px] text-text-muted">
+									<p className="break-all rounded-lg border border-border/70 bg-warm-50/60 px-3 py-2 font-mono text-xs text-text-muted">
 										{apiPreviewUrl}
 									</p>
 								</div>
 							)}
 							{canConfigureEndpoint && (
 								<div>
-									<label className="mb-2 block text-[12px] font-medium text-text-secondary">
+									<label className="mb-2 block text-xs font-medium text-text-secondary">
 										默认端点类型
 									</label>
 									<Select

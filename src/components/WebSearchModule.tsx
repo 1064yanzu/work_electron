@@ -407,7 +407,7 @@ export default function WebSearchModule({
 
 										{/* 内容 */}
 										<div className="flex-1 min-w-0">
-											<h4 className="text-[13px] font-medium text-text-primary dark:text-cream-200 line-clamp-1 leading-tight">
+											<h4 className="text-sm font-medium text-text-primary dark:text-cream-200 line-clamp-1 leading-tight">
 												{result.title}
 											</h4>
 											<p className="text-xs text-text-muted mt-0.5 line-clamp-1">

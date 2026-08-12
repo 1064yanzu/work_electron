@@ -544,7 +544,7 @@ function AxisRow({
 							{axis.name}
 						</span>
 						<span
-							className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${INTENSITY_COLORS[axis.intensity]}`}
+							className={`rounded-full px-1.5 py-0.5 text-[11px] font-medium ${INTENSITY_COLORS[axis.intensity]}`}
 						>
 							{INTENSITY_LABELS[axis.intensity]}
 						</span>
@@ -618,7 +618,7 @@ function AxisRow({
 						key={level}
 						type="button"
 						onClick={() => onUpdate("intensity", level)}
-						className={`px-2 py-0.5 text-[9px] rounded-full border transition-colors duration-150 ${
+						className={`px-2 py-0.5 text-[11px] rounded-full border transition-colors duration-150 ${
 							axis.intensity === level
 								? "border-transparent " + INTENSITY_COLORS[level]
 								: "border-cream-200 dark:border-cream-600/40 text-text-muted hover:border-cream-400 dark:hover:border-cream-400/50"

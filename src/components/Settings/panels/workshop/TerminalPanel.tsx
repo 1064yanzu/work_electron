@@ -105,7 +105,7 @@ export function TerminalPanel() {
 						description="新建终端时的起始目录。选「对话目录」会自动跟随当前对话的工作路径。"
 						action={
 							loading ? (
-								<span className="text-[12px] text-text-muted">加载中…</span>
+								<span className="text-xs text-text-muted">加载中…</span>
 							) : (
 								<SettingsChipGroup
 									value={prefs.defaultCwdMode}
@@ -124,7 +124,7 @@ export function TerminalPanel() {
 						description="留空即可，会自动用系统默认 Shell。想指定就填路径，例如 /bin/bash。"
 						action={
 							loading ? (
-								<span className="text-[12px] text-text-muted">加载中…</span>
+								<span className="text-xs text-text-muted">加载中…</span>
 							) : (
 								<SettingsTextInput
 									value={prefs.shellPath}
@@ -143,7 +143,7 @@ export function TerminalPanel() {
 						description="应用启动后直接展开终端面板，不用再手动唤起。"
 						action={
 							loading ? (
-								<span className="text-[12px] text-text-muted">加载中…</span>
+								<span className="text-xs text-text-muted">加载中…</span>
 							) : (
 								<SettingsSwitch
 									checked={prefs.openOnLaunch}
@@ -165,7 +165,7 @@ export function TerminalPanel() {
 							description="终端能向上翻多少行历史输出。调大更占内存，改完对新开的终端生效。"
 							action={
 								loading ? (
-									<span className="text-[12px] text-text-muted">加载中…</span>
+									<span className="text-xs text-text-muted">加载中…</span>
 								) : (
 									<Select
 										variant="compact"

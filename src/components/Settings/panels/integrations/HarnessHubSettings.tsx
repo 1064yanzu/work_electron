@@ -138,7 +138,7 @@ function isValidHttpUrl(raw: string): boolean {
 /** 一条路径信息（可执行 / 会话目录），缺失时显示「未检测到」 */
 function PathLine({ label, value }: { label: string; value: string | null }) {
 	return (
-		<div className="flex items-baseline gap-2 text-[11.5px] leading-relaxed">
+		<div className="flex items-baseline gap-2 text-xs leading-relaxed">
 			<span className="w-[56px] shrink-0 text-text-light">{label}</span>
 			<span
 				className={cn(
@@ -159,10 +159,10 @@ function HarnessDetectionItem({ row }: { row: HarnessDetectionRow }) {
 		<div className="border-b border-border py-3.5 last:border-0">
 			<div className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex-1">
-					<div className="text-[13.5px] font-medium leading-snug text-text-primary">
+					<div className="text-sm font-medium leading-snug text-text-primary">
 						{row.label}
 					</div>
-					<div className="mt-1 text-[12px] leading-relaxed text-text-secondary">
+					<div className="mt-1 text-xs leading-relaxed text-text-secondary">
 						{row.installed
 							? `已摄取 ${row.session_count} 个会话`
 							: "未在 PATH 与常见安装目录中找到"}
@@ -461,7 +461,7 @@ export function HarnessHubSettings() {
 					}
 				>
 					{detecting && detections.length === 0 ? (
-						<div className="py-6 text-center text-[12px] text-text-muted">
+						<div className="py-6 text-center text-xs text-text-muted">
 							正在探测本机 AI 入口…
 						</div>
 					) : detectError ? (
@@ -501,11 +501,11 @@ export function HarnessHubSettings() {
 						{showProgress && (
 							<div className="rounded-2xl border border-border bg-cream-50 px-3.5 py-3">
 								<div className="flex items-baseline justify-between gap-3">
-									<span className="min-w-0 truncate text-[12px] font-medium text-text-primary">
+									<span className="min-w-0 truncate text-xs font-medium text-text-primary">
 										{PHASE_LABEL[progress?.phase ?? "scanning"]}
 										{progress?.harness ? ` · ${progress.harness}` : ""}
 									</span>
-									<span className="shrink-0 font-mono text-[11.5px] tabular-nums text-text-muted">
+									<span className="shrink-0 font-mono text-xs tabular-nums text-text-muted">
 										{progress ? `${progress.processed}/${progress.total}` : "…"}
 									</span>
 								</div>
@@ -550,7 +550,7 @@ export function HarnessHubSettings() {
 					description="可内嵌浏览的 Web AI 入口。启用后会出现在中间栏标签条的「+」菜单里，可各开一个标签页；禁用后不再出现在 AI 入口列表中；内置站点只能禁用，不能删除。"
 				>
 					{sitesLoading ? (
-						<div className="py-6 text-center text-[12px] text-text-muted">
+						<div className="py-6 text-center text-xs text-text-muted">
 							正在加载站点清单…
 						</div>
 					) : sitesError ? (
@@ -625,10 +625,10 @@ export function HarnessHubSettings() {
 												{expanded && (
 													<div className="pb-4">
 														<div className="rounded-2xl border border-border bg-cream-50 px-3.5 py-3">
-															<div className="text-[12px] font-medium text-text-primary">
+															<div className="text-xs font-medium text-text-primary">
 																输入框选择器
 															</div>
-															<p className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+															<p className="mt-0.5 text-xs leading-relaxed text-text-muted">
 																每行一个（也支持逗号分隔），按顺序尝试；全部命中失败时会自动降级为复制到剪贴板。
 																站点改版导致注入失效时，在这里换成新的 CSS
 																选择器即可，不必等应用更新。
@@ -671,10 +671,10 @@ export function HarnessHubSettings() {
 							<div className="mt-4 border-t border-border pt-4">
 								{showAddForm ? (
 									<div className="rounded-2xl border border-border bg-cream-50 px-3.5 py-3">
-										<div className="text-[12px] font-medium text-text-primary">
+										<div className="text-xs font-medium text-text-primary">
 											添加自定义站点
 										</div>
-										<p className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+										<p className="mt-0.5 text-xs leading-relaxed text-text-muted">
 											新站点会先用通用选择器兜底；若注入或提取失败，展开「高级」按该站点实际的
 											DOM 结构修正选择器。
 										</p>

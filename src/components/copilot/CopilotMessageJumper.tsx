@@ -151,7 +151,7 @@ export function CopilotMessageJumper({
 													: "w-1.5 h-0.5 bg-current opacity-40"
 											}`}
 										/>
-										<span className="flex-1 text-[12px] truncate leading-5">
+										<span className="flex-1 text-xs truncate leading-5">
 											{preview || "（空消息）"}
 										</span>
 										{onDeleteMessage && (

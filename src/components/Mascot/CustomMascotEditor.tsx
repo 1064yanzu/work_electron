@@ -81,7 +81,7 @@ export function CustomMascotEditor({
 						<div className="text-xs font-semibold uppercase tracking-[0.16em] text-text-light">
 							编辑自定义桌宠
 						</div>
-						<div className="text-[15px] font-semibold text-text-primary mt-0.5">
+						<div className="text-base font-semibold text-text-primary mt-0.5">
 							{mascot.label}
 						</div>
 					</div>
@@ -140,14 +140,14 @@ export function CustomMascotEditor({
 								value={accentColor}
 								onChange={(e) => setAccentColor(e.target.value)}
 								maxLength={9}
-								className={cn(inputClass, "flex-1 font-mono text-[12px]")}
+								className={cn(inputClass, "flex-1 font-mono text-xs")}
 								placeholder="#RRGGBB"
 							/>
 						</div>
 					</FormField>
 
 					{error && (
-						<div className="rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-700">
+						<div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
 							{error}
 						</div>
 					)}
@@ -157,7 +157,7 @@ export function CustomMascotEditor({
 					<button
 						type="button"
 						onClick={onClose}
-						className="rounded-xl px-4 py-2 text-[12.5px] font-medium text-text-secondary hover:bg-warm-100 transition"
+						className="rounded-xl px-4 py-2 text-xs font-medium text-text-secondary hover:bg-warm-100 transition"
 					>
 						取消
 					</button>
@@ -165,7 +165,7 @@ export function CustomMascotEditor({
 						type="button"
 						onClick={handleSave}
 						disabled={saving}
-						className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[12.5px] font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60"
+						className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60"
 					>
 						{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
 						保存
@@ -177,7 +177,7 @@ export function CustomMascotEditor({
 }
 
 const inputClass =
-	"h-9 w-full rounded-md border border-border bg-surface px-3 text-[13px] text-text-primary outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition";
+	"h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-text-primary outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition";
 
 function FormField({
 	label,
@@ -191,10 +191,10 @@ function FormField({
 	return (
 		<div className="space-y-1.5">
 			<div className="flex items-baseline justify-between">
-				<label className="text-[12px] font-semibold text-text-primary">
+				<label className="text-xs font-semibold text-text-primary">
 					{label}
 				</label>
-				{hint && <span className="text-[10.5px] text-text-light">{hint}</span>}
+				{hint && <span className="text-[11px] text-text-light">{hint}</span>}
 			</div>
 			{children}
 		</div>

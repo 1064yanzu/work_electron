@@ -58,7 +58,7 @@ export function PetTaskBubble({
 			<div className="max-w-[220px]">
 				<div
 					data-bubble-row
-					className="flex items-center gap-1.5 text-[13.5px] leading-snug text-[color:var(--t-text-primary,#1a1a19)]"
+					className="flex items-center gap-1.5 text-sm leading-snug text-[color:var(--t-text-primary,#1a1a19)]"
 				>
 					<span data-bubble-line>{opener}</span>
 					<span className="inline-flex items-center gap-1 pb-0.5">
@@ -76,7 +76,7 @@ export function PetTaskBubble({
 				</div>
 				<div
 					data-bubble-row
-					className="mt-1 text-[12px] leading-relaxed text-[color:var(--t-text-light,#9d9d98)] line-clamp-2"
+					className="mt-1 text-xs leading-relaxed text-[color:var(--t-text-light,#9d9d98)] line-clamp-2"
 				>
 					{title}
 				</div>

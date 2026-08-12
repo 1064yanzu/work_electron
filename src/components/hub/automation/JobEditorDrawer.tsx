@@ -193,7 +193,7 @@ export function JobEditorDrawer({
 			    结果整个抽屉透明，底层的入口轨道和面板文字全叠上来没法看。 */}
 			<div className="w-[420px] max-w-full h-full bg-surface dark:bg-cream-950 border-l border-border shadow-2xl flex flex-col animate-slide-in-right">
 				<div className="flex items-center justify-between px-4 py-3 border-b border-border/60 shrink-0">
-					<span className="text-[12.5px] font-medium text-text-secondary">
+					<span className="text-xs font-medium text-text-secondary">
 						{job ? "编辑任务" : "新建自动化任务"}
 					</span>
 					<button
@@ -230,7 +230,7 @@ export function JobEditorDrawer({
 								))}
 							</select>
 						) : (
-							<p className="text-[10.5px] text-warning leading-relaxed">
+							<p className="text-[11px] text-warning leading-relaxed">
 								本机没有检测到可用的 CLI 入口。自动化只支持 CLI （Web 站点靠 DOM
 								注入驱动，无人值守时一次页面改版就会静默失败）。
 							</p>
@@ -268,7 +268,7 @@ export function JobEditorDrawer({
 								value={cwd}
 								onChange={(e) => setCwd(e.target.value)}
 								placeholder="/path/to/project"
-								className={cn(inputCls, "flex-1 font-mono text-[10.5px]")}
+								className={cn(inputCls, "flex-1 font-mono text-[11px]")}
 							/>
 							<button
 								type="button"
@@ -300,7 +300,7 @@ export function JobEditorDrawer({
 							className="mt-1 accent-terracotta"
 						/>
 						<span className="min-w-0">
-							<span className="block text-[11.5px] text-text-secondary">
+							<span className="block text-xs text-text-secondary">
 								允许修改文件
 							</span>
 							<span className="block text-[11px] text-text-light leading-relaxed mt-0.5">
@@ -409,7 +409,7 @@ export function JobEditorDrawer({
 									onChange={(e) => setWindowEnabled(e.target.checked)}
 									className="accent-terracotta"
 								/>
-								<span className="text-[11.5px] text-text-secondary">
+								<span className="text-xs text-text-secondary">
 									只在时间窗内执行
 								</span>
 							</label>
@@ -497,7 +497,7 @@ export function JobEditorDrawer({
 										className="mt-1 accent-terracotta"
 									/>
 									<span className="min-w-0">
-										<span className="block text-[11.5px] text-text-secondary">
+										<span className="block text-xs text-text-secondary">
 											连续失败后换一个入口继续
 										</span>
 										<span className="block text-[11px] text-text-light leading-relaxed mt-0.5">
@@ -540,7 +540,7 @@ export function JobEditorDrawer({
 					<button
 						type="button"
 						onClick={onClose}
-						className="px-3 py-1.5 rounded-lg text-[11.5px] text-text-muted hover:text-text-secondary transition duration-150"
+						className="px-3 py-1.5 rounded-lg text-xs text-text-muted hover:text-text-secondary transition duration-150"
 					>
 						取消
 					</button>
@@ -548,7 +548,7 @@ export function JobEditorDrawer({
 						type="button"
 						onClick={() => void submit()}
 						disabled={saving || !cliHarnesses.length}
-						className="flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition duration-150"
+						className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition duration-150"
 					>
 						{saving ? "保存中…" : job ? "保存修改" : "创建任务"}
 					</button>
@@ -560,7 +560,7 @@ export function JobEditorDrawer({
 
 // 输入框底色要和面板底色（bg-surface）拉开，否则只剩一条边框在提示"这里能输入"
 const inputCls =
-	"w-full px-2.5 py-1.5 text-[11.5px] bg-cream-50 dark:bg-cream-900/40 border border-border rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150";
+	"w-full px-2.5 py-1.5 text-xs bg-cream-50 dark:bg-cream-900/40 border border-border rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150";
 
 function Field({
 	label,
@@ -571,7 +571,7 @@ function Field({
 }) {
 	return (
 		<div>
-			<span className="block text-[10.5px] text-text-light mb-1.5">
+			<span className="block text-[11px] text-text-light mb-1.5">
 				{label}
 			</span>
 			{children}

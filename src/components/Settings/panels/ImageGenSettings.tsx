@@ -243,7 +243,7 @@ export function ImageGenSettings() {
 							placeholder="如 dall-e-3"
 						/>
 					) : (
-						<span className="text-[12.5px] text-text-light">—</span>
+						<span className="text-xs text-text-light">—</span>
 					)}
 				</SettingsField>
 			</SettingsCardSection>
@@ -275,7 +275,7 @@ export function ImageGenSettings() {
 												type="button"
 												onClick={() => handleChange("defaultSize", opt.value)}
 												className={cn(
-													"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
+													"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 													active
 														? "bg-primary text-primary-foreground shadow-bai-card"
 														: "bg-surface border border-border text-text-secondary hover:border-cream-500 hover:text-text-primary",

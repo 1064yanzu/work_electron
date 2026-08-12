@@ -133,7 +133,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 				{/* 头像 — 单字符 serif，淡彩背景；trust 用小角标在右下 */}
 				<div className="relative shrink-0">
 					<div
-						className="w-9 h-9 rounded-lg flex items-center justify-center font-serif text-[15px] font-semibold"
+						className="w-9 h-9 rounded-lg flex items-center justify-center font-serif text-base font-semibold"
 						style={{
 							backgroundColor: `oklch(0.92 0.04 ${hue})`,
 							color: `oklch(0.45 0.12 ${hue})`,
@@ -158,7 +158,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 				{/* 主体 */}
 				<div className="flex-1 min-w-0 pt-px">
 					<div className="flex items-baseline gap-1.5 min-w-0">
-						<span className="text-[12.5px] font-semibold text-text-primary truncate">
+						<span className="text-xs font-semibold text-text-primary truncate">
 							{entry.displayName || entry.name}
 						</span>
 						{entry.version && (
@@ -167,7 +167,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							</span>
 						)}
 						{entry.installed && (
-							<span className="text-[9.5px] font-medium text-success tracking-wide uppercase shrink-0">
+							<span className="text-[11px] font-medium text-success tracking-wide uppercase shrink-0">
 								已装
 							</span>
 						)}
@@ -297,7 +297,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							加载中…
 						</p>
 					) : (
-						<pre className="text-[10.5px] leading-relaxed text-text-secondary whitespace-pre-wrap font-mono">
+						<pre className="text-[11px] leading-relaxed text-text-secondary whitespace-pre-wrap font-mono">
 							{previewText || "（SKILL.md 内容为空）"}
 						</pre>
 					)}

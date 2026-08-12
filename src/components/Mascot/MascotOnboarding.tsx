@@ -207,13 +207,13 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 
 					<h2
 						data-onb-title
-						className="text-[22px] font-semibold tracking-tight text-text-primary"
+						className="text-2xl font-semibold tracking-tight text-text-primary"
 					>
 						{slide.title}
 					</h2>
 					<p
 						data-onb-desc
-						className="mx-auto mt-2 max-w-sm text-[13.5px] leading-relaxed text-text-secondary"
+						className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-secondary"
 					>
 						{slide.description}
 					</p>
@@ -248,7 +248,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 											className="h-full w-full object-contain p-0.5"
 										/>
 									</div>
-									<div className="text-[11.5px] font-medium text-text-primary">
+									<div className="text-xs font-medium text-text-primary">
 										{meta.label}
 									</div>
 								</button>
@@ -272,7 +272,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 					<button
 						type="button"
 						onClick={handleNext}
-						className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
+						className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
 					>
 						{isLastStep ? "开始使用" : "下一步"}
 						<ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />

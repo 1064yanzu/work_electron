@@ -338,7 +338,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 											)}
 										</div>
 
-										<p className="text-[13px] text-text-muted leading-relaxed line-clamp-3">
+										<p className="text-sm text-text-muted leading-relaxed line-clamp-3">
 											{card.text}
 										</p>
 

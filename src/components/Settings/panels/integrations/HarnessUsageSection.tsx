@@ -128,7 +128,7 @@ export function HarnessUsageSection() {
 						type="button"
 						onClick={() => setRange(key)}
 						className={cn(
-							"rounded-lg px-2.5 py-1 text-[11.5px] font-medium transition-colors",
+							"rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
 							range === key
 								? "bg-terracotta/[0.12] text-terracotta"
 								: "text-text-muted hover:bg-warm-200 hover:text-text-primary",
@@ -144,7 +144,7 @@ export function HarnessUsageSection() {
 					{error}
 				</SettingsHint>
 			) : loading && rows.length === 0 ? (
-				<div className="py-6 text-center text-[12px] text-text-muted">
+				<div className="py-6 text-center text-xs text-text-muted">
 					正在汇总用量…
 				</div>
 			) : rows.length === 0 ? (
@@ -165,7 +165,7 @@ export function HarnessUsageSection() {
 
 					<div className="space-y-0">
 						{visible.length === 0 ? (
-							<div className="py-5 text-center text-[12px] text-text-muted">
+							<div className="py-5 text-center text-xs text-text-muted">
 								{RANGE_LABELS[range]}内没有活动
 							</div>
 						) : (
@@ -176,7 +176,7 @@ export function HarnessUsageSection() {
 								>
 									<div className="min-w-0 flex-1">
 										<div className="flex items-center gap-1.5">
-											<span className="truncate text-[12.5px] font-medium text-text-primary">
+											<span className="truncate text-xs font-medium text-text-primary">
 												{row.label}
 											</span>
 											<SettingsBadge tone="neutral">
@@ -191,7 +191,7 @@ export function HarnessUsageSection() {
 										</div>
 									</div>
 									<div className="shrink-0 text-right">
-										<div className="text-[12px] tabular-nums text-text-secondary">
+										<div className="text-xs tabular-nums text-text-secondary">
 											{formatCount(row[range].messages)} 条消息 ·{" "}
 											{formatCount(row[range].sessions)} 会话
 										</div>
@@ -255,7 +255,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="rounded-xl border border-border px-3 py-2">
 			<div className="text-xs text-text-muted">{label}</div>
-			<div className="mt-0.5 text-[15px] font-medium tabular-nums text-text-primary">
+			<div className="mt-0.5 text-base font-medium tabular-nums text-text-primary">
 				{value}
 			</div>
 		</div>

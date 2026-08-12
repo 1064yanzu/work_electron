@@ -184,7 +184,7 @@ export function MascotPicker({
 				{importMessage && (
 					<div
 						className={cn(
-							"mt-3 rounded-lg px-3 py-2 text-[12px] leading-relaxed",
+							"mt-3 rounded-lg px-3 py-2 text-xs leading-relaxed",
 							importMessage.startsWith("导入失败") ||
 								importMessage.startsWith("删除失败")
 								? "bg-red-50 text-red-700"
@@ -322,7 +322,7 @@ function CustomMascotCard({
 					{/* badge：是否带 atlas / loading */}
 					{(mascot.hasAtlas || mascot.hasLoading) && (
 						<span
-							className="absolute -bottom-1 right-1 inline-flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold shadow-sm"
+							className="absolute -bottom-1 right-1 inline-flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-[11px] font-semibold shadow-sm"
 							style={{ color: accentColor }}
 						>
 							{mascot.hasAtlas && "atlas"}
@@ -340,10 +340,10 @@ function CustomMascotCard({
 function CardTitle({ title, tagline }: { title: string; tagline: string }) {
 	return (
 		<div className="mt-1 space-y-1 w-full">
-			<div className="text-[14px] font-semibold tracking-tight text-text-primary line-clamp-1">
+			<div className="text-sm font-semibold tracking-tight text-text-primary line-clamp-1">
 				{title}
 			</div>
-			<div className="text-[11.5px] leading-snug text-text-light line-clamp-2">
+			<div className="text-xs leading-snug text-text-light line-clamp-2">
 				{tagline}
 			</div>
 		</div>
@@ -480,14 +480,14 @@ function AddMascotCard({
 				)}
 			</div>
 			<div className="mt-1 space-y-0.5">
-				<div className="text-[13px] font-semibold tracking-tight text-text-primary">
+				<div className="text-sm font-semibold tracking-tight text-text-primary">
 					{importing
 						? "正在导入…"
 						: dragOver
 							? "松开即可导入"
 							: "添加自定义桌宠"}
 				</div>
-				<div className="text-[10.5px] leading-snug text-text-light px-2">
+				<div className="text-[11px] leading-snug text-text-light px-2">
 					{dragOver
 						? "支持 .zip 包或目录"
 						: "可拖入 zip / 目录，也兼容 codex hatch-pet"}
@@ -553,10 +553,10 @@ function OffCard({ selected, onSelect }: OffCardProps) {
 				<X className="h-8 w-8 text-text-light" strokeWidth={1.5} />
 			</div>
 			<div className="mt-1 space-y-1">
-				<div className="text-[14px] font-semibold tracking-tight text-text-primary">
+				<div className="text-sm font-semibold tracking-tight text-text-primary">
 					关闭桌面宠物
 				</div>
-				<div className="text-[11.5px] leading-snug text-text-light">
+				<div className="text-xs leading-snug text-text-light">
 					回到极简的图标 / SVG 风格
 				</div>
 			</div>

@@ -35,7 +35,7 @@ function ShortcutRow({ entry }: { entry: RegisteredShortcut }) {
 	const keys = entry.keysDisplay ?? formatKeys(entry.keys);
 	return (
 		<div className="flex items-center justify-between gap-3 py-1.5">
-			<span className="text-[12.5px] text-text-secondary truncate">
+			<span className="text-xs text-text-secondary truncate">
 				{entry.label}
 			</span>
 			<span className="flex items-center gap-1 shrink-0">
@@ -90,7 +90,7 @@ export function ShortcutCheatSheet() {
 				<div className="flex items-center justify-between px-5 py-3.5 border-b border-border shrink-0">
 					<div className="flex items-center gap-2 text-text-primary">
 						<Keyboard className="w-4 h-4" strokeWidth={1.5} />
-						<span className="text-[13.5px] font-semibold">快捷键速查表</span>
+						<span className="text-sm font-semibold">快捷键速查表</span>
 					</div>
 					<button
 						type="button"

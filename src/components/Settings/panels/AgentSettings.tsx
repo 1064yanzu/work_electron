@@ -449,7 +449,7 @@ export function AgentSettings() {
 				<SettingsStat
 					label="默认模型"
 					value={
-						<span className="break-all text-[12.5px]">
+						<span className="break-all text-xs">
 							{modelSettings.defaultModelId || "未指定"}
 						</span>
 					}

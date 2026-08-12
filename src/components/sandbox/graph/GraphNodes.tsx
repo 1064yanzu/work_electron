@@ -107,7 +107,7 @@ const TaskNode = memo(function TaskNode(props: NodeProps<TaskGraphNode>) {
 							</span>
 						</div>
 						{data.subtitle ? (
-							<div className="mt-0.5 text-[12px] text-text-muted line-clamp-2">
+							<div className="mt-0.5 text-xs text-text-muted line-clamp-2">
 								{data.subtitle}
 							</div>
 						) : null}
@@ -248,7 +248,7 @@ const ToolNode = memo(function ToolNode(props: NodeProps<ToolGraphNode>) {
 								: data.name}
 						</div>
 						{data.description && (
-							<div className="mt-0.5 text-[12px] text-text-muted line-clamp-2">
+							<div className="mt-0.5 text-xs text-text-muted line-clamp-2">
 								{data.description}
 							</div>
 						)}

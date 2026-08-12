@@ -411,7 +411,7 @@ const SwarmProgressRing = memo(function SwarmProgressRing({
 				/>
 			</svg>
 			<div className="absolute inset-0 flex items-center justify-center">
-				<span className="text-[9px] font-bold text-text-secondary">
+				<span className="text-[11px] font-bold text-text-secondary">
 					{completed}/{total}
 				</span>
 			</div>

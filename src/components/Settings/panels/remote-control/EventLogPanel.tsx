@@ -125,7 +125,7 @@ export function EventLogPanel() {
 											{formatTime(log.timestamp)}
 										</span>
 										<span
-											className={`shrink-0 inline-flex items-center justify-center w-9 rounded px-1 py-0.5 text-[9px] font-bold uppercase ${style.badge}`}
+											className={`shrink-0 inline-flex items-center justify-center w-9 rounded px-1 py-0.5 text-[11px] font-bold uppercase ${style.badge}`}
 										>
 											{LEVEL_LABELS[log.level] ?? log.level}
 										</span>

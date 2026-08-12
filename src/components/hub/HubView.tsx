@@ -395,10 +395,10 @@ export function HubView() {
 			<div className="px-5 pt-5 pb-3 shrink-0">
 				<div className="flex items-start justify-between gap-3">
 					<div className="min-w-0">
-						<div className="text-[9.5px] font-semibold tracking-[0.22em] text-text-light uppercase">
+						<div className="text-[11px] font-semibold tracking-[0.22em] text-text-light uppercase">
 							AI Harness Hub
 						</div>
-						<h2 className="font-serif text-[22px] leading-tight text-text-primary mt-1 tracking-tight">
+						<h2 className="font-serif text-2xl leading-tight text-text-primary mt-1 tracking-tight">
 							跨入口工作台
 						</h2>
 						<p className="text-xs text-text-muted mt-1.5">
@@ -455,7 +455,7 @@ export function HubView() {
 								value={query}
 								onChange={(event) => setQuery(event.target.value)}
 								placeholder="全文检索所有入口的会话内容…"
-								className="w-full pl-9 pr-8 py-1.5 text-[12px] bg-surface dark:bg-cream-900/40 border border-border rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150"
+								className="w-full pl-9 pr-8 py-1.5 text-xs bg-surface dark:bg-cream-900/40 border border-border rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150"
 							/>
 							{query && (
 								<button
@@ -531,7 +531,7 @@ export function HubView() {
 							运行
 							{/* 有执行体在跑时给个活体标记，不用切过去也知道有事在发生 */}
 							{runningCount > 0 && (
-								<span className="ml-1 text-[9.5px] text-success">
+								<span className="ml-1 text-[11px] text-success">
 									{runningCount}
 								</span>
 							)}
@@ -636,7 +636,7 @@ function PanelTab({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"px-2.5 py-1 rounded-md text-[11.5px] font-medium transition duration-150",
+				"px-2.5 py-1 rounded-md text-xs font-medium transition duration-150",
 				active
 					? "bg-terracotta/[0.12] text-terracotta"
 					: "text-text-muted hover:text-text-secondary hover:bg-warm-200/60 dark:hover:bg-cream-800/40",

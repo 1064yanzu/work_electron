@@ -74,8 +74,8 @@ export function SessionDetail({
 						strokeWidth={1.5}
 					/>
 				</div>
-				<p className="text-[12px] text-text-secondary">从左侧选一段会话</p>
-				<p className="text-[10.5px] text-text-light mt-1.5 leading-relaxed max-w-[260px]">
+				<p className="text-xs text-text-secondary">从左侧选一段会话</p>
+				<p className="text-[11px] text-text-light mt-1.5 leading-relaxed max-w-[260px]">
 					或者直接把它拖到顶部的任意入口上——那是接力最快的路径
 				</p>
 			</div>
@@ -88,13 +88,13 @@ export function SessionDetail({
 		<div className="flex flex-col h-full min-h-0">
 			{/* 概要 */}
 			<div className="px-5 pt-4 pb-3 shrink-0 border-b border-border/50">
-				<div className="text-[9.5px] font-medium tracking-wide text-text-light uppercase">
+				<div className="text-[11px] font-medium tracking-wide text-text-light uppercase">
 					{labelOf(session.harness)}
 				</div>
-				<h3 className="text-[14px] text-text-primary mt-1 leading-snug">
+				<h3 className="text-sm text-text-primary mt-1 leading-snug">
 					{sessionTitle(session)}
 				</h3>
-				<div className="flex items-center gap-1.5 text-[10.5px] text-text-light mt-1">
+				<div className="flex items-center gap-1.5 text-[11px] text-text-light mt-1">
 					<span className="tabular-nums">{session.message_count} 条消息</span>
 					{session.cwd && (
 						<>
@@ -110,7 +110,7 @@ export function SessionDetail({
 
 				{/* 接力目标（拖拽的键盘可达等价物） */}
 				<div className="mt-3">
-					<div className="text-[9.5px] font-medium tracking-wide text-text-light uppercase mb-1.5">
+					<div className="text-[11px] font-medium tracking-wide text-text-light uppercase mb-1.5">
 						接力到
 					</div>
 					<div className="flex flex-wrap gap-1">
@@ -126,7 +126,7 @@ export function SessionDetail({
 							</button>
 						))}
 						{targets.length === 0 && (
-							<span className="text-[10.5px] text-text-light">
+							<span className="text-[11px] text-text-light">
 								当前没有可用入口
 							</span>
 						)}
@@ -152,7 +152,7 @@ export function SessionDetail({
 						<div key={message.id} className="min-w-0">
 							<div
 								className={cn(
-									"text-[9.5px] font-medium tracking-wide uppercase mb-0.5",
+									"text-[11px] font-medium tracking-wide uppercase mb-0.5",
 									message.role === "user"
 										? "text-terracotta/80"
 										: "text-text-light",
@@ -164,7 +164,7 @@ export function SessionDetail({
 										? "助手"
 										: "系统"}
 							</div>
-							<p className="text-[11.5px] leading-relaxed text-text-secondary whitespace-pre-wrap break-words">
+							<p className="text-xs leading-relaxed text-text-secondary whitespace-pre-wrap break-words">
 								{message.content.length > 900
 									? `${message.content.slice(0, 900)}…`
 									: message.content}

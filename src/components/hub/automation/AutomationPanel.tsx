@@ -145,7 +145,7 @@ export function AutomationPanel({
 
 	if (loading) {
 		return (
-			<div className="flex items-center justify-center h-full text-[11.5px] text-text-light">
+			<div className="flex items-center justify-center h-full text-xs text-text-light">
 				正在读取自动化任务…
 			</div>
 		);
@@ -154,7 +154,7 @@ export function AutomationPanel({
 	return (
 		<div className="flex flex-col h-full min-h-0">
 			<div className="flex items-center justify-between px-5 pt-3.5 pb-2.5 shrink-0">
-				<span className="text-[10.5px] text-text-light">
+				<span className="text-[11px] text-text-light">
 					{jobs.length ? `${jobs.length} 个任务` : "还没有自动化任务"}
 				</span>
 				<button
@@ -173,10 +173,10 @@ export function AutomationPanel({
 						className="w-5 h-5 text-text-light"
 						strokeWidth={1.5}
 					/>
-					<p className="text-[12px] text-text-muted">
+					<p className="text-xs text-text-muted">
 						让 AI 在你不在的时候把活干了
 					</p>
-					<p className="text-[10.5px] text-text-light leading-relaxed">
+					<p className="text-[11px] text-text-light leading-relaxed">
 						定一个时间（比如每天凌晨两点），到点自动起一个 CLI 跑你写好的指令。
 						中途遇到限流、上游 5xx、连接中断，会按类别等待并
 						<b className="font-medium">接着上次的进度续跑</b>，而不是从头重来。
@@ -289,7 +289,7 @@ function JobCard({
 						<div className="flex items-center gap-2">
 							<span
 								className={cn(
-									"text-[12px] font-medium truncate",
+									"text-xs font-medium truncate",
 									job.enabled ? "text-text-secondary" : "text-text-light",
 								)}
 							>

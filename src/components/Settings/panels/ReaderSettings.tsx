@@ -131,10 +131,10 @@ export function ReaderSettings() {
 							<Volume2 className="h-4 w-4" strokeWidth={1.6} />
 						</span>
 						<div className="min-w-0">
-							<div className="text-[13px] font-semibold text-text-primary">
+							<div className="text-sm font-semibold text-text-primary">
 								朗读由「语音朗读」面板统一管理
 							</div>
-							<p className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+							<p className="mt-0.5 text-xs leading-relaxed text-text-muted">
 								Provider、音色、语速、声音克隆等都在那里。请在左侧切换到「语音朗读」并开启「阅读器朗读」场景。
 							</p>
 						</div>

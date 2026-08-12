@@ -45,7 +45,7 @@ export function HubTimeline({
 }) {
 	if (loading && sessions.length === 0) {
 		return (
-			<div className="flex items-center justify-center gap-2 py-20 text-[11.5px] text-text-light">
+			<div className="flex items-center justify-center gap-2 py-20 text-xs text-text-light">
 				<Loader2 className="w-3.5 h-3.5 animate-spin" />
 				正在加载会话…
 			</div>
@@ -55,7 +55,7 @@ export function HubTimeline({
 	if (sessions.length === 0) {
 		return (
 			<div className="px-6 py-20 text-center">
-				<p className="text-[12.5px] text-text-secondary">这里还没有会话</p>
+				<p className="text-xs text-text-secondary">这里还没有会话</p>
 				<p className="text-xs text-text-light mt-2 leading-relaxed">
 					用顶部的「摄取」从本机 Claude Code / Codex 拉取，
 					<br />
@@ -112,22 +112,22 @@ export function HubTimeline({
 							<div className="flex items-start justify-between gap-2">
 								<div className="min-w-0 flex-1">
 									<div className="flex items-center gap-1.5">
-										<span className="text-[9.5px] font-medium tracking-wide text-text-light uppercase shrink-0">
+										<span className="text-[11px] font-medium tracking-wide text-text-light uppercase shrink-0">
 											{labelOf(session.harness)}
 										</span>
 										{resumable && (
 											<span
-												className="text-[9px] px-1 py-px rounded bg-success/10 text-success shrink-0"
+												className="text-[11px] px-1 py-px rounded bg-success/10 text-success shrink-0"
 												title="该会话可原生续接：直接载入原会话，上下文无损"
 											>
 												可无损续接
 											</span>
 										)}
 									</div>
-									<div className="text-[12.5px] text-text-primary truncate mt-0.5">
+									<div className="text-xs text-text-primary truncate mt-0.5">
 										{sessionTitle(session)}
 									</div>
-									<div className="flex items-center gap-1.5 text-[10.5px] text-text-light mt-0.5">
+									<div className="flex items-center gap-1.5 text-[11px] text-text-light mt-0.5">
 										<span className="tabular-nums">
 											{session.message_count} 条
 										</span>
@@ -173,7 +173,7 @@ export function HubTimeline({
 							</div>
 
 							{/* 拖拽引导：只在悬停时轻声提示一次，不做常驻噪音 */}
-							<div className="pointer-events-none absolute right-3 bottom-1 text-[9.5px] text-text-light/0 group-hover:text-text-light/60 transition duration-150 flex items-center gap-0.5">
+							<div className="pointer-events-none absolute right-3 bottom-1 text-[11px] text-text-light/0 group-hover:text-text-light/60 transition duration-150 flex items-center gap-0.5">
 								<ArrowUpRight className="w-2.5 h-2.5" />
 								拖到上方入口即接力
 							</div>

@@ -494,7 +494,7 @@ export function WikiView() {
 			<div className="px-3 py-1.5 flex items-center justify-between shrink-0 border-b border-border">
 				<div className="flex min-w-0 items-center gap-2">
 					{scopeLabel ? (
-						<span className="max-w-[150px] truncate text-[12px] text-text-secondary">
+						<span className="max-w-[150px] truncate text-xs text-text-secondary">
 							{scopeLabel}
 						</span>
 					) : null}
@@ -862,7 +862,7 @@ export function WikiView() {
 												{page.title}
 											</h4>
 											{page.page_type && page.page_type !== "entity" && (
-												<span className="px-1.5 py-0.5 text-[9px] font-medium bg-warm-200 text-text-light rounded uppercase tracking-wider flex-shrink-0">
+												<span className="px-1.5 py-0.5 text-[11px] font-medium bg-warm-200 text-text-light rounded uppercase tracking-wider flex-shrink-0">
 													{page.page_type}
 												</span>
 											)}

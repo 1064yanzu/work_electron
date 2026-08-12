@@ -91,7 +91,7 @@ function DiffSummaryItem({
 				</span>
 			</button>
 
-			<div className="flex shrink-0 items-center gap-1.5 font-mono text-[12px]">
+			<div className="flex shrink-0 items-center gap-1.5 font-mono text-xs">
 				{stats.additions > 0 && (
 					<span className="text-emerald-600 dark:text-emerald-400">
 						+{stats.additions}
@@ -170,7 +170,7 @@ function DiffSummaryInner({ rootPath, taskId }: DiffSummaryProps) {
 				</div>
 
 				<div className="flex shrink-0 items-center gap-3">
-					<div className="flex items-center gap-1.5 font-mono text-[12px]">
+					<div className="flex items-center gap-1.5 font-mono text-xs">
 						{summaryStats.totalAdditions > 0 && (
 							<span className="text-emerald-600 dark:text-emerald-400">
 								+{summaryStats.totalAdditions}

@@ -108,7 +108,7 @@ export function ThreadGroupHeader({
 					/>
 				</span>
 				<span
-					className={`truncate text-[13px] font-medium transition-colors ${
+					className={`truncate text-sm font-medium transition-colors ${
 						groupHasActive ? "text-text-secondary" : "text-text-muted"
 					}`}
 					title={group.folderPath || group.folderName}
@@ -223,7 +223,7 @@ export function ThreadSessionItem({
 				{streaming ? (
 					<ShinyText
 						text={title}
-						className="block truncate text-[14px] leading-5 text-text-primary"
+						className="block truncate text-sm leading-5 text-text-primary"
 						color="#D96C46"
 						shineColor="#ffa07a"
 						speed={1.2}
@@ -233,7 +233,7 @@ export function ThreadSessionItem({
 					/>
 				) : (
 					<span
-						className={`block overflow-hidden whitespace-nowrap text-[14px] leading-5 [mask-image:linear-gradient(to_right,#000_calc(100%-42px),transparent)] ${
+						className={`block overflow-hidden whitespace-nowrap text-sm leading-5 [mask-image:linear-gradient(to_right,#000_calc(100%-42px),transparent)] ${
 							isEmptyDraft ? "text-text-muted" : "text-text-primary"
 						} ${isActive ? "font-medium" : ""}`}
 					>
@@ -276,7 +276,7 @@ export function ThreadOverflowToggle({
 			type="button"
 			onClick={() => onToggleOverflow(groupKey)}
 			// pl-2.5 + 图标 14 + gap 6 = 30，文字与对话标题落在同一条竖线上
-			className="flex w-full items-center gap-1.5 rounded-lg py-1.5 pl-2.5 pr-2.5 text-left text-[12.5px] text-text-light transition-colors hover:bg-warm-200/45 hover:text-text-secondary dark:hover:bg-white/[0.03]"
+			className="flex w-full items-center gap-1.5 rounded-lg py-1.5 pl-2.5 pr-2.5 text-left text-xs text-text-light transition-colors hover:bg-warm-200/45 hover:text-text-secondary dark:hover:bg-white/[0.03]"
 		>
 			<ChevronDown
 				className={`h-3.5 w-3.5 shrink-0 transition-transform duration-150 ${

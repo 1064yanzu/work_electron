@@ -135,7 +135,7 @@ export function CommandSubmenuView({
 					<span className="font-mono text-xs text-text-light">
 						/{definition.id}
 					</span>
-					<span className="text-[13px] font-medium text-text-primary truncate">
+					<span className="text-sm font-medium text-text-primary truncate">
 						{definition.name}
 					</span>
 				</div>
@@ -144,7 +144,7 @@ export function CommandSubmenuView({
 			<div className="max-h-[300px] overflow-y-auto">
 				{filteredOptions.length === 0 ? (
 					<div className="px-4 py-8 text-center">
-						<p className="text-[13px] text-text-muted">
+						<p className="text-sm text-text-muted">
 							{SLASH_MESSAGES.empty.noMatch}
 						</p>
 					</div>
@@ -170,7 +170,7 @@ export function CommandSubmenuView({
                     ${disabled ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}`}
 								>
 									<div className="flex-1 min-w-0">
-										<div className="text-[13px] font-medium truncate text-text-primary">
+										<div className="text-sm font-medium truncate text-text-primary">
 											{option.label}
 										</div>
 										{option.description && (
@@ -194,15 +194,15 @@ export function CommandSubmenuView({
 			<div className="px-4 py-1.5 border-t border-border">
 				<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[9px]">⌫</span>
+						<span className="font-mono text-[11px]">⌫</span>
 						<span>返回</span>
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[9px]">↵</span>
+						<span className="font-mono text-[11px]">↵</span>
 						<span>选择</span>
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[9px]">esc</span>
+						<span className="font-mono text-[11px]">esc</span>
 						<span>关闭</span>
 					</span>
 				</div>

@@ -127,7 +127,7 @@ export function TTSProviderCard({
 			<div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
 				<div className="flex min-w-0 items-start gap-3">
 					<span
-						className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-[13px] font-bold uppercase"
+						className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-bold uppercase"
 						style={{
 							backgroundColor: `${accent}14`,
 							borderColor: `${accent}33`,
@@ -146,7 +146,7 @@ export function TTSProviderCard({
 					</span>
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">
-							<h3 className="text-[14px] font-semibold leading-snug text-text-primary">
+							<h3 className="text-sm font-semibold leading-snug text-text-primary">
 								{provider.name || template?.defaultName || provider.type}
 							</h3>
 							<span
@@ -166,7 +166,7 @@ export function TTSProviderCard({
 								{provider.is_enabled ? "已启用" : "已停用"}
 							</span>
 						</div>
-						<p className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+						<p className="mt-0.5 text-xs leading-relaxed text-text-muted">
 							{template?.description || provider.type}
 						</p>
 					</div>
@@ -352,7 +352,7 @@ export function TTSProviderCard({
 							aria-expanded={voicesOpen}
 						>
 							<span
-								className="inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[10.5px] font-semibold tabular-nums"
+								className="inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums"
 								style={{
 									backgroundColor: `${accent}14`,
 									color: accent,
@@ -360,7 +360,7 @@ export function TTSProviderCard({
 							>
 								{voicesState.voices.length}
 							</span>
-							<span className="text-[12.5px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+							<span className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 								音色管理
 							</span>
 							{cloneCount > 0 && (
@@ -441,10 +441,10 @@ function FormField({
 	return (
 		<div className="space-y-1.5">
 			<div className="flex items-baseline justify-between gap-2">
-				<label className="text-[12px] font-medium text-text-primary">
+				<label className="text-xs font-medium text-text-primary">
 					{label}
 				</label>
-				{hint && <span className="text-[10.5px] text-text-muted">{hint}</span>}
+				{hint && <span className="text-[11px] text-text-muted">{hint}</span>}
 			</div>
 			{children}
 		</div>
@@ -475,7 +475,7 @@ function ApiBasePresetChips({
 	const isCustom = !matched && (current || "").trim().length > 0;
 	return (
 		<div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-			<span className="text-[10.5px] uppercase tracking-[0.12em] text-text-light">
+			<span className="text-[11px] uppercase tracking-[0.12em] text-text-light">
 				常用接入
 			</span>
 			{presets.map((preset) => {
@@ -507,7 +507,7 @@ function ApiBasePresetChips({
 						{preset.hint && (
 							<span
 								className={cn(
-									"rounded-full px-1.5 py-px text-[9.5px] uppercase tracking-wider",
+									"rounded-full px-1.5 py-px text-[11px] uppercase tracking-wider",
 									active ? "opacity-80" : "bg-cream-200 text-text-muted",
 								)}
 								style={
@@ -525,7 +525,7 @@ function ApiBasePresetChips({
 				);
 			})}
 			{isCustom && (
-				<span className="rounded-full border border-dashed border-border px-2 py-0.5 text-[10.5px] text-text-muted">
+				<span className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] text-text-muted">
 					自定义
 				</span>
 			)}

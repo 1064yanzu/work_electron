@@ -394,7 +394,7 @@ export function ChatInput({
 						disabled={disabled}
 						rows={1}
 						className={cn(
-							"block w-full bg-transparent text-[15px] leading-[1.5] text-text-primary",
+							"block w-full bg-transparent text-base leading-[1.5] text-text-primary",
 							"placeholder-cream-600 dark:placeholder-text-muted/40",
 							"resize-none focus:outline-none focus:ring-0 focus:shadow-none",
 							"disabled:opacity-50 px-4 pt-3.5 pb-2 min-h-[60px]",

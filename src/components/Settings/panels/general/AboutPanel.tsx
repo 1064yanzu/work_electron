@@ -217,7 +217,7 @@ export function AboutPanel() {
 							className="h-3.5 w-3.5 text-text-muted"
 							strokeWidth={1.8}
 						/>
-						<span className="text-[11.5px] text-text-muted">最近时段：</span>
+						<span className="text-xs text-text-muted">最近时段：</span>
 						{logsInfo.latest_subdirs.map((name) => (
 							<span
 								key={name}

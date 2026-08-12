@@ -28,7 +28,7 @@ export const CodePreview = memo(function CodePreview({
 	const language = languageOverride ?? mapLanguageFromPath(fileName);
 	const { tokens, loading } = useShikiTokens(content, language);
 	const lineHeightClass =
-		density === "compact" ? "text-[12px] leading-6" : "text-[13px] leading-7";
+		density === "compact" ? "text-xs leading-6" : "text-sm leading-7";
 
 	if (!content) {
 		return <p className="text-text-muted">文件内容为空。</p>;

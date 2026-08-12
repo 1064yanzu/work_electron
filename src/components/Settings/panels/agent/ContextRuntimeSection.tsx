@@ -212,7 +212,7 @@ export function ContextRuntimeSection({
 			>
 				<div>
 					<SubsectionTitle icon={Cpu} label="设置来源" />
-					<p className="mb-2 text-[11.5px] text-text-muted">
+					<p className="mb-2 text-xs text-text-muted">
 						Agent 启动时读取的设置来源；至少保留一个。
 					</p>
 					<div className="flex flex-wrap gap-4 rounded-2xl border border-border bg-cream-50 px-4 py-3">

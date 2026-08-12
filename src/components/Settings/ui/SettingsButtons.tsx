@@ -57,7 +57,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
 	sm: "px-2.5 py-1 text-xs gap-1",
-	md: "px-3.5 py-1.5 text-[12px] gap-1.5",
+	md: "px-3.5 py-1.5 text-xs gap-1.5",
 };
 
 export const SettingsButton = forwardRef<
@@ -227,13 +227,13 @@ export function SettingsHint({
 			)}
 			<div className="min-w-0 flex-1">
 				{title && (
-					<div className="text-[12.5px] font-medium leading-snug text-text-primary">
+					<div className="text-xs font-medium leading-snug text-text-primary">
 						{title}
 					</div>
 				)}
 				<div
 					className={cn(
-						"text-[11.5px] leading-relaxed text-text-muted",
+						"text-xs leading-relaxed text-text-muted",
 						title && "mt-0.5",
 					)}
 				>
@@ -266,7 +266,7 @@ export function SettingsToolbar({
 				className,
 			)}
 		>
-			<div className="min-w-0 flex-1 text-[12px] text-text-muted">{left}</div>
+			<div className="min-w-0 flex-1 text-xs text-text-muted">{left}</div>
 			<div className="flex shrink-0 items-center gap-2">{right}</div>
 		</div>
 	);

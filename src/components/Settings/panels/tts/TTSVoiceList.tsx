@@ -84,7 +84,7 @@ export function TTSVoiceList({
 
 	if (state.loading) {
 		return (
-			<div className="flex items-center gap-2 rounded-xl border border-dashed border-border bg-cream-50 px-3 py-3 text-[12px] text-text-muted">
+			<div className="flex items-center gap-2 rounded-xl border border-dashed border-border bg-cream-50 px-3 py-3 text-xs text-text-muted">
 				<Loader2 className="h-3 w-3 animate-spin" /> 加载音色…
 			</div>
 		);
@@ -92,7 +92,7 @@ export function TTSVoiceList({
 
 	if (state.error) {
 		return (
-			<div className="rounded-xl border border-error/30 bg-error/5 px-3 py-2 text-[12px] text-error">
+			<div className="rounded-xl border border-error/30 bg-error/5 px-3 py-2 text-xs text-error">
 				加载失败：{state.error}
 			</div>
 		);
@@ -100,7 +100,7 @@ export function TTSVoiceList({
 
 	if (state.voices.length === 0) {
 		return (
-			<div className="rounded-xl border border-dashed border-border bg-cream-50 px-3 py-4 text-center text-[12px] text-text-muted">
+			<div className="rounded-xl border border-dashed border-border bg-cream-50 px-3 py-4 text-center text-xs text-text-muted">
 				暂无可用音色（请先填写 API Key 或克隆新音色）
 			</div>
 		);
@@ -109,8 +109,8 @@ export function TTSVoiceList({
 	return (
 		<div className="space-y-2">
 			{onSelectAsDefault && (
-				<div className="flex items-center gap-1.5 text-[10.5px] text-text-muted">
-					<span className="rounded-full bg-cream-200 px-1.5 py-px text-[9.5px] uppercase tracking-wider text-text-secondary">
+				<div className="flex items-center gap-1.5 text-[11px] text-text-muted">
+					<span className="rounded-full bg-cream-200 px-1.5 py-px text-[11px] uppercase tracking-wider text-text-secondary">
 						提示
 					</span>
 					<span>点击任意音色卡即可将其设为默认朗读音色</span>
@@ -213,17 +213,17 @@ function VoiceCard({
 			</span>
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-1.5">
-					<span className="truncate text-[12.5px] font-medium text-text-primary">
+					<span className="truncate text-xs font-medium text-text-primary">
 						{voice.name}
 					</span>
 					{voice.is_cloned && (
-						<span className="rounded-full bg-violetx-500/10 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wider text-violetx-600">
+						<span className="rounded-full bg-violetx-500/10 px-1.5 py-px text-[11px] font-semibold uppercase tracking-wider text-violetx-600">
 							克隆
 						</span>
 					)}
 					{selected && (
 						<span
-							className="inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wider"
+							className="inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-semibold uppercase tracking-wider"
 							style={{
 								backgroundColor: `${accent}1f`,
 								color: accent,
@@ -234,7 +234,7 @@ function VoiceCard({
 						</span>
 					)}
 				</div>
-				<div className="mt-0.5 flex items-center gap-1.5 text-[10.5px] text-text-muted">
+				<div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-text-muted">
 					{voice.language ? (
 						<span className="rounded-md bg-cream-200 px-1.5 py-px font-mono">
 							{voice.language}

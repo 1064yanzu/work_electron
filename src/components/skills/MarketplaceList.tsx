@@ -68,7 +68,7 @@ export function MarketplaceList() {
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 						placeholder="搜索市场技能…"
-						className="w-full pl-9 pr-8 py-2 text-[12px] bg-surface dark:bg-cream-900/40 border border-cream-300/80 dark:border-cream-500/30 rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition"
+						className="w-full pl-9 pr-8 py-2 text-xs bg-surface dark:bg-cream-900/40 border border-cream-300/80 dark:border-cream-500/30 rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition"
 					/>
 					{query && (
 						<button
@@ -111,7 +111,7 @@ export function MarketplaceList() {
 								e.stopPropagation();
 								handleRetry();
 							}}
-							className="text-[10.5px] underline underline-offset-2 hover:no-underline"
+							className="text-[11px] underline underline-offset-2 hover:no-underline"
 						>
 							重试
 						</button>
@@ -130,10 +130,10 @@ export function MarketplaceList() {
 									className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-amber-50/40 dark:bg-amber-500/5"
 								>
 									<div className="flex-1 min-w-0">
-										<div className="text-[10.5px] font-medium text-amber-800 dark:text-amber-300">
+										<div className="text-[11px] font-medium text-amber-800 dark:text-amber-300">
 											{sourceName(e.sourceId)}
 										</div>
-										<div className="text-[9.5px] font-mono text-amber-700/80 dark:text-amber-400/70 truncate">
+										<div className="text-[11px] font-mono text-amber-700/80 dark:text-amber-400/70 truncate">
 											{e.error}
 										</div>
 									</div>
@@ -176,7 +176,7 @@ export function MarketplaceList() {
 									onClick={() =>
 										setVisibleCount((c) => Math.min(c + 50, entries.length))
 									}
-									className="px-4 py-1.5 text-[11.5px] font-medium text-text-secondary bg-cream-100/70 hover:bg-cream-200/80 dark:bg-cream-800/30 dark:hover:bg-cream-800/50 border border-cream-300/60 dark:border-cream-500/20 rounded-lg transition"
+									className="px-4 py-1.5 text-xs font-medium text-text-secondary bg-cream-100/70 hover:bg-cream-200/80 dark:bg-cream-800/30 dark:hover:bg-cream-800/50 border border-cream-300/60 dark:border-cream-500/20 rounded-lg transition"
 								>
 									显示更多（剩 {entries.length - visibleCount} 条）
 								</button>
@@ -212,7 +212,7 @@ function MarketplaceEmpty({ hasQuery }: { hasQuery: boolean }) {
 			<div className="text-[32px] font-serif text-text-light/60 leading-none mb-3">
 				—
 			</div>
-			<p className="text-[12.5px] text-text-secondary font-medium">
+			<p className="text-xs text-text-secondary font-medium">
 				{hasQuery ? "没有匹配的技能" : "市场暂时为空"}
 			</p>
 			<p className="text-xs text-text-light mt-2 leading-relaxed">

@@ -127,7 +127,7 @@ export function MascotHeroBanner({
 						</span>
 						<span
 							className={cn(
-								"inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium",
+								"inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
 								windowEnabled
 									? "border-mint-500/40 bg-mint-500/10 text-mint-600"
 									: "border-border bg-cream-100 text-text-muted",
@@ -144,18 +144,18 @@ export function MascotHeroBanner({
 					</div>
 
 					<div>
-						<h3 className="text-[22px] font-semibold leading-tight tracking-tight text-text-primary">
+						<h3 className="text-2xl font-semibold leading-tight tracking-tight text-text-primary">
 							{meta.label}
 						</h3>
 						<p
-							className="mt-1 text-[13px] font-medium"
+							className="mt-1 text-sm font-medium"
 							style={{ color: accent }}
 						>
 							{meta.tagline}
 						</p>
 					</div>
 
-					<p className="text-[12.5px] leading-relaxed text-text-secondary">
+					<p className="text-xs leading-relaxed text-text-secondary">
 						{meta.personality}
 					</p>
 
@@ -167,7 +167,7 @@ export function MascotHeroBanner({
 						/>
 						<span>
 							accent 主色{" "}
-							<code className="rounded bg-cream-200 px-1.5 py-0.5 font-mono text-[10.5px] text-text-secondary">
+							<code className="rounded bg-cream-200 px-1.5 py-0.5 font-mono text-[11px] text-text-secondary">
 								{accent}
 							</code>
 						</span>

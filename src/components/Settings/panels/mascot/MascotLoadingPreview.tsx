@@ -51,7 +51,7 @@ export function MascotLoadingPreview({
 			</div>
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-2">
-					<span className="text-[13px] font-semibold text-text-primary">
+					<span className="text-sm font-semibold text-text-primary">
 						思考态视频动画
 					</span>
 					<span
@@ -64,7 +64,7 @@ export function MascotLoadingPreview({
 						LOOP
 					</span>
 				</div>
-				<p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+				<p className="mt-1 text-xs leading-relaxed text-text-muted">
 					文档生成、Agent 等待等长任务中替代静态图片，让等待更生动。仅当前 IP
 					配置了视频时启用。
 				</p>

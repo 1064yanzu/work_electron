@@ -123,12 +123,12 @@ export function PermissionPolicySection({
 									<div className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 										{level}
 									</div>
-									<div className="text-[13px] font-semibold text-text-primary">
+									<div className="text-sm font-semibold text-text-primary">
 										{cfg.label}
 									</div>
 								</div>
 							</div>
-							<p className="mt-2 text-[11.5px] leading-relaxed text-text-muted">
+							<p className="mt-2 text-xs leading-relaxed text-text-muted">
 								{cfg.hint}
 							</p>
 							<div className="mt-3">
@@ -153,14 +153,14 @@ export function PermissionPolicySection({
 			>
 				<div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-cream-50 px-4 py-3">
 					<div className="min-w-0 flex-1">
-						<div className="flex items-center gap-1.5 text-[13px] font-medium text-text-primary">
+						<div className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
 							<Clock
 								className="h-3.5 w-3.5 text-text-muted"
 								strokeWidth={1.8}
 							/>
 							权限请求超时
 						</div>
-						<div className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+						<div className="mt-0.5 text-xs leading-relaxed text-text-muted">
 							timeout_seconds · 超时后自动按「默认拒绝」处理；范围 5–120 秒。
 						</div>
 					</div>
@@ -180,15 +180,15 @@ export function PermissionPolicySection({
 			{/* 内置工具风险等级 */}
 			<div>
 				<div className="mb-3 flex items-baseline justify-between">
-					<h5 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+					<h5 className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 						内置工具风险等级
 					</h5>
-					<span className="text-[10.5px] text-text-light">
+					<span className="text-[11px] text-text-light">
 						共 {Object.keys(TOOL_NAMES).length} 个工具
 					</span>
 				</div>
 				<div className="overflow-hidden rounded-xl border border-border">
-					<div className="grid grid-cols-[1fr_140px_140px] bg-cream-50 px-4 py-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+					<div className="grid grid-cols-[1fr_140px_140px] bg-cream-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
 						<div>工具</div>
 						<div>风险等级</div>
 						<div>当前策略</div>
@@ -205,7 +205,7 @@ export function PermissionPolicySection({
 							return (
 								<div
 									key={toolType}
-									className="grid grid-cols-[1fr_140px_140px] items-center bg-surface px-4 py-2 text-[12.5px] transition-colors hover:bg-cream-50"
+									className="grid grid-cols-[1fr_140px_140px] items-center bg-surface px-4 py-2 text-xs transition-colors hover:bg-cream-50"
 								>
 									<div className="text-text-primary">
 										{TOOL_NAMES[toolType]}

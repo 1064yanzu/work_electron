@@ -40,11 +40,11 @@ function ShortcutRow({ entry }: { entry: RegisteredShortcut }) {
 	return (
 		<div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-0">
 			<div className="min-w-0 flex-1">
-				<div className="text-[14px] font-medium leading-snug text-text-primary">
+				<div className="text-sm font-medium leading-snug text-text-primary">
 					{entry.label}
 				</div>
 				{entry.description ? (
-					<div className="mt-1.5 text-[12.5px] leading-relaxed text-text-secondary">
+					<div className="mt-1.5 text-xs leading-relaxed text-text-secondary">
 						{entry.description}
 					</div>
 				) : null}
@@ -52,7 +52,7 @@ function ShortcutRow({ entry }: { entry: RegisteredShortcut }) {
 			<div className="flex shrink-0 items-center gap-1">
 				{keys.map((key, idx) => (
 					<span key={`${entry.id}-${idx}`} className="flex items-center gap-1">
-						<kbd className="rounded-md border border-border bg-cream-200 px-2 py-1 text-[11.5px] font-medium text-text-secondary">
+						<kbd className="rounded-md border border-border bg-cream-200 px-2 py-1 text-xs font-medium text-text-secondary">
 							{key}
 						</kbd>
 						{idx < keys.length - 1 && (
@@ -122,7 +122,7 @@ export function ShortcutsSettings() {
 					className={cn(settingsInputClass, "rounded-xl px-4 py-2.5 text-sm")}
 				/>
 				{filtering && (
-					<p className="mt-2 text-[12.5px] text-text-muted">
+					<p className="mt-2 text-xs text-text-muted">
 						{matched > 0
 							? `匹配到 ${matched} 个快捷键`
 							: "没有匹配的快捷键，换个关键词试试。"}
@@ -149,14 +149,14 @@ export function ShortcutsSettings() {
 							<Command className="h-4 w-4" strokeWidth={1.5} />
 						</div>
 						<div className="min-w-0 flex-1">
-							<p className="text-[13.5px] leading-relaxed text-text-secondary">
+							<p className="text-sm leading-relaxed text-text-secondary">
 								命令面板（{modKey}+K）是访问绝大多数功能的最快方式 ——
 								新建项目、切换主题、跳转到任意设置 tab、唤起终端等都能直接搜索。
 							</p>
 							<button
 								type="button"
 								onClick={() => shortcutRegistry.openCheatSheet()}
-								className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-cream-200 px-3.5 py-2 text-[12.5px] font-medium text-text-primary transition-colors hover:bg-cream-300 active:scale-[0.98]"
+								className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-cream-200 px-3.5 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-cream-300 active:scale-[0.98]"
 							>
 								<SquareSlash className="h-3.5 w-3.5" strokeWidth={1.5} />
 								打开速查表（{modKey}+/）

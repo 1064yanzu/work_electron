@@ -21,16 +21,16 @@ export function MascotPackagingFooter({
 						<FileCode2 className="h-3.5 w-3.5" strokeWidth={1.6} />
 					</span>
 					<div className="min-w-0">
-						<div className="text-[13px] font-semibold text-text-primary">
+						<div className="text-sm font-semibold text-text-primary">
 							打包你自己的桌宠
 						</div>
-						<p className="mt-0.5 text-[11.5px] leading-relaxed text-text-muted">
+						<p className="mt-0.5 text-xs leading-relaxed text-text-muted">
 							支持 zip 包（pet.json + 17 张 PNG），或直接读取{" "}
-							<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[10.5px]">
+							<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[11px]">
 								~/.codex/pets/&lt;id&gt;
 							</code>{" "}
 							与{" "}
-							<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[10.5px]">
+							<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[11px]">
 								hatch-pet/runs/&lt;id&gt;
 							</code>{" "}
 							目录。缺失的 hero / accent 颜色会自动从 spritesheet 派生。
@@ -42,7 +42,7 @@ export function MascotPackagingFooter({
 						href="https://github.com/anthropics/claude-code/blob/main/docs/custom-mascot-pack.md"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[11.5px] font-medium text-text-secondary transition hover:border-cream-500 hover:text-text-primary"
+						className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-cream-500 hover:text-text-primary"
 					>
 						<ExternalLink className="h-3 w-3" strokeWidth={1.8} />
 						打包规范
@@ -50,7 +50,7 @@ export function MascotPackagingFooter({
 					<button
 						type="button"
 						onClick={onDownloadTemplate}
-						className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11.5px] font-semibold text-primary-foreground transition hover:opacity-90"
+						className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
 					>
 						<Download className="h-3 w-3" strokeWidth={1.8} />
 						下载 pet.json 模版

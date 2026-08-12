@@ -66,7 +66,7 @@ export function TTSSceneSection({
 					</span>
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">
-							<h3 className="text-[14px] font-semibold leading-snug text-text-primary">
+							<h3 className="text-sm font-semibold leading-snug text-text-primary">
 								{title}
 							</h3>
 							{enabled && (
@@ -85,7 +85,7 @@ export function TTSSceneSection({
 								</span>
 							)}
 						</div>
-						<p className="mt-1 text-[12px] leading-relaxed text-text-muted">
+						<p className="mt-1 text-xs leading-relaxed text-text-muted">
 							{description}
 						</p>
 					</div>
@@ -97,10 +97,10 @@ export function TTSSceneSection({
 				<div className="space-y-3 border-t border-border px-5 py-4">
 					<div className="rounded-2xl border border-border bg-cream-50 p-4">
 						<div className="mb-2 flex items-baseline justify-between">
-							<span className="text-[12.5px] font-medium text-text-primary">
+							<span className="text-xs font-medium text-text-primary">
 								场景音色
 							</span>
-							<span className="text-[10.5px] text-text-muted">
+							<span className="text-[11px] text-text-muted">
 								不选则跟随全局默认
 							</span>
 						</div>
@@ -112,7 +112,7 @@ export function TTSSceneSection({
 								allowInherit
 							/>
 						) : (
-							<div className="rounded-lg border border-dashed border-border bg-surface px-3 py-2 text-[12px] text-text-muted">
+							<div className="rounded-lg border border-dashed border-border bg-surface px-3 py-2 text-xs text-text-muted">
 								请先选择全局默认 Provider
 							</div>
 						)}

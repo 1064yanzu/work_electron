@@ -94,11 +94,11 @@ function EmotionCell({
 				)}
 			</div>
 			<div className="relative flex flex-col items-center gap-0.5">
-				<span className="text-[12px] font-medium text-text-primary">
+				<span className="text-xs font-medium text-text-primary">
 					{label}
 				</span>
 				<span
-					className="text-[9.5px] uppercase tracking-[0.16em]"
+					className="text-[11px] uppercase tracking-[0.16em]"
 					style={{ color: accentColor }}
 				>
 					{group === "emotion" ? "Emotion" : "State"}

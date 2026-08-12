@@ -85,10 +85,10 @@ export function SystemPromptTemplates() {
 		<div className="h-full overflow-y-auto p-6 scroll-smooth">
 			<div className="max-w-2xl mx-auto">
 				<div className="mb-5">
-					<h3 className="text-[15px] font-semibold text-text-primary">
+					<h3 className="text-base font-semibold text-text-primary">
 						系统模板
 					</h3>
-					<p className="mt-1 text-[12.5px] leading-relaxed text-text-muted">
+					<p className="mt-1 text-xs leading-relaxed text-text-muted">
 						内置场景使用的系统级提示词，修改会影响标题生成等自动行为。失焦或回车自动保存。
 					</p>
 				</div>
@@ -143,32 +143,32 @@ function SystemPromptCard({
 					</span>
 					<div className="min-w-0">
 						<div className="flex items-center gap-2 flex-wrap">
-							<h4 className="text-[14px] font-semibold leading-snug text-text-primary">
+							<h4 className="text-sm font-semibold leading-snug text-text-primary">
 								{config.label}
 							</h4>
 							{isModified && (
-								<span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10.5px] font-medium">
+								<span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-medium">
 									已自定义
 								</span>
 							)}
 							{isDirty && (
-								<span className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 text-[10.5px] font-medium">
+								<span className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 text-[11px] font-medium">
 									未提交
 								</span>
 							)}
 						</div>
-						<p className="mt-1 text-[12.5px] leading-relaxed text-text-muted">
+						<p className="mt-1 text-xs leading-relaxed text-text-muted">
 							{config.description}
 						</p>
 						{config.variables.length > 0 && (
 							<div className="mt-2 flex items-center gap-1.5 flex-wrap">
-								<span className="text-[10.5px] uppercase tracking-[0.14em] text-text-muted">
+								<span className="text-[11px] uppercase tracking-[0.14em] text-text-muted">
 									变量
 								</span>
 								{config.variables.map((v) => (
 									<code
 										key={v}
-										className="inline-flex items-center rounded-md border border-border bg-cream-100 px-1.5 py-0.5 font-mono text-[10.5px] text-text-secondary"
+										className="inline-flex items-center rounded-md border border-border bg-cream-100 px-1.5 py-0.5 font-mono text-[11px] text-text-secondary"
 									>
 										{`{${v}}`}
 									</code>
@@ -209,7 +209,7 @@ function SystemPromptCard({
 					placeholder={config.placeholder}
 					rows={8}
 					disabled={loading}
-					className="w-full rounded-xl border border-border bg-cream-50 dark:bg-cream-900 px-3 py-2.5 font-mono text-[12.5px] leading-relaxed text-text-primary placeholder-text-muted outline-none focus:border-focus focus:ring-2 focus:ring-focus/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] resize-y min-h-[160px] disabled:opacity-50"
+					className="w-full rounded-xl border border-border bg-cream-50 dark:bg-cream-900 px-3 py-2.5 font-mono text-xs leading-relaxed text-text-primary placeholder-text-muted outline-none focus:border-focus focus:ring-2 focus:ring-focus/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] resize-y min-h-[160px] disabled:opacity-50"
 				/>
 				<div className="mt-1 flex items-center justify-end text-xs tabular-nums text-text-light">
 					{draft.length} 字符

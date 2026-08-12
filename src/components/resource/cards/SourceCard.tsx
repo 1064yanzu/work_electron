@@ -272,7 +272,7 @@ function SourceCardImpl({
 				) : null}
 
 				{/* 标题 */}
-				<h3 className="text-[13.5px] font-medium text-text-primary dark:text-cream-100 line-clamp-3 leading-[1.5] tracking-[-0.005em]">
+				<h3 className="text-sm font-medium text-text-primary dark:text-cream-100 line-clamp-3 leading-[1.5] tracking-[-0.005em]">
 					{source.title}
 				</h3>
 
@@ -337,7 +337,7 @@ function SourceCardImpl({
 			/>
 
 			<div className="flex-1 min-w-0">
-				<h3 className="text-[13px] font-medium text-text-primary dark:text-cream-100 truncate leading-[1.45]">
+				<h3 className="text-sm font-medium text-text-primary dark:text-cream-100 truncate leading-[1.45]">
 					{source.title}
 				</h3>
 				<div className="mt-0.5">

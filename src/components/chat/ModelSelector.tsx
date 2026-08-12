@@ -128,7 +128,7 @@ export function ModelSelector({
 							ref={inputRef}
 							type="text"
 							placeholder="Search models..."
-							className="w-full bg-cream-100 dark:bg-cream-800 text-text-primary text-[13px] rounded-full pl-8 pr-3 py-1.5 border border-cream-300 dark:border-cream-500 focus:outline-none focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 placeholder:text-text-muted"
+							className="w-full bg-cream-100 dark:bg-cream-800 text-text-primary text-sm rounded-full pl-8 pr-3 py-1.5 border border-cream-300 dark:border-cream-500 focus:outline-none focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 placeholder:text-text-muted"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 						/>
@@ -210,7 +210,7 @@ export function ModelSelector({
 
 														<div className="flex-1 min-w-0">
 															<div
-																className={`text-[13px] font-medium truncate ${isActive ? "text-text-primary" : ""}`}
+																className={`text-sm font-medium truncate ${isActive ? "text-text-primary" : ""}`}
 															>
 																{formatModelName(model.id)}
 															</div>

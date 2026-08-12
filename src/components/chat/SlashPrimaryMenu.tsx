@@ -185,7 +185,7 @@ export function SlashPrimaryMenu({
 				className="absolute left-0 bottom-full mb-2 w-[280px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50"
 			>
 				<div className="px-4 py-8 text-center">
-					<p className="text-[13px] text-text-muted">未找到匹配的命令类型</p>
+					<p className="text-sm text-text-muted">未找到匹配的命令类型</p>
 				</div>
 			</div>
 		);
@@ -246,7 +246,7 @@ export function SlashPrimaryMenu({
 							<div className="flex-1 min-w-0">
 								<div className="flex items-baseline gap-1.5">
 									<span
-										className={`text-[13px] font-medium leading-tight transition-colors duration-120
+										className={`text-sm font-medium leading-tight transition-colors duration-120
                       ${
 												isSelected ? "text-text-primary" : "text-text-secondary"
 											}`}
@@ -285,15 +285,15 @@ export function SlashPrimaryMenu({
 			<div className="px-4 py-1.5 border-t border-border">
 				<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[9px]">↑↓</span>
+						<span className="font-mono text-[11px]">↑↓</span>
 						<span>导航</span>
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[9px]">↵</span>
+						<span className="font-mono text-[11px]">↵</span>
 						<span>选择</span>
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[9px]">esc</span>
+						<span className="font-mono text-[11px]">esc</span>
 						<span>关闭</span>
 					</span>
 				</div>

@@ -172,7 +172,7 @@ export function VoiceCloneModal({
 				style={{ backgroundColor: "var(--t-bg-surface)" }}
 			>
 				<div className="flex items-center justify-between border-b border-border px-5 py-4">
-					<h3 className="text-[14px] font-semibold text-text-primary">
+					<h3 className="text-sm font-semibold text-text-primary">
 						克隆新音色
 					</h3>
 					<button
@@ -238,7 +238,7 @@ export function VoiceCloneModal({
 							onDrop={handleDrop}
 						>
 							<Upload className="w-6 h-6 text-text-muted mb-2" />
-							<p className="text-[12px] text-text-secondary">
+							<p className="text-xs text-text-secondary">
 								拖拽音频文件到此处，或
 								<button
 									type="button"
@@ -267,7 +267,7 @@ export function VoiceCloneModal({
 								{files.map((f, i) => (
 									<li
 										key={`${f.name}-${i}`}
-										className="flex items-center justify-between rounded-md bg-warm-100 px-3 py-1.5 text-[12px] text-text-secondary"
+										className="flex items-center justify-between rounded-md bg-warm-100 px-3 py-1.5 text-xs text-text-secondary"
 									>
 										<span className="truncate">{f.name}</span>
 										<span className="text-text-muted ml-2">
@@ -290,7 +290,7 @@ export function VoiceCloneModal({
 					</SettingsField>
 
 					{submitting && (
-						<div className="rounded-md bg-warm-100 px-3 py-2 text-[12px] text-text-secondary">
+						<div className="rounded-md bg-warm-100 px-3 py-2 text-xs text-text-secondary">
 							<div className="flex items-center gap-2 mb-1">
 								<Loader2 className="w-3 h-3 animate-spin" />
 								<span>{progressStage || "提交中…"}</span>
@@ -310,7 +310,7 @@ export function VoiceCloneModal({
 						type="button"
 						onClick={onClose}
 						disabled={submitting}
-						className="rounded-md border border-border bg-surface px-4 py-1.5 text-[13px] text-text-secondary hover:text-text-primary disabled:opacity-40"
+						className="rounded-md border border-border bg-surface px-4 py-1.5 text-sm text-text-secondary hover:text-text-primary disabled:opacity-40"
 					>
 						取消
 					</button>
@@ -318,7 +318,7 @@ export function VoiceCloneModal({
 						type="button"
 						onClick={() => void handleSubmit()}
 						disabled={submitting}
-						className="rounded-md bg-primary px-4 py-1.5 text-[13px] text-primary-foreground hover:opacity-90 disabled:opacity-40 flex items-center gap-1.5"
+						className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-40 flex items-center gap-1.5"
 					>
 						{submitting && <Loader2 className="w-3 h-3 animate-spin" />}
 						{submitting ? "提交中…" : "开始克隆"}

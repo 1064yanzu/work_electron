@@ -121,7 +121,7 @@ export const PetInputBubble = forwardRef<
 					onBlur={() => setFocused(false)}
 					placeholder="想跟我说点什么？"
 					rows={2}
-					className="block w-full resize-none bg-transparent pr-8 text-[13.5px] leading-relaxed text-[color:var(--t-text-primary,#1a1a19)] placeholder:text-[color:var(--t-text-light,#9d9d98)] outline-none"
+					className="block w-full resize-none bg-transparent pr-8 text-sm leading-relaxed text-[color:var(--t-text-primary,#1a1a19)] placeholder:text-[color:var(--t-text-light,#9d9d98)] outline-none"
 				/>
 
 				{/* 快速建议 chip — 仅未聚焦且无内容时显示 */}
@@ -138,7 +138,7 @@ export const PetInputBubble = forwardRef<
 										ref.current?.focus();
 									}
 								}}
-								className="inline-flex items-center rounded-full border px-2.5 py-1 text-[11.5px] leading-none transition-colors"
+								className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs leading-none transition-colors"
 								style={{
 									borderColor: withAlpha(accentColor, 0.18),
 									backgroundColor: withAlpha(accentColor, 0.04),

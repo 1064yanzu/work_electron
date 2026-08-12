@@ -104,7 +104,7 @@ export function SettingsDisclosure({
 				aria-controls={panelId}
 				className={cn(
 					"inline-flex items-center gap-1.5 rounded-md px-1.5 py-1",
-					"text-[12px] font-medium text-text-muted",
+					"text-xs font-medium text-text-muted",
 					"hover:text-text-primary",
 					"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
 					"transition-[color,background-color] ease-out",

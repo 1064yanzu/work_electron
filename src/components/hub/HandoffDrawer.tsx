@@ -198,7 +198,7 @@ export function HandoffDrawer({
 			<div className="px-5 pt-5 pb-3 border-b border-border/60 shrink-0">
 				<div className="flex items-start justify-between gap-2">
 					<div className="min-w-0">
-						<div className="text-[9.5px] font-semibold tracking-[0.22em] text-text-light uppercase">
+						<div className="text-[11px] font-semibold tracking-[0.22em] text-text-light uppercase">
 							Handoff
 						</div>
 						<h3 className="font-serif text-[17px] text-text-primary mt-1 leading-tight">
@@ -225,7 +225,7 @@ export function HandoffDrawer({
 			{/* 体 */}
 			<div className="flex-1 overflow-y-auto scrollbar-hide px-5 py-4 space-y-4">
 				{stage === "planning" && (
-					<div className="flex items-center gap-2 text-[11.5px] text-text-light py-8 justify-center">
+					<div className="flex items-center gap-2 text-xs text-text-light py-8 justify-center">
 						<Loader2 className="w-3.5 h-3.5 animate-spin" />
 						正在判断最优接力方式…
 					</div>
@@ -252,12 +252,12 @@ export function HandoffDrawer({
 									strokeWidth={1.8}
 								/>
 							)}
-							<span className="text-[12px] font-medium text-text-primary">
+							<span className="text-xs font-medium text-text-primary">
 								{modeMeta.label}
 							</span>
 							<span
 								className={cn(
-									"text-[9.5px] px-1.5 py-px rounded",
+									"text-[11px] px-1.5 py-px rounded",
 									modeMeta.lossless
 										? "bg-success/15 text-success"
 										: "bg-warning/15 text-warning",
@@ -270,7 +270,7 @@ export function HandoffDrawer({
 							{plan.reason}
 						</p>
 						{plan.resume_command && (
-							<pre className="mt-2 px-2.5 py-1.5 rounded-lg bg-cream-100 dark:bg-cream-900/60 text-[10.5px] font-mono text-text-secondary overflow-x-auto">
+							<pre className="mt-2 px-2.5 py-1.5 rounded-lg bg-cream-100 dark:bg-cream-900/60 text-[11px] font-mono text-text-secondary overflow-x-auto">
 								{plan.resume_command}
 							</pre>
 						)}
@@ -283,7 +283,7 @@ export function HandoffDrawer({
 				)}
 
 				{stage === "building" && (
-					<div className="flex items-center gap-2 text-[11.5px] text-text-light py-8 justify-center">
+					<div className="flex items-center gap-2 text-xs text-text-light py-8 justify-center">
 						<Loader2 className="w-3.5 h-3.5 animate-spin" />
 						{plan?.mode === "distill"
 							? "正在蒸馏交接包（调用 LLM，可能要一会儿）…"
@@ -305,7 +305,7 @@ export function HandoffDrawer({
 							value={markdown}
 							onChange={(event) => setMarkdown(event.target.value)}
 							spellCheck={false}
-							className="w-full h-[320px] px-3 py-2.5 text-[11.5px] leading-relaxed font-mono bg-cream-50 dark:bg-cream-900/40 border border-border rounded-xl text-text-secondary focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150 resize-none"
+							className="w-full h-[320px] px-3 py-2.5 text-xs leading-relaxed font-mono bg-cream-50 dark:bg-cream-900/40 border border-border rounded-xl text-text-secondary focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150 resize-none"
 						/>
 					</div>
 				) : null}
@@ -322,7 +322,7 @@ export function HandoffDrawer({
 				<button
 					type="button"
 					onClick={onClose}
-					className="px-3 py-1.5 rounded-lg text-[11.5px] text-text-muted hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-150"
+					className="px-3 py-1.5 rounded-lg text-xs text-text-muted hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-150"
 				>
 					取消
 				</button>
@@ -370,7 +370,7 @@ function PrimaryButton({
 			type="button"
 			onClick={onClick}
 			disabled={disabled}
-			className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-[11.5px] font-medium hover:bg-primary-hover transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+			className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary-hover transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
 		>
 			{children}
 		</button>

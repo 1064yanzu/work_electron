@@ -98,7 +98,7 @@ function ThemeCard({
 				/>
 			</div>
 			<div className="flex items-center justify-between px-1">
-				<span className="text-[12px] font-semibold text-text-primary">
+				<span className="text-xs font-semibold text-text-primary">
 					{theme.label}
 				</span>
 				<span

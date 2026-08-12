@@ -85,7 +85,7 @@ export function FileTreeNode({
 			}}
 			onContextMenu={(e) => onContextMenu(e, entry)}
 			className={cn(
-				"flex items-center w-full px-2 py-1.5 text-left group transition-colors text-[13px]",
+				"flex items-center w-full px-2 py-1.5 text-left group transition-colors text-sm",
 				isSelected
 					? "bg-warm-200/80 dark:bg-cream-700"
 					: "hover:bg-warm-200/50",
@@ -220,7 +220,7 @@ function InlineRenameInput({
 				if (value && value !== initialValue) onSubmit(value);
 				else onCancel();
 			}}
-			className="flex-1 min-w-0 px-1.5 py-0.5 text-[13px] bg-surface border border-primary/40 rounded outline-none focus:ring-2 focus:ring-primary/30"
+			className="flex-1 min-w-0 px-1.5 py-0.5 text-sm bg-surface border border-primary/40 rounded outline-none focus:ring-2 focus:ring-primary/30"
 		/>
 	);
 }

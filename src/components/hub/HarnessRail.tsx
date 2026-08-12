@@ -69,7 +69,7 @@ export function HarnessRail({
 						: "border-border/70 hover:border-border hover:bg-warm-200/40 dark:hover:bg-cream-800/30",
 				)}
 			>
-				<div className="text-[11.5px] font-medium text-text-primary">全部</div>
+				<div className="text-xs font-medium text-text-primary">全部</div>
 				<div className="text-[11px] text-text-light mt-0.5">所有入口</div>
 			</button>
 
@@ -129,7 +129,7 @@ export function HarnessRail({
 							>
 								<EntryIcon kind={entry.kind} />
 							</span>
-							<span className="text-[11.5px] font-medium text-text-primary truncate">
+							<span className="text-xs font-medium text-text-primary truncate">
 								{entry.label}
 							</span>
 							{/* 正在跑的入口带一个实时状态点。出错时它比限额三角更要紧，故排在前 */}

@@ -34,7 +34,7 @@ export function KnowledgeTabBar({ active, onSelect }: KnowledgeTabBarProps) {
 							rememberKnowledgeTab(tab.id);
 							onSelect(tab.id);
 						}}
-						className={`rounded-lg px-2.5 py-1 text-[12.5px] font-medium transition-colors duration-150 ${
+						className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors duration-150 ${
 							isActive
 								? "bg-warm-200 text-text-primary dark:bg-white/[0.09]"
 								: "text-text-muted hover:bg-warm-200/60 hover:text-text-primary dark:hover:bg-white/[0.05]"

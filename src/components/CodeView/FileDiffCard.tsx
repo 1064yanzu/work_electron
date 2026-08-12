@@ -149,7 +149,7 @@ function FileDiffCardInner({ diff, rootPath }: FileDiffCardProps) {
 			{expanded && (
 				<div className="border-t border-border">
 					{/* diff 行预览 */}
-					<div className="max-h-[240px] overflow-y-auto text-[12px] font-mono leading-5">
+					<div className="max-h-[240px] overflow-y-auto text-xs font-mono leading-5">
 						{preview.lines.map((line, idx) => (
 							<div
 								key={idx}

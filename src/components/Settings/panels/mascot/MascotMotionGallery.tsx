@@ -38,11 +38,11 @@ export function MascotMotionGallery({ accentColor }: MascotMotionGalleryProps) {
 						strokeWidth={1.6}
 						style={{ color: accentColor }}
 					/>
-					<span className="text-[11.5px] font-medium text-text-secondary">
+					<span className="text-xs font-medium text-text-secondary">
 						Spritesheet 实时驱动
 					</span>
 				</div>
-				<div className="flex items-center gap-2 text-[10.5px] tabular-nums text-text-muted">
+				<div className="flex items-center gap-2 text-[11px] tabular-nums text-text-muted">
 					<span>codex hatch-pet · 1536×1872 · 192×208</span>
 				</div>
 			</div>
@@ -57,7 +57,7 @@ export function MascotMotionGallery({ accentColor }: MascotMotionGalleryProps) {
 					/>
 				))}
 			</div>
-			<p className="text-[10.5px] leading-relaxed text-text-muted">
+			<p className="text-[11px] leading-relaxed text-text-muted">
 				每帧时长不等（120–360ms），最后一帧延长以模拟「活物呼吸感」。系统检测到{" "}
 				<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[11px]">
 					prefers-reduced-motion
@@ -98,12 +98,12 @@ function MotionCell({
 			</div>
 			<div className="flex flex-col items-center gap-0.5">
 				<span
-					className="text-[10.5px] font-semibold uppercase tracking-[0.14em]"
+					className="text-[11px] font-semibold uppercase tracking-[0.14em]"
 					style={{ color: accentColor }}
 				>
 					{label}
 				</span>
-				<span className="text-[10.5px] leading-tight text-text-light">
+				<span className="text-[11px] leading-tight text-text-light">
 					{hint}
 				</span>
 			</div>

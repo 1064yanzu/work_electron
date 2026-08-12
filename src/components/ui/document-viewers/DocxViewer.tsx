@@ -96,7 +96,7 @@ export default function DocxViewer({ src, className }: DocxViewerProps) {
             prose-headings:font-semibold
             prose-h1:text-2xl prose-h1:mt-6 prose-h1:mb-4
             prose-h2:text-xl prose-h2:mt-5 prose-h2:mb-3
-            prose-p:text-[15px] prose-p:leading-7 prose-p:my-3
+            prose-p:text-base prose-p:leading-7 prose-p:my-3
             prose-table:my-4 prose-table:w-full
             prose-th:bg-warm-200 dark:prose-th:bg-dark-surface prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:text-sm
             prose-td:px-3 prose-td:py-2 prose-td:border-b prose-td:border-border dark:prose-td:border-dark-border

@@ -263,10 +263,10 @@ export function SlashCommandsSection() {
 			</SettingsFieldGroup>
 
 			<div className="border-t border-border px-5 py-4">
-				<div className="mb-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+				<div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 					命令可见性
 				</div>
-				<p className="mb-3 text-[11.5px] leading-relaxed text-text-muted">
+				<p className="mb-3 text-xs leading-relaxed text-text-muted">
 					取消勾选以在菜单中隐藏某条命令；不影响其它入口的功能。
 				</p>
 				<div className="space-y-3">
@@ -286,7 +286,7 @@ export function SlashCommandsSection() {
 									) : (
 										<ChevronDown className="w-3.5 h-3.5 text-text-muted" />
 									)}
-									<span className="text-[12.5px] font-medium text-text-primary">
+									<span className="text-xs font-medium text-text-primary">
 										{GROUP_LABEL[g] ?? g}
 									</span>
 									<span className="text-xs text-text-muted">
@@ -300,7 +300,7 @@ export function SlashCommandsSection() {
 											return (
 												<label
 													key={c.id}
-													className="flex items-center gap-2 py-1 cursor-pointer select-none text-[12.5px] text-text-secondary hover:text-text-primary"
+													className="flex items-center gap-2 py-1 cursor-pointer select-none text-xs text-text-secondary hover:text-text-primary"
 												>
 													<input
 														type="checkbox"

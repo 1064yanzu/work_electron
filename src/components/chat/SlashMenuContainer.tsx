@@ -93,7 +93,7 @@ function CategoryPills({
 						type="button"
 						key={cat.id}
 						onClick={() => onSelect(cat.id)}
-						className={`group inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[12px] font-medium whitespace-nowrap transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out cursor-pointer select-none
+						className={`group inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-xs font-medium whitespace-nowrap transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120 ease-out cursor-pointer select-none
 							${
 								isActive
 									? `${cat.gradient} shadow-[0_1px_2px_rgba(0,0,0,0.04)]`
@@ -728,7 +728,7 @@ export function SlashMenuContainer({
 				<div className="max-h-[320px] overflow-y-auto">
 					{commandsCategoryDisabled ? (
 						<div className="px-4 py-8 text-center">
-							<p className="text-[13px] text-text-muted">
+							<p className="text-sm text-text-muted">
 								命令类别已在设置中关闭。
 							</p>
 						</div>
@@ -745,15 +745,15 @@ export function SlashMenuContainer({
 				<div className="px-4 py-1.5 border-t border-border">
 					<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
 						<span className="flex items-center gap-1">
-							<span className="font-mono text-[9px]">↑↓</span>
+							<span className="font-mono text-[11px]">↑↓</span>
 							<span>导航</span>
 						</span>
 						<span className="flex items-center gap-1">
-							<span className="font-mono text-[9px]">↵</span>
+							<span className="font-mono text-[11px]">↵</span>
 							<span>选择</span>
 						</span>
 						<span className="flex items-center gap-1">
-							<span className="font-mono text-[9px]">Tab</span>
+							<span className="font-mono text-[11px]">Tab</span>
 							<span>回填</span>
 						</span>
 					</div>
@@ -788,7 +788,7 @@ export function SlashMenuContainer({
 						<Plus className="w-3.5 h-3.5 text-text-muted group-hover:text-text-secondary" />
 					</div>
 					<div>
-						<span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary">
+						<span className="text-xs font-medium text-text-secondary group-hover:text-text-primary">
 							添加提示词
 						</span>
 					</div>
@@ -798,7 +798,7 @@ export function SlashMenuContainer({
 			<div className="max-h-[300px] overflow-y-auto">
 				{filteredGroups.length === 0 && totalCommands === 0 ? (
 					<div className="px-4 py-8 text-center">
-						<p className="text-[13px] text-text-muted">
+						<p className="text-sm text-text-muted">
 							{selectedCategory === "prompt"
 								? "暂无自定义提示词"
 								: "暂无可用命令"}
@@ -830,11 +830,11 @@ export function SlashMenuContainer({
 			<div className="px-4 py-1.5 border-t border-border">
 				<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[9px]">⌫</span>
+						<span className="font-mono text-[11px]">⌫</span>
 						<span>返回</span>
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[9px]">↵</span>
+						<span className="font-mono text-[11px]">↵</span>
 						<span>选择</span>
 					</span>
 				</div>
@@ -927,7 +927,7 @@ function GroupSection({
 
 								<div className="flex-1 min-w-0">
 									<div
-										className={`text-[13px] font-medium truncate transition-colors duration-120
+										className={`text-sm font-medium truncate transition-colors duration-120
                       ${
 												isSelected ? "text-text-primary" : "text-text-secondary"
 											}`}

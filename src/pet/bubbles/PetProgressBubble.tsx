@@ -62,19 +62,19 @@ export function PetProgressBubble({
 			<div className="w-[244px]">
 				{/* 第一行：标题 + 进度数字 */}
 				<div data-bubble-row className="flex items-center gap-2">
-					<div className="flex-1 text-[13.5px] font-medium leading-snug text-[color:var(--t-text-primary,#1a1a19)] truncate">
+					<div className="flex-1 text-sm font-medium leading-snug text-[color:var(--t-text-primary,#1a1a19)] truncate">
 						{title}
 					</div>
 					{hasDeterminate ? (
 						<div
-							className="text-[11.5px] font-medium tabular-nums shrink-0"
+							className="text-xs font-medium tabular-nums shrink-0"
 							style={{ color: accentColor }}
 						>
 							{current} / {total}
 						</div>
 					) : typeof current === "number" && current > 0 ? (
 						<div
-							className="text-[11.5px] font-medium tabular-nums shrink-0"
+							className="text-xs font-medium tabular-nums shrink-0"
 							style={{ color: accentColor }}
 						>
 							已 {current} 步
@@ -87,7 +87,7 @@ export function PetProgressBubble({
 					<div
 						key={stepLabel}
 						data-bubble-row
-						className="mt-1 text-[12px] leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-1"
+						className="mt-1 text-xs leading-relaxed text-[color:var(--t-text-secondary,#6b6b68)] line-clamp-1"
 					>
 						{stepLabel}
 					</div>

@@ -137,7 +137,7 @@ export function ToolbarMenu({
 						{title}
 					</div>
 					{hint && (
-						<div className="text-[9.5px] text-text-muted/60 font-mono shrink-0">
+						<div className="text-[11px] text-text-muted/60 font-mono shrink-0">
 							{hint}
 						</div>
 					)}
@@ -158,7 +158,7 @@ export function ToolbarMenu({
 export function ToolbarMenuSection({ label }: { label: string }) {
 	return (
 		<div className="px-2.5 pt-2 pb-1 first:pt-1">
-			<div className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-muted/70">
+			<div className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted/70">
 				{label}
 			</div>
 		</div>
@@ -213,7 +213,7 @@ export function ToolbarMenuOption({
 			<span className="flex-1 min-w-0">
 				<span
 					className={cn(
-						"block text-[12px] leading-none truncate",
+						"block text-xs leading-none truncate",
 						active ? "font-semibold" : "font-medium",
 					)}
 				>

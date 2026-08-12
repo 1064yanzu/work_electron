@@ -72,7 +72,7 @@ export function RenameInline({
 					}
 				}}
 				placeholder="输入新的会话标题…"
-				className="flex-1 min-w-0 bg-transparent outline-none text-[13px] text-text-primary placeholder:text-text-light"
+				className="flex-1 min-w-0 bg-transparent outline-none text-sm text-text-primary placeholder:text-text-light"
 			/>
 			<button
 				type="button"

@@ -114,7 +114,7 @@ export function CouncilPanel({
 					onChange={(event) => setQuestion(event.target.value)}
 					placeholder="要同时问几家的问题…（架构选型、根因判断这类一家之言不够的场景）"
 					rows={3}
-					className="w-full px-3 py-2.5 text-[12px] leading-relaxed bg-surface dark:bg-cream-900/40 border border-border rounded-xl text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150 resize-none"
+					className="w-full px-3 py-2.5 text-xs leading-relaxed bg-surface dark:bg-cream-900/40 border border-border rounded-xl text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition duration-150 resize-none"
 				/>
 
 				<div className="flex flex-wrap items-center gap-1.5">
@@ -144,14 +144,14 @@ export function CouncilPanel({
 				</div>
 
 				<div className="flex items-center justify-between gap-2">
-					<span className="text-[10.5px] text-text-light">
+					<span className="text-[11px] text-text-light">
 						每一路都是真实调用，会花时间也可能花钱
 					</span>
 					<button
 						type="button"
 						onClick={() => void start()}
 						disabled={running || selectable.length === 0}
-						className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-[11.5px] font-medium hover:bg-primary-hover transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+						className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary-hover transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
 					>
 						{running ? (
 							<Loader2 className="w-3 h-3 animate-spin" />
@@ -164,7 +164,7 @@ export function CouncilPanel({
 
 				{progress && (
 					<div className="space-y-1">
-						<div className="flex items-center justify-between text-[10.5px] text-text-muted">
+						<div className="flex items-center justify-between text-[11px] text-text-muted">
 							<span>
 								{progress.phase === "reducing"
 									? "正在裁决合并…"
@@ -201,14 +201,14 @@ export function CouncilPanel({
 								className="w-3.5 h-3.5 text-terracotta"
 								strokeWidth={1.8}
 							/>
-							<h4 className="text-[12px] font-medium text-text-primary">
+							<h4 className="text-xs font-medium text-text-primary">
 								裁决结论
 							</h4>
 							<span className="text-[11px] text-text-light tabular-nums">
 								{succeededCount}/{answers.length} 路作答
 							</span>
 						</div>
-						<div className="px-3.5 py-3 rounded-xl bg-terracotta/[0.05] border border-terracotta/20 text-[11.5px] leading-relaxed text-text-secondary whitespace-pre-wrap">
+						<div className="px-3.5 py-3 rounded-xl bg-terracotta/[0.05] border border-terracotta/20 text-xs leading-relaxed text-text-secondary whitespace-pre-wrap">
 							{verdict}
 						</div>
 					</section>
@@ -236,14 +236,14 @@ export function CouncilPanel({
 											strokeWidth={1.8}
 										/>
 									)}
-									<span className="text-[11.5px] font-medium text-text-primary">
+									<span className="text-xs font-medium text-text-primary">
 										{answer.label}
 									</span>
 									<span className="text-[11px] text-text-light tabular-nums ml-auto shrink-0">
 										{formatDuration(answer.duration_ms)}
 									</span>
 								</summary>
-								<div className="px-3 pb-3 pt-1 text-[11.5px] leading-relaxed text-text-secondary whitespace-pre-wrap border-t border-border/50">
+								<div className="px-3 pb-3 pt-1 text-xs leading-relaxed text-text-secondary whitespace-pre-wrap border-t border-border/50">
 									{answer.status === "succeeded"
 										? answer.answer
 										: `未作答：${answer.error ?? "无返回内容"}`}
@@ -255,8 +255,8 @@ export function CouncilPanel({
 
 				{!running && !answers.length && !error && (
 					<div className="text-center py-14">
-						<p className="text-[11.5px] text-text-secondary">还没有开过议会</p>
-						<p className="text-[10.5px] text-text-light mt-1.5 leading-relaxed">
+						<p className="text-xs text-text-secondary">还没有开过议会</p>
+						<p className="text-[11px] text-text-light mt-1.5 leading-relaxed">
 							同一个问题问多家，结论会明确标出哪里有共识、哪里有分歧
 						</p>
 					</div>

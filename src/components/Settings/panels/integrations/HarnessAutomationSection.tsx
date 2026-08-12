@@ -66,7 +66,7 @@ export function HarnessAutomationSection() {
 
 	if (!settings) {
 		return (
-			<div className="flex items-center gap-2 py-8 text-[12.5px] text-text-light">
+			<div className="flex items-center gap-2 py-8 text-xs text-text-light">
 				<Loader2 className="h-3.5 w-3.5 animate-spin" />
 				正在读取自动化配置…
 			</div>
@@ -211,9 +211,9 @@ function AttemptsInput({
 					}
 					onCommit(Math.round(Math.min(50, n)));
 				}}
-				className="w-[72px] rounded-lg border border-border bg-surface px-2.5 py-1 text-right text-[12.5px] tabular-nums text-text-secondary focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/8 dark:bg-cream-900/40"
+				className="w-[72px] rounded-lg border border-border bg-surface px-2.5 py-1 text-right text-xs tabular-nums text-text-secondary focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/8 dark:bg-cream-900/40"
 			/>
-			<span className="text-[12px] text-text-light">次</span>
+			<span className="text-xs text-text-light">次</span>
 		</div>
 	);
 }
