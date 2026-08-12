@@ -15,6 +15,8 @@ import { useCardsQuery } from "../../lib/query";
 import { convertFileSrc, invoke } from "../../lib/tauriCompat";
 import type { Card } from "../../types";
 import { toast } from "../ui/Toast";
+import { IllustratedEmptyState } from "../ui/EmptyState";
+import { Skeleton } from "../ui/Skeleton";
 
 interface SharedCardsEmbeddedProps {
 	hideTitle?: boolean;
@@ -266,21 +268,17 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 						</button>
 					</div>
 				) : isLoadingCards ? (
-					<div className="flex items-center justify-center h-32">
-						<Loader2 className="w-5 h-5 animate-spin text-text-light" />
+					<div className="space-y-4" aria-busy="true">
+						<Skeleton className="h-40 w-full rounded-2xl" />
+						<Skeleton className="h-40 w-full rounded-2xl" />
+						<Skeleton className="h-40 w-2/3 rounded-2xl" />
 					</div>
 				) : cards.length === 0 ? (
-					<div className="text-center py-12">
-						<div className="w-16 h-16 bg-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-							<ImageIcon className="w-7 h-7 text-text-light" />
-						</div>
-						<p className="text-sm font-medium text-text-secondary mb-1">
-							暂无分享卡
-						</p>
-						<p className="text-xs text-text-light">
-							请在浏览器插件中生成并发送分享卡
-						</p>
-					</div>
+					<IllustratedEmptyState
+						illustration="document"
+						title="暂无分享卡"
+						description="请在浏览器插件中生成并发送分享卡"
+					/>
 				) : (
 					<div className="space-y-4">
 						{cards.map((card) => {

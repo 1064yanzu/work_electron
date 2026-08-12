@@ -4,6 +4,7 @@ import type {
 	RemotePairingRequest,
 } from "../../../../lib/api";
 import { Button } from "../../../ui/Button";
+import { EmptyState } from "../../../ui/EmptyState";
 
 function formatTs(ts?: number): string {
 	if (!ts) return "—";
@@ -45,8 +46,8 @@ export function PairingList(props: {
 					</span>
 				</div>
 				{props.pending.length === 0 ? (
-					<div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-xs text-text-muted">
-						<p className="text-text-muted">暂无待审批请求</p>
+					<div className="rounded-xl border border-dashed border-border px-4 py-6">
+						<EmptyState size="sm" title="暂无待审批请求" className="py-2" />
 					</div>
 				) : (
 					<div className="space-y-2">
@@ -108,8 +109,8 @@ export function PairingList(props: {
 					</span>
 				</div>
 				{props.records.length === 0 ? (
-					<div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-xs text-text-muted">
-						<p className="text-text-muted">暂无已授权配对</p>
+					<div className="rounded-xl border border-dashed border-border px-4 py-6">
+						<EmptyState size="sm" title="暂无已授权配对" className="py-2" />
 					</div>
 				) : (
 					<div className="space-y-2">

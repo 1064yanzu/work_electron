@@ -1,9 +1,7 @@
 // 资料列表视图组件
 
 import {
-	FileText,
 	Folder as FolderIcon,
-	Loader2,
 	MoreHorizontal,
 	Plus,
 } from "lucide-react";
@@ -22,6 +20,8 @@ import { ResourceSidebarHeader } from "./sidebar/ResourceSidebarHeader";
 import { SourceCard } from "./cards/SourceCard";
 import { UNASSIGNED_FOLDER_ID } from "./hooks/useFolderManagement";
 import { Tooltip } from "../ui/Tooltip";
+import { IllustratedEmptyState } from "../ui/EmptyState";
+import { Skeleton } from "../ui/Skeleton";
 
 interface SourceListViewProps {
 	// Data
@@ -659,19 +659,18 @@ export function SourceListView({
 						</button>
 					</div>
 				) : isLoading ? (
-					<div className="flex items-center justify-center h-32">
-						<Loader2 className="w-5 h-5 animate-spin text-text-light" />
+					<div className="space-y-2" aria-busy="true">
+						<Skeleton className="h-16 w-full rounded-xl" />
+						<Skeleton className="h-16 w-full rounded-xl" />
+						<Skeleton className="h-16 w-full rounded-xl" />
+						<Skeleton className="h-16 w-2/3 rounded-xl" />
 					</div>
 				) : sources.length === 0 && currentSubfolders.length === 0 ? (
-					<div className="text-center py-12">
-						<div className="w-16 h-16 bg-warm-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-							<FileText className="w-7 h-7 text-text-light" />
-						</div>
-						<p className="text-sm font-medium text-text-secondary mb-1">
-							暂无资料
-						</p>
-						<p className="text-xs text-text-light">点击下方按钮添加</p>
-					</div>
+					<IllustratedEmptyState
+						illustration="folder"
+						title="暂无资料"
+						description="点击下方按钮添加"
+					/>
 				) : (
 					<div
 						className={

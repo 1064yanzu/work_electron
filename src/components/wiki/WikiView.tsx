@@ -28,6 +28,8 @@ import { useWiki, type WikiPageItem } from "./useWiki";
 import { WikiPageEditor } from "./WikiPageEditor";
 import { WikiContentRenderer } from "./WikiContentRenderer";
 import { confirmDialog } from "../ui/ConfirmDialog";
+import { IllustratedEmptyState } from "../ui/EmptyState";
+import { Skeleton } from "../ui/Skeleton";
 import { useActiveThreadScope } from "../../lib/chat/threadScope";
 import { WikiGraphPanel } from "./WikiGraphPanel";
 import { WikiLintPanel } from "./WikiLintPanel";
@@ -294,18 +296,12 @@ export function WikiView() {
 	if (!scopePath) {
 		return (
 			<div className="flex flex-col h-full">
-				<div className="flex-1 flex flex-col items-center justify-center px-6">
-					<div className="w-16 h-16 rounded-2xl bg-warm-200/80 flex items-center justify-center mb-5">
-						<BookOpen className="w-8 h-8 text-text-light" />
-					</div>
-					<h3 className="text-base font-semibold text-text-primary mb-2">
-						暂无对话工作目录
-					</h3>
-					<p className="text-sm text-text-muted text-center leading-relaxed max-w-[260px]">
-						Wiki
-						跟随当前对话的工作目录。请先在对话列表中选择一条对话，再整理该目录下的结构化知识。
-					</p>
-				</div>
+				<IllustratedEmptyState
+					illustration="document"
+					title="暂无对话工作目录"
+					description="Wiki 跟随当前对话的工作目录。请先在对话列表中选择一条对话，再整理该目录下的结构化知识。"
+					className="flex-1 px-6"
+				/>
 			</div>
 		);
 	}
@@ -353,11 +349,20 @@ export function WikiView() {
 		);
 	}
 
-	// --- 加载中 ---
+	// --- 加载中：结构化骨架（替代孤立 spinner，预示页面布局） ---
 	if (enabled === null) {
 		return (
-			<div className="flex flex-col h-full items-center justify-center">
-				<RefreshCw className="w-5 h-5 text-text-light animate-spin" />
+			<div className="flex flex-col h-full p-5 gap-4" aria-busy="true">
+				<div className="flex items-center gap-3">
+					<Skeleton className="h-9 w-9 rounded-xl" />
+					<div className="flex-1 space-y-2">
+						<Skeleton className="h-4 w-1/3" />
+						<Skeleton className="h-3 w-1/2" />
+					</div>
+				</div>
+				<Skeleton className="h-24 w-full rounded-xl" />
+				<Skeleton className="h-24 w-full rounded-xl" />
+				<Skeleton className="h-24 w-2/3 rounded-xl" />
 			</div>
 		);
 	}

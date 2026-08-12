@@ -17,6 +17,7 @@ import { useUpdateBadge } from "../../lib/skillsMarketplaceStore";
 import { openDirectory } from "../../lib/dialogCompat";
 import { revealFileSafe } from "../../lib/api/storage";
 import { confirmDialog } from "../ui/ConfirmDialog";
+import { IllustratedEmptyState } from "../ui/EmptyState";
 import { cn } from "../../lib/utils";
 import { MarketplaceList } from "../skills/MarketplaceList";
 import { InstallProgress } from "../skills/InstallProgress";
@@ -586,20 +587,17 @@ function EmptyState({
 	onImport: () => void;
 }) {
 	return (
-		<div className="text-center py-16 px-6">
-			<div className="text-[32px] font-serif text-text-light/60 leading-none mb-3">
-				{searchQuery ? "—" : "∅"}
-			</div>
-			<p className="text-xs text-text-secondary font-medium">
-				{searchQuery ? "没有匹配的技能" : "尚未安装任何技能"}
-			</p>
-			<p className="text-xs text-text-light mt-2 leading-relaxed">
-				{searchQuery
+		<IllustratedEmptyState
+			illustration={searchQuery ? "search" : "folder"}
+			title={searchQuery ? "没有匹配的技能" : "尚未安装任何技能"}
+			description={
+				searchQuery
 					? "试试别的关键词或切换过滤器"
-					: "去市场一键安装，或导入本地技能文件夹"}
-			</p>
-			{!searchQuery && (
-				<div className="flex items-center gap-2 justify-center mt-5">
+					: "去市场一键安装，或导入本地技能文件夹"
+			}
+			action={
+				!searchQuery ? (
+				<div className="flex items-center gap-2 justify-center">
 					<button
 						type="button"
 						onClick={onBrowse}
@@ -617,7 +615,8 @@ function EmptyState({
 						导入本地
 					</button>
 				</div>
-			)}
-		</div>
+				) : undefined
+			}
+		/>
 	);
 }

@@ -32,6 +32,7 @@ import { useActiveThreadScope } from "../../lib/chat/threadScope";
 import { centerTabsStore } from "../../lib/stores/centerTabsStore";
 import { useWiki, type WikiPageItem } from "./useWiki";
 import { WIKI_NODE_COLORS, WikiGraphCanvas } from "./WikiGraphCanvas";
+import { EmptyState } from "../ui/EmptyState";
 
 const PAGE_TYPE_META: Array<{
 	type: string;
@@ -261,10 +262,11 @@ export function WikiGraphFullscreen() {
 				{/* Graph canvas — takes full remaining width */}
 				<div ref={canvasHostRef} className="flex-1 relative overflow-hidden">
 					{pages.length === 0 ? (
-						<div className="flex flex-col items-center justify-center h-full text-text-light">
-							<BookOpen className="h-12 w-12 mb-3 opacity-40" />
-							<p className="text-sm">暂无页面数据</p>
-						</div>
+						<EmptyState
+							icon={<BookOpen className="h-7 w-7" />}
+							title="暂无页面数据"
+							className="h-full"
+						/>
 					) : (
 						<WikiGraphCanvas
 							pages={pages}

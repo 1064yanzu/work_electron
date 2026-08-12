@@ -35,6 +35,7 @@ import { StyleProfileListItem } from "./StyleProfileListItem";
 import { StyleProfileCreateModal } from "./StyleProfileCreateModal";
 import { StyleRecipeListItem } from "./StyleRecipeListItem";
 import { StyleRecipeCreateModal } from "./StyleRecipeCreateModal";
+import { EmptyState } from "../../../ui/EmptyState";
 
 const ACTIVE_PROFILE_KEY = "active_style_profile_id";
 const ACTIVE_INTENSITY_KEY = "active_style_profile_intensity";
@@ -221,9 +222,11 @@ export function StyleProfilePanel() {
 					{loading ? (
 						<SettingsHint>正在加载风格包列表…</SettingsHint>
 					) : activeProfiles.length === 0 ? (
-						<div className="py-4 text-center text-xs text-text-muted">
-							还没有风格包。点击下方「新建」创建第一个。
-						</div>
+						<EmptyState
+							size="sm"
+							title="还没有风格包"
+							description="点击下方「新建」创建第一个"
+						/>
 					) : (
 						activeProfiles.map((p) => (
 							<StyleProfileListItem
@@ -260,9 +263,11 @@ export function StyleProfilePanel() {
 			>
 				<div className="flex flex-col gap-2">
 					{recipes.length === 0 ? (
-						<div className="py-4 text-center text-xs text-text-muted">
-							还没有混搭配方。创建至少两个风格包后，可以将它们的不同维度组合在一起使用。
-						</div>
+						<EmptyState
+							size="sm"
+							title="还没有混搭配方"
+							description="创建至少两个风格包后，可以将它们的不同维度组合在一起使用"
+						/>
 					) : (
 						recipes.map((r) => (
 							<StyleRecipeListItem

@@ -26,6 +26,7 @@ import {
 	useState,
 } from "react";
 import { getSourceDetail, updateNote, updateSource } from "../../lib/api";
+import { EmptyState } from "../ui/EmptyState";
 import { readerOpenFromSource } from "../../lib/api/reader";
 import { EVENTS, events } from "../../lib/events";
 import { openReader } from "../reader/ReaderApp";
@@ -651,16 +652,19 @@ export const SourceDetailView = forwardRef<
 											} else {
 												// 无内容
 												return (
-													<div className="flex flex-col items-center justify-center py-12 text-text-light">
-														<FileEdit className="w-8 h-8 mb-2 opacity-50" />
-														<p className="text-sm">暂无内容</p>
-														<button
-															onClick={() => setIsEditing(true)}
-															className="mt-2 text-xs text-focus hover:underline"
-														>
-															开始编辑
-														</button>
-													</div>
+													<EmptyState
+														size="sm"
+														icon={<FileEdit className="w-5 h-5" />}
+														title="暂无内容"
+														action={
+															<button
+																onClick={() => setIsEditing(true)}
+																className="text-xs text-focus hover:underline"
+															>
+																开始编辑
+															</button>
+														}
+													/>
 												);
 											}
 										})()
@@ -677,9 +681,7 @@ export const SourceDetailView = forwardRef<
 											{(previewSource as ResearchSource).snippet}
 										</p>
 									) : (
-										<p className="text-sm text-text-light text-center py-8">
-											暂无内容
-										</p>
+										<EmptyState size="sm" title="暂无内容" />
 									)}
 								</>
 							)}

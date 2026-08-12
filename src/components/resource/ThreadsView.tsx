@@ -56,6 +56,7 @@ import {
 	revealFileSafe,
 } from "../../lib/api";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
+import { EmptyState, IllustratedEmptyState } from "../ui/EmptyState";
 import { toast } from "../ui/Toast";
 import { listAgentSessions } from "../../lib/agent/api";
 import { buildBackendThreadMetadataMap } from "./threads/backendThreadMetadata";
@@ -648,40 +649,32 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 					})
 				)}
 
-				{/* Empty State */}
+				{/* Empty State — 统一走 IllustratedEmptyState/EmptyState，获得 mascot 与入场编排 */}
 				{folderGroups.length === 0 &&
 					(isSearching ? (
-						<div className="px-4 py-12 text-center">
-							<p className="text-xs text-text-muted">
-								没有找到「{searchQuery.trim()}」
-							</p>
-							<p className="mt-1.5 text-xs text-text-light">
-								换个关键词，或搜索对话正文中的原句
-							</p>
-						</div>
+						<EmptyState
+							size="sm"
+							icon={<Search className="h-5 w-5" />}
+							title={`没有找到「${searchQuery.trim()}」`}
+							description="换个关键词，或搜索对话正文中的原句"
+						/>
 					) : (
-						<div className="px-4 py-14 text-center">
-							<div className="mx-auto mb-3.5 flex h-11 w-11 items-center justify-center rounded-2xl bg-warm-200/70 dark:bg-white/[0.05]">
-								<MessageSquare
-									className="h-[18px] w-[18px] text-text-light"
-									strokeWidth={1.5}
-								/>
-							</div>
-							<p className="text-sm font-medium text-text-secondary">
-								还没有对话
-							</p>
-							<p className="mt-1.5 text-xs leading-relaxed text-text-light">
-								在右侧开始提问，对话会按工作目录自动归档到这里
-							</p>
-							<button
-								type="button"
-								onClick={handleCreateThread}
-								className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
-							>
-								<Plus className="h-3.5 w-3.5" strokeWidth={2} />
-								新建对话
-							</button>
-						</div>
+						<IllustratedEmptyState
+							illustration="chat"
+							title="还没有对话"
+							description="在右侧开始提问，对话会按工作目录自动归档到这里"
+							className="px-4"
+							action={
+								<button
+									type="button"
+									onClick={handleCreateThread}
+									className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
+								>
+									<Plus className="h-3.5 w-3.5" strokeWidth={2} />
+									新建对话
+								</button>
+							}
+						/>
 					))}
 			</div>
 

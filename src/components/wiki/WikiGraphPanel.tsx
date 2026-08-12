@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import type { WikiPageItem } from "./useWiki";
 import { WikiGraphCanvas } from "./WikiGraphCanvas";
 import { workspaceStore } from "../../lib/workspaceStore";
+import { EmptyState } from "../ui/EmptyState";
 
 interface WikiGraphPanelProps {
 	scopeLabel: string;
@@ -80,8 +81,11 @@ export function WikiGraphPanel({
 						className="flex flex-col items-center justify-center rounded-xl bg-warm-50/60"
 						style={{ height: GRAPH_HEIGHT }}
 					>
-						<BookOpen className="h-8 w-8 text-text-light mb-2" />
-						<span className="text-xs text-text-light">暂无页面数据</span>
+						<EmptyState
+							size="sm"
+							icon={<BookOpen className="h-5 w-5" />}
+							title="暂无页面数据"
+						/>
 					</div>
 				) : (
 					<WikiGraphCanvas

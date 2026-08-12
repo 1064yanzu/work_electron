@@ -25,6 +25,7 @@ import {
 	type SlashCommandSubOption,
 } from "../../lib/slashCommands";
 import { chatStore, useChatStoreSelector } from "../../lib/chat/store";
+import { EmptyState } from "../ui/EmptyState";
 import { EVENTS, events } from "../../lib/events";
 import { slashCategories } from "./SlashPrimaryMenu";
 import { type SlashCommand, defaultCommands } from "./SlashCommand";
@@ -797,13 +798,14 @@ export function SlashMenuContainer({
 
 			<div className="max-h-[300px] overflow-y-auto">
 				{filteredGroups.length === 0 && totalCommands === 0 ? (
-					<div className="px-4 py-8 text-center">
-						<p className="text-sm text-text-muted">
-							{selectedCategory === "prompt"
+					<EmptyState
+						size="sm"
+						title={
+							selectedCategory === "prompt"
 								? "暂无自定义提示词"
-								: "暂无可用命令"}
-						</p>
-					</div>
+								: "暂无可用命令"
+						}
+					/>
 				) : (
 					<div className="py-0.5">
 						{filteredGroups.map((group) => (
