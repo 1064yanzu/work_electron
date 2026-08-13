@@ -33,8 +33,6 @@ interface CopilotMessagePaneProps {
 	onEditMessage?: (messageId: string, newContent: string) => void;
 	onDeleteMessage?: (messageId: string) => void;
 	onOpenResearch: () => void;
-	/** 欢迎页建议 chip 直接发起对话 */
-	onSendMessage?: (content: string) => void;
 	onAllowAskUserQuestion: (
 		requestId: string,
 		updatedInput: Record<string, unknown>,
@@ -61,7 +59,6 @@ function CopilotMessagePaneImpl({
 	onEditMessage,
 	onDeleteMessage,
 	onOpenResearch,
-	onSendMessage,
 	onAllowAskUserQuestion,
 	onDenyAskUserQuestion,
 }: CopilotMessagePaneProps) {
@@ -75,7 +72,7 @@ function CopilotMessagePaneImpl({
 			>
 				{messages.length === 0 ? (
 					<div className="h-full relative">
-						<WelcomeScreen onSendMessage={onSendMessage} />
+						<WelcomeScreen />
 						{currentResearch && currentResearch.status !== "completed" && (
 							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-surface/90 backdrop-blur-md border border-border rounded-2xl shadow-[0_4px_12px_0_rgb(26_26_25/0.06)] animate-in slide-in-from-bottom-2 duration-250">
 								<div className="flex items-center justify-between">

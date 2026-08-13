@@ -8,11 +8,11 @@
  */
 
 import {
+	Compass,
 	Eye,
 	Globe,
 	Move,
 	SquareTerminal,
-	Waypoints,
 	Workflow,
 } from "lucide-react";
 import { useRef } from "react";
@@ -88,13 +88,13 @@ export function CenterEmptyState({ groupId }: { groupId?: string }) {
 			className="flex h-full flex-col items-center justify-center gap-5 px-8"
 		>
 			<div data-empty-head className="text-center">
-				<p className="text-sm text-text-secondary">
-					{hasSplit ? "这一屏还空着" : "中间栏没有打开的标签页"}
+				<p className="text-sm font-medium text-text-secondary">
+					{hasSplit ? "这一屏还空着" : "打开一个工作视图"}
 				</p>
 				<p className="mt-1 text-xs text-text-muted">
 					{hasSplit
 						? "挑一个放进来，或者把别的标签拖过来"
-						: "右栏的对话不受影响；这里可以随时开回来"}
+						: "对话在右栏进行；这里放运行图、预览、终端这些视图"}
 				</p>
 			</div>
 
@@ -132,13 +132,7 @@ export function CenterEmptyState({ groupId }: { groupId?: string }) {
 					onClick={() => void openWebSite()}
 				/>
 				<EmptyAction
-					icon={<Waypoints className="h-4 w-4" strokeWidth={1.5} />}
-					label="知识图谱"
-					hint="Wiki 全局视图"
-					onClick={() => centerTabsStore.openWikiGraph(groupId)}
-				/>
-				<EmptyAction
-					icon={<Globe className="h-4 w-4" strokeWidth={1.5} />}
+					icon={<Compass className="h-4 w-4" strokeWidth={1.5} />}
 					label="浏览器"
 					hint="内嵌网页"
 					onClick={() => centerTabsStore.openBrowser(groupId)}
@@ -183,19 +177,24 @@ function EmptyAction({
 			onClick={onClick}
 			disabled={disabled}
 			className={cn(
-				"flex items-center gap-2.5 rounded-xl border border-border px-3 py-2.5 text-left",
+				"flex items-center gap-3 rounded-xl border border-border bg-surface p-3 text-left",
 				"transition-colors duration-150 focus-ring",
 				disabled
 					? "cursor-not-allowed opacity-40"
-					: "cursor-pointer hover:border-terracotta/40 hover:bg-warm-200/60",
+					: "cursor-pointer hover:border-warm-400 hover:bg-warm-100",
 			)}
 		>
-			<span className="shrink-0 text-text-muted">{icon}</span>
+			{/* 图标垫一层暖底 —— 六个裸线性图标贴在白卡上会显得像一列表单字段 */}
+			<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warm-200/70 text-text-secondary">
+				{icon}
+			</span>
 			<span className="min-w-0">
-				<span className="block truncate text-xs font-medium text-text-primary">
+				<span className="block truncate text-sm font-medium text-text-primary">
 					{label}
 				</span>
-				<span className="block truncate text-xs text-text-muted">{hint}</span>
+				<span className="mt-px block truncate text-xs text-text-muted">
+					{hint}
+				</span>
 			</span>
 		</button>
 	);

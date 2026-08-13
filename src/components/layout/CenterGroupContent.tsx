@@ -22,11 +22,6 @@ import {
 
 const BrowserPanel = lazy(() => import("../BrowserPanel"));
 const SandboxWorkspace = lazy(() => import("../sandbox/SandboxWorkspace"));
-const WikiGraphFullscreen = lazy(() =>
-	import("../wiki/WikiGraphFullscreen").then((m) => ({
-		default: m.WikiGraphFullscreen,
-	})),
-);
 const AiHubPanel = lazy(() =>
 	import("../aihub/AiHubPanel").then((m) => ({ default: m.AiHubPanel })),
 );
@@ -56,10 +51,7 @@ export function CenterGroupContent({ groupId }: { groupId: string }) {
 	// 内部切换（它自己有过渡动画），用 tab id 当 key 会让整个工作区重新挂载。
 	const viewKey = activeWebSiteId
 		? activeTabId
-		: activeTabId === "browser" ||
-				activeTabId === "wiki-graph" ||
-				activeTabId === "hub" ||
-				activeTabId === ""
+		: activeTabId === "browser" || activeTabId === "hub" || activeTabId === ""
 			? activeTabId || "empty"
 			: "sandbox";
 
@@ -82,10 +74,6 @@ export function CenterGroupContent({ groupId }: { groupId: string }) {
 					) : activeTabId === "hub" ? (
 						<Suspense fallback={<PanelLoadingFallback />}>
 							<HubView />
-						</Suspense>
-					) : activeTabId === "wiki-graph" ? (
-						<Suspense fallback={<PanelLoadingFallback />}>
-							<WikiGraphFullscreen />
 						</Suspense>
 					) : activeTabId === "browser" ? (
 						<Suspense fallback={<PanelLoadingFallback />}>

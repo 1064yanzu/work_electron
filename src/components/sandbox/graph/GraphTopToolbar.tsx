@@ -142,7 +142,9 @@ export function GraphTopToolbar({
 								<ChevronDown className="w-3.5 h-3.5" />
 							</button>
 							<span className="px-1.5 text-text-muted tabular-nums">
-								{hasMatch ? `${searchIndex + 1}/${searchMatchedNodeCount}` : "0/0"}
+								{hasMatch
+									? `${searchIndex + 1}/${searchMatchedNodeCount}`
+									: "0/0"}
 							</span>
 						</div>
 					) : null}

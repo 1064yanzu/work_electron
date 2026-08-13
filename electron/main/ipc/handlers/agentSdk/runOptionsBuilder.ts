@@ -63,20 +63,11 @@ export function normalizeSandboxSettings(
 		: undefined;
 }
 
-/**
- * additionalDirectories 终值。
- *
- * wiki scope 目录必须并进来：SDK 的文件工具只在 cwd + additionalDirectories
- * 里解析相对路径，漏了它读 raw sources 会直接因路径解析失败被拒。
- */
+/** additionalDirectories 终值：空数组归一为 undefined。 */
 export function resolveAdditionalDirectories(
 	additionalDirectories: string[],
-	wikiScopePath?: string,
 ): string[] | undefined {
 	const dirs = [...additionalDirectories];
-	if (wikiScopePath && !dirs.includes(wikiScopePath)) {
-		dirs.push(wikiScopePath);
-	}
 	return dirs.length > 0 ? dirs : undefined;
 }
 

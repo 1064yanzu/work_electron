@@ -42,8 +42,6 @@ import type { ThemeIpcSchema } from "./ipc/theme";
 import type { TtsIpcSchema } from "./ipc/tts";
 import type { UpdateIpcSchema } from "./ipc/update";
 import type { WebContentIpcSchema } from "./ipc/webContent";
-import type { WikiIpcSchema } from "./ipc/wiki";
-
 export type { AgentIpcSchema } from "./ipc/agent";
 export type { AgentSdkIpcSchema } from "./ipc/agentSdk";
 export type { ArtifactsIpcSchema } from "./ipc/artifacts";
@@ -74,8 +72,6 @@ export type { ThemeIpcSchema } from "./ipc/theme";
 export type { TtsIpcSchema } from "./ipc/tts";
 export type { UpdateIpcSchema } from "./ipc/update";
 export type { WebContentIpcSchema } from "./ipc/webContent";
-export type { WikiIpcSchema } from "./ipc/wiki";
-
 /**
  * 全部 IPC 命令的输入输出契约。
  *
@@ -112,7 +108,6 @@ export interface IPCSchema
 		ThemeIpcSchema,
 		TtsIpcSchema,
 		UpdateIpcSchema,
-		WebContentIpcSchema,
-		WikiIpcSchema {}
+		WebContentIpcSchema {}
 
 export type IPCChannel = keyof IPCSchema;

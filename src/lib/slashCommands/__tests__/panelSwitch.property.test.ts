@@ -41,14 +41,14 @@ type RightPanelTab =
 interface LayoutState {
 	rightPanelActive: RightPanelTab;
 	rightSidebarVisible: boolean;
-	activeMainView: "editor" | "browser" | "wiki-graph";
+	activeMainView: "editor" | "browser" | "aihub";
 	leftSidebarView:
 		| "sources"
 		| "research"
 		| "detail"
-		| "agent"
 		| "cards"
-		| "websearch";
+		| "threads"
+		| "files";
 	cardsActiveTab: "knowledge" | "shared";
 }
 
@@ -96,16 +96,16 @@ const RIGHT_PANEL_TABS: readonly RightPanelTab[] = [
 const MAIN_VIEWS: readonly LayoutState["activeMainView"][] = [
 	"editor",
 	"browser",
-	"wiki-graph",
+	"aihub",
 ];
 
 const LEFT_VIEWS: readonly LayoutState["leftSidebarView"][] = [
 	"sources",
 	"research",
 	"detail",
-	"agent",
 	"cards",
-	"websearch",
+	"threads",
+	"files",
 ];
 
 const CARDS_TABS: readonly LayoutState["cardsActiveTab"][] = [

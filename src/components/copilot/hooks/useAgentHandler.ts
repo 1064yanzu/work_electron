@@ -876,8 +876,6 @@ export function useAgentHandler({
 								attachedFiles, // 传递文件路径
 								conversationSessionId: session.id,
 								sandboxKey: boundAgentSessionId || session.id,
-								wikiScopePath:
-									sessionStore.getCurrentSession()?.cwd || undefined,
 								resumeSessionId: resumeSessionIdForRun,
 								persistSession: true,
 								forkSession: effectiveForkSession,

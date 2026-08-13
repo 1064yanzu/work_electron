@@ -1,41 +1,26 @@
-import { FileText, Settings2, Sparkles, Wand2 } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { listProviders } from "../../lib/api";
 import { EVENTS, events } from "../../lib/events";
 import { useMascot } from "../../lib/mascotStore";
 import { Mascot } from "../Mascot/Mascot";
 
-interface WelcomeScreenProps {
-	/** 点击建议 chip 直接发起对话（由 CopilotMessagePane 注入） */
-	onSendMessage?: (content: string) => void;
-}
-
 /**
- * 首条消息前的欢迎页。
- * 建议 chip 不是装饰——点击即发送，把空窗变成转化入口。
- * 三条提示对应产品最高频的真实用法：资料总结 / 内容起草 / 文字润色。
+ * 首条消息前的欢迎页 —— 只做一句问候。
+ *
+ * 推荐 query 已整体移除（用户明确不要）：输入框的 placeholder 和
+ * 斜杠命令已经说清了「怎么开始」，再铺三条按钮只是噪音。
+ * 问候语随时段变化（Claude 桌面端同款），比一句静态的
+ * 「深度研究、分析资料、撰写内容」营销文案更像一个真实的开场。
  */
-const SUGGESTIONS: Array<{
-	icon: typeof Sparkles;
-	label: string;
-	prompt: string;
-}> = [
-	{
-		icon: Sparkles,
-		label: "总结资料要点",
-		prompt: "帮我总结当前工作目录中资料的核心要点",
-	},
-	{
-		icon: FileText,
-		label: "起草文档大纲",
-		prompt: "帮我起草一份文档大纲",
-	},
-	{
-		icon: Wand2,
-		label: "润色一段文字",
-		prompt: "帮我润色一段文字：",
-	},
-];
+function getTimeGreeting(): string {
+	const hour = new Date().getHours();
+	if (hour < 5) return "夜深了";
+	if (hour < 12) return "早上好";
+	if (hour < 14) return "中午好";
+	if (hour < 18) return "下午好";
+	return "晚上好";
+}
 
 /**
  * 检测是否存在至少一个已启用且带模型的 Provider。
@@ -65,18 +50,20 @@ function useHasAvailableModel(): boolean | null {
 	return hasModel;
 }
 
-export function WelcomeScreen({ onSendMessage }: WelcomeScreenProps) {
+export function WelcomeScreen() {
 	const { enabled } = useMascot();
 	const hasModel = useHasAvailableModel();
+	// 挂载时取一次即可：欢迎页停留期间跨时段的概率可以忽略
+	const [greeting] = useState(getTimeGreeting);
 
 	return (
-		// 光学居中用上下 spacer 的 flex 比例（2:3）实现，替代原先的 -mt-8 魔法偏移；
-		// 下方 spacer 更大，矮窗口下建议 chip 不会与底部浮条挤压
+		// 光学居中用上下 spacer 的 flex 比例（2:3）实现，替代原先的 -mt-8 魔法偏移
 		<div className="flex flex-col h-full items-center animate-in fade-in duration-700 slide-in-from-bottom-4 relative z-10">
 			<div className="flex-[2]" aria-hidden />
-			<div className="flex flex-col items-center text-center mb-8 z-10">
+			<div className="flex flex-col items-center text-center z-10">
+				{/* 吉祥物克制在 96px —— 它是问候，不是主角；2xl(176px) 会统治整个面板 */}
 				{enabled ? (
-					<Mascot slot="state-greet" size="2xl" float wrapperClassName="mb-4" />
+					<Mascot slot="state-greet" size="lg" float wrapperClassName="mb-5" />
 				) : (
 					<div
 						className="w-12 h-12 rounded-full bai-avatar-glow mb-6"
@@ -85,15 +72,13 @@ export function WelcomeScreen({ onSendMessage }: WelcomeScreenProps) {
 				)}
 
 				<h3
-					className="text-[1.5rem] font-semibold text-text-primary mb-2 leading-tight"
+					className="text-[1.5rem] font-semibold text-text-primary leading-tight"
 					style={{ letterSpacing: "-0.02em" }}
 				>
-					有什么可以帮您的？
+					{greeting}
 				</h3>
 
-				<p className="text-sm text-text-secondary max-w-[300px] leading-relaxed">
-					深度研究、分析资料、撰写内容
-				</p>
+				<p className="mt-2 text-sm text-text-muted">有什么可以帮你的？</p>
 			</div>
 
 			{hasModel === false && (
@@ -102,7 +87,7 @@ export function WelcomeScreen({ onSendMessage }: WelcomeScreenProps) {
 					onClick={() =>
 						events.emit(EVENTS.OPEN_SETTINGS, { tab: "ai.models" })
 					}
-					className="group mb-4 flex w-full max-w-[280px] items-start gap-2.5 rounded-xl border border-warm-400/60 bg-warm-50 px-3.5 py-3 text-left shadow-bai-card transition-[border-color,box-shadow] duration-150 hover:border-warm-400 hover:shadow-bai-pop dark:bg-warm-400/10"
+					className="group mt-7 flex w-full max-w-[280px] items-start gap-2.5 rounded-xl border border-warm-400/60 bg-warm-50 px-3.5 py-3 text-left shadow-bai-card transition-[border-color,box-shadow] duration-150 hover:border-warm-400 hover:shadow-bai-pop dark:bg-warm-400/10"
 				>
 					<Settings2
 						className="mt-0.5 h-4 w-4 shrink-0 text-primary"
@@ -117,25 +102,6 @@ export function WelcomeScreen({ onSendMessage }: WelcomeScreenProps) {
 						</span>
 					</span>
 				</button>
-			)}
-
-			{onSendMessage && (
-				<div className="flex flex-col items-center gap-2 w-full max-w-[280px] animate-in fade-in slide-in-from-bottom-2 duration-500 [animation-delay:120ms] [animation-fill-mode:both]">
-					{SUGGESTIONS.map((item) => (
-						<button
-							key={item.label}
-							type="button"
-							onClick={() => onSendMessage(item.prompt)}
-							className="group flex w-full items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-left text-xs text-text-secondary shadow-bai-card transition-[color,background-color,border-color,box-shadow,transform] duration-150 hover:-translate-y-px hover:border-warm-400 hover:text-text-primary hover:shadow-bai-pop active:translate-y-0"
-						>
-							<item.icon
-								className="h-3.5 w-3.5 shrink-0 text-text-light transition-colors group-hover:text-text-secondary"
-								strokeWidth={1.5}
-							/>
-							<span className="truncate">{item.label}</span>
-						</button>
-					))}
-				</div>
 			)}
 			<div className="flex-[3]" aria-hidden />
 		</div>

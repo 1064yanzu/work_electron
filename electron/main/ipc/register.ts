@@ -89,8 +89,6 @@ import { createCloudNodeHandlers } from "./handlers/cloudNode";
 import { getCloudNodeClient } from "../cloud-node/service";
 import { createTerminalHandlers } from "./handlers/terminal";
 import { createWorktreeHandlers } from "./handlers/worktree";
-import { createWikiHandlers } from "./handlers/wiki";
-import { createWikiGenerationHandlers } from "./handlers/wikiGeneration";
 import { createPetWindowHandlers } from "./handlers/petWindow";
 import { createCustomMascotHandlers } from "./handlers/customMascot";
 import {
@@ -461,16 +459,6 @@ export function registerIpcHandlers({
 
 	// Worktree handlers (Git Worktree 沙盒隔离)
 	const worktreeHandlers = createWorktreeHandlers({ logger });
-
-	// Wiki handlers (知识 Wiki 页面 — 文件系统驱动，不需要 db)
-	const wikiHandlers = createWikiHandlers();
-
-	// Wiki AI 生成 handlers
-	const wikiGenHandlers = createWikiGenerationHandlers(db, {
-		get current() {
-			return mainWindowRef;
-		},
-	});
 
 	// Preview Server handlers (沙盒前端预览)
 	const previewServerHandlers = createPreviewServerHandlers({
@@ -1358,33 +1346,6 @@ export function registerIpcHandlers({
 	handle("worktree_merge", worktreeHandlers.worktree_merge);
 	handle("worktree_remove", worktreeHandlers.worktree_remove);
 	handle("worktree_diff", worktreeHandlers.worktree_diff);
-
-	// ==================
-	// Wiki 知识页面
-	// ==================
-	handle("wiki_list_pages", wikiHandlers.wiki_list_pages);
-	handle("wiki_get_page", wikiHandlers.wiki_get_page);
-	handle("wiki_create_page", wikiHandlers.wiki_create_page);
-	handle("wiki_update_page", wikiHandlers.wiki_update_page);
-	handle("wiki_delete_page", wikiHandlers.wiki_delete_page);
-	handle("wiki_search_pages", wikiHandlers.wiki_search_pages);
-	handle("wiki_count_pages", wikiHandlers.wiki_count_pages);
-	handle("wiki_is_enabled", wikiHandlers.wiki_is_enabled);
-	handle("wiki_enable", wikiHandlers.wiki_enable);
-	handle("wiki_disable", wikiHandlers.wiki_disable);
-	handle("wiki_rebuild", wikiHandlers.wiki_rebuild);
-	handle("wiki_get_page_file_path", wikiHandlers.wiki_get_page_file_path);
-	handle("wiki_schema_stats", wikiHandlers.wiki_schema_stats);
-	handle("wiki_reset_skipped_sources", wikiHandlers.wiki_reset_skipped_sources);
-	handle(
-		"wiki_reset_processed_sources",
-		wikiHandlers.wiki_reset_processed_sources,
-	);
-	handle("wiki_lint", wikiHandlers.wiki_lint);
-
-	// Wiki AI 生成
-	handle("wiki_generate", wikiGenHandlers.wiki_generate);
-	handle("wiki_generation_status", wikiGenHandlers.wiki_generation_status);
 
 	// ==================
 	// 桌面宠物窗口

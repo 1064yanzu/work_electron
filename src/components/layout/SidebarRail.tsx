@@ -39,7 +39,7 @@ interface SidebarRailProps {
  * 中间一条极淡分隔线，让 4 个入口读起来是 2+2 而不是一长串 4。
  *
  * 刻意不在这里的入口：
- * - 「资料库 / 卡片 / Wiki」合并进「知识」，由面板顶部的 tab 条切换（见 knowledgeSection.ts）
+ * - 「资料库 / 卡片」合并进「知识」，由面板顶部的 tab 条切换（见 knowledgeSection.ts）
  * - 跨入口会话与接力属于中栏的「Agent 接力」标签页，不在左栏重复开一个入口
  *   （⌘K →「打开 Agent 接力」）
  */
@@ -78,11 +78,11 @@ export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 
 	// 只切左栏视图，**不动中栏标签**。
 	// 中栏改成自由标签页后，这条边栏就是 VSCode 的活动栏：它决定左边看什么，
-	// 不该替用户决定中间看什么。真正需要把中栏拉回工作区的动作（点开文件、
-	// Wiki 在编辑器中打开…）自己会调 centerTabsStore.openSandboxView。
+	// 不该替用户决定中间看什么。真正需要把中栏拉回工作区的动作（点开文件…）
+	// 自己会调 centerTabsStore.openSandboxView。
 	//
 	// 「知识」是个聚合入口：本身不是一个 leftSidebarView 取值，
-	// 点它等于回到上次看的那个知识 tab（资料库 / 卡片 / Wiki）。
+	// 点它等于回到上次看的那个知识 tab（资料库 / 卡片）。
 	const handleNavClick = (id: NavId) => {
 		// 折叠状态下点任意导航 = 先展开面板再切视图（VSCode 活动栏行为），
 		// 否则视图切了面板还藏着，用户会以为点了没反应

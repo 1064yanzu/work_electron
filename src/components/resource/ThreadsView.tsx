@@ -58,6 +58,7 @@ import {
 } from "../../lib/api";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
 import { EmptyState, IllustratedEmptyState } from "../ui/EmptyState";
+import { inputDialog } from "../ui/InputDialog";
 import { toast } from "../ui/Toast";
 import { listAgentSessions } from "../../lib/agent/api";
 import { buildBackendThreadMetadataMap } from "./threads/backendThreadMetadata";
@@ -428,11 +429,16 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 			{
 				label: "重命名对话",
 				icon: <Edit3 className="w-4 h-4" />,
-				onClick: () => {
-					const newTitle = window.prompt(
-						"请输入新的对话标题",
-						session.title || "未命名对话",
-					);
+				onClick: async () => {
+					// Electron 渲染进程不支持 window.prompt（调用即抛错），走应用内对话框
+					const newTitle = await inputDialog.show({
+						title: "重命名对话",
+						message: "请输入新的对话标题",
+						defaultValue: session.title || "未命名对话",
+						confirmText: "重命名",
+						cancelText: "取消",
+						validate: (value) => (value.trim() ? null : "标题不能为空"),
+					});
 					if (newTitle?.trim()) {
 						chatStore.updateSessionTitle(session.id, newTitle.trim());
 						toast.success("已重命名");

@@ -75,7 +75,7 @@ const SLIDES: Slide[] = [
 	{
 		kind: "model",
 		title: "最后一步:接上模型",
-		description: "AI 对话、Wiki 生成、卡片总结都要调用模型,先配一个再开始。",
+		description: "AI 对话、卡片总结都要调用模型,先配一个再开始。",
 	},
 ];
 
@@ -87,7 +87,7 @@ const TOUR_COLUMNS = [
 		lines: [
 			{ icon: FolderOpen, text: "文件：浏览工作目录" },
 			{ icon: MessagesSquare, text: "对话：历史会话" },
-			{ icon: Library, text: "知识：资料库 / 卡片 / Wiki" },
+			{ icon: Library, text: "知识：资料库 / 卡片" },
 			{ icon: Blocks, text: "技能：本地 Skill 与市场" },
 		],
 	},

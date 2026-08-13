@@ -20,7 +20,6 @@ const LEFT_SIDEBAR_VIEWS: readonly LayoutState["leftSidebarView"][] = [
 	"threads",
 	"files",
 	"skills",
-	"wiki",
 ];
 
 function readPersistedLeftSidebarView(): LayoutState["leftSidebarView"] {

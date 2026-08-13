@@ -553,8 +553,6 @@ class AgentExecutor {
 			/** Chat window/session ID for log grouping. */
 			conversationSessionId?: string;
 			workingDirectory?: string;
-			/** Project root / wiki scope path (actual user folder, may differ from sandbox workingDirectory) */
-			wikiScopePath?: string;
 			/** Reuse the same sandbox dir across turns by providing a stable key */
 			sandboxKey?: string;
 			/** Resume an existing SDK session to enable SDK context management/compaction */
@@ -901,7 +899,6 @@ class AgentExecutor {
 				prompt: userPromptForRun,
 				systemPrompt: enhancedPrompt || undefined,
 				workingDirectory: sandboxDir,
-				wikiScopePath: options?.wikiScopePath,
 				resumeSessionId,
 				persistSession: options?.persistSession,
 				forkSession: options?.forkSession,

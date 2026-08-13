@@ -66,7 +66,6 @@ export type CenterTabKind =
 	| "graph"
 	| "preview"
 	| "browser"
-	| "wiki-graph"
 	| "hub"
 	| "web"
 	| "cli";
@@ -196,7 +195,6 @@ export function isCliTabId(tabId: string): boolean {
  */
 function mainViewForTab(tabId: string): LayoutState["activeMainView"] {
 	if (tabId === "browser") return "browser";
-	if (tabId === "wiki-graph") return "wiki-graph";
 	if (tabId.startsWith(WEB_TAB_PREFIX)) return "aihub";
 	return "editor";
 }
@@ -441,7 +439,7 @@ function openTab(tab: CenterTab, targetGroupId?: string): void {
 /**
  * 打开（或激活）沙盒工作区的某个视图（运行图 / 预览）。
  *
- * 给「点击文件预览」「Wiki 在编辑器中打开」这类**明确的用户动作**用：它们的
+ * 给「点击文件预览」这类**明确的用户动作**用：它们的
  * 意图是"我现在要看到它"，只写 `managedModeStore.setCenterView` 的话，用户
  * 若正停在别的标签上就会觉得点了没反应；标签被关掉之后更是连落脚点都没有，
  * 所以这里会把标签补开。
@@ -460,10 +458,6 @@ function openSandboxView(view: "graph" | "preview"): void {
 
 function openBrowser(groupId?: string): void {
 	openTab({ id: "browser", kind: "browser" }, groupId);
-}
-
-function openWikiGraph(groupId?: string): void {
-	openTab({ id: "wiki-graph", kind: "wiki-graph" }, groupId);
 }
 
 /** 打开「Agent 接力」主视图（跨入口时间线 + 拖拽接力 + 议会 + 共享白板）。 */
@@ -1005,9 +999,9 @@ function cycleGroup(delta: 1 | -1): void {
 // 反向镜像：兜底既有的 setMainView / setCenterView 调用点
 // ============================================================
 
-// 旧调用点（WikiGraphPanel 的 setMainView("wiki-graph")、ResourceSidebar 的
-// setMainView("browser")、斜杠命令…）不知道标签的存在，这里把它们的意图翻译成
-// 标签操作。`applying` 锁住 syncExternalStores 自己写外部时的回声。
+// 旧调用点（ResourceSidebar 的 setMainView("browser")、斜杠命令…）不知道标签
+// 的存在，这里把它们的意图翻译成标签操作。`applying` 锁住 syncExternalStores
+// 自己写外部时的回声。
 layoutStore.subscribe(() => {
 	if (applying) return;
 	const view = layoutStore.getState().activeMainView;
@@ -1021,10 +1015,6 @@ layoutStore.subscribe(() => {
 	}
 	if (view === "browser") {
 		openBrowser();
-		return;
-	}
-	if (view === "wiki-graph") {
-		openWikiGraph();
 		return;
 	}
 	if (view === "aihub") {
@@ -1096,7 +1086,6 @@ async function restorePersistedTabsIfEnabled(): Promise<void> {
 			item.kind === "graph" ||
 			item.kind === "preview" ||
 			item.kind === "browser" ||
-			item.kind === "wiki-graph" ||
 			item.kind === "hub"
 		) {
 			tabsById[item.id] = { id: item.id, kind: item.kind };
@@ -1182,7 +1171,6 @@ export const centerTabsStore = {
 	openHub,
 	restartCli,
 	openSandboxView,
-	openWikiGraph,
 	openWebSite,
 	ensureClis,
 	ensureWebSites,

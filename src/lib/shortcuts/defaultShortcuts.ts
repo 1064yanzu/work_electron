@@ -18,7 +18,7 @@ type LeftSidebarView = ReturnType<
 
 /**
  * ⌘1..4 对应 SidebarRail 的四个入口。
- * 「知识」是资料库 / 卡片 / Wiki 三个 tab 的合集，跳回上次看的那个，
+ * 「知识」是资料库 / 卡片两个 tab 的合集，跳回上次看的那个，
  * 与点 rail 的行为保持一致。
  */
 const LEFT_SIDEBAR_TARGETS: Array<{

@@ -446,7 +446,6 @@ export default function CopilotSidebar() {
 				onEditMessage={handleEditUserMessage}
 				onDeleteMessage={handleDeleteMessage}
 				onOpenResearch={handleOpenResearch}
-				onSendMessage={(content) => void handleSendMessage(content)}
 				onAllowAskUserQuestion={handleAllowAskUserQuestion}
 				onDenyAskUserQuestion={handleDenyAskUserQuestion}
 			/>

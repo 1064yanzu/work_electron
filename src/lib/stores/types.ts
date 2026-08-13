@@ -106,7 +106,7 @@ export interface AIReviewState {
 // 布局状态
 export interface LayoutState {
 	// 中间栏主视图模式
-	activeMainView: "editor" | "browser" | "wiki-graph" | "aihub";
+	activeMainView: "editor" | "browser" | "aihub";
 	// 左边栏视图模式
 	leftSidebarView:
 		| "sources"
@@ -115,8 +115,7 @@ export interface LayoutState {
 		| "cards"
 		| "threads"
 		| "files"
-		| "skills"
-		| "wiki";
+		| "skills";
 	// 右侧栏可见性
 	rightSidebarVisible: boolean;
 	// 左边栏折叠状态（仅留 SidebarRail）
@@ -158,7 +157,7 @@ export interface CoreWorkspaceState {
 	currentProjectId: string | null;
 	// 当前选中的文件夹（用于资料库筛选/新增归类）；null=全部
 	currentFolderId: string | null;
-	// 当前线程工作目录（用于 Files / Wiki 等直接跟随线程）
+	// 当前线程工作目录（用于 Files 等直接跟随线程）
 	currentThreadPath: string | null;
 	currentThreadTitle: string | null;
 	// 当前预览的资料

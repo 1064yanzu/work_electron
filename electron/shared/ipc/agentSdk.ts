@@ -62,8 +62,6 @@ export interface AgentSdkIpcSchema {
 			};
 			/** MCP tool search mode */
 			enable_tool_search?: "auto" | "auto:5" | "true" | "false";
-			/** Project root directory (actual user folder, separate from sandbox cwd). Used to locate .llm-wiki/ */
-			wiki_scope_path?: string;
 		};
 		output: string;
 	};

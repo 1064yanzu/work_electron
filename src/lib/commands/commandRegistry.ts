@@ -1,7 +1,7 @@
 // 命令注册 API — 供功能面板动态注册命令面板条目
 //
 // 用法：
-//   const unregister = commandRegistry.register("wiki", [{ id: "wiki.rebuild", ... }]);
+//   const unregister = commandRegistry.register("reader", [{ id: "reader.open", ... }]);
 //   卸载时调用 unregister()。
 // useCommands 会把 registry 内容与静态命令合并。
 

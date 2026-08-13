@@ -25,7 +25,6 @@ import {
 	Sparkles,
 	Sun,
 	Terminal as TerminalIcon,
-	Waypoints,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useCommandRegistrySelector } from "../../lib/commands/commandRegistry";
@@ -206,16 +205,6 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 		});
 
 		items.push({
-			id: "ws.open-wiki-graph-tab",
-			title: "打开知识图谱标签页",
-			description: "在中栏以标签页打开 Wiki 知识图谱",
-			icon: Waypoints,
-			keywords: ["wiki", "graph", "zhishitupu", "tupu", "biaoqianye"],
-			group: "工作区",
-			action: () => centerTabsStore.openWikiGraph(),
-		});
-
-		items.push({
 			id: "ws.open-cli-tab",
 			title: "打开本机 CLI 标签页",
 			description:
@@ -276,9 +265,9 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 				id: "nav.left.knowledge",
 				view: "knowledge",
 				title: "打开知识面板",
-				description: "左栏切到「知识」（资料库 / 卡片 / Wiki）",
+				description: "左栏切到「知识」（资料库 / 卡片）",
 				icon: Library,
-				keywords: ["knowledge", "zhishi", "sources", "ziliao", "wiki", "cards"],
+				keywords: ["knowledge", "zhishi", "sources", "ziliao", "cards"],
 			},
 			{
 				id: "nav.left.skills",

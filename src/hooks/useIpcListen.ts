@@ -4,8 +4,7 @@
 // 如果组件在 `.then()` 回调触发前就已经 unmount，会产生「孤儿监听器」（没有被正确清理，
 // 可能重复触发副作用或造成内存泄漏）。
 //
-// 本 Hook 统一用 `cancelled` 标志位模式处理这种竞态（参考 src/components/wiki/useWiki.ts
-// 中 `wiki_generation_progress` 监听的写法）：
+// 本 Hook 统一用 `cancelled` 标志位模式处理这种竞态：
 //   - 若订阅尚未完成组件已卸载，标记 cancelled，待 Promise resolve 后立刻调用 unlisten 并丢弃。
 //   - 若订阅已完成组件仍存活，正常保留 unlisten 供卸载时调用。
 
@@ -49,7 +48,7 @@ export function useIpcListen<T>(
 				unlisten = fn;
 			})
 			// electronAPI 不可用（如纯浏览器环境）时 listen 会 reject，
-			// 与 useWiki 的参照实现保持一致：静默吞掉，避免 unhandled rejection
+			// 静默吞掉，避免 unhandled rejection
 			.catch(() => {});
 
 		return () => {

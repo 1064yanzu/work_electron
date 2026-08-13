@@ -2,7 +2,7 @@
  * DefaultsPanel — AI 与模型 · 默认模型分工
  *
  * Phase 6 新建，承载：
- *   1. 默认模型分工：标题生成 / 图像信息提取 / Wiki 生成 / Skill 执行
+ *   1. 默认模型分工：标题生成 / 图像信息提取 / Skill 执行
  *      （Skill 执行模型读写 `skill_llm_model`，下游 `SkillExecutor.getConfig("skill_llm_model")` 消费）；
  *   2. 搜索策略：搜索优先级 / MCP 搜索引擎 / `describeSearchHealth` 显示。
  *
@@ -35,7 +35,6 @@ import {
 const ANCHOR = {
 	titleModel: "ai.defaults.model.title",
 	imageModel: "ai.defaults.model.image",
-	wikiModel: "ai.defaults.model.wiki",
 	skillModel: "ai.defaults.model.skill",
 	searchStrategy: "ai.defaults.search.strategy",
 	searchProvider: "ai.defaults.search.provider",
@@ -52,7 +51,6 @@ export function DefaultsPanel() {
 
 	const [titleModel, setTitleModel] = useState<string>("");
 	const [imageExtractionModel, setImageExtractionModel] = useState<string>("");
-	const [wikiModel, setWikiModel] = useState<string>("");
 	const [skillModel, setSkillModel] = useState<string>("");
 	const [searchStrategy, setSearchStrategyState] =
 		useState<SearchStrategy>("local_first");
@@ -83,11 +81,10 @@ export function DefaultsPanel() {
 		let cancelled = false;
 		void (async () => {
 			try {
-				const [titleRaw, imageRaw, wikiRaw, skillRaw, strategy, provider] =
+				const [titleRaw, imageRaw, skillRaw, strategy, provider] =
 					await Promise.all([
 						getConfig("title_generation_model"),
 						getConfig("image_extraction_model"),
-						getConfig("wiki_generation_model"),
 						getConfig("skill_llm_model"),
 						getSearchStrategy(),
 						getSearchMcpProvider(),
@@ -95,7 +92,6 @@ export function DefaultsPanel() {
 				if (cancelled) return;
 				if (typeof titleRaw === "string") setTitleModel(titleRaw);
 				if (typeof imageRaw === "string") setImageExtractionModel(imageRaw);
-				if (typeof wikiRaw === "string") setWikiModel(wikiRaw);
 				if (typeof skillRaw === "string") setSkillModel(skillRaw);
 				setSearchStrategyState(strategy);
 				setSearchMcpProviderState(provider);
@@ -114,7 +110,6 @@ export function DefaultsPanel() {
 			key:
 				| "title_generation_model"
 				| "image_extraction_model"
-				| "wiki_generation_model"
 				| "skill_llm_model",
 			setLocal: (v: string) => void,
 			currentValue: string,
@@ -142,12 +137,6 @@ export function DefaultsPanel() {
 		setImageExtractionModel,
 		imageExtractionModel,
 		"保存图像信息提取模型失败",
-	);
-	const handleWikiModelChange = makeModelHandler(
-		"wiki_generation_model",
-		setWikiModel,
-		wikiModel,
-		"保存 Wiki 生成模型失败",
 	);
 	const handleSkillModelChange = makeModelHandler(
 		"skill_llm_model",
@@ -221,21 +210,6 @@ export function DefaultsPanel() {
 								onChange={(e) =>
 									handleImageExtractionModelChange(e.target.value)
 								}
-								variant="inline"
-								containerClassName="w-auto min-w-[220px]"
-								options={modelOptions}
-							/>
-						}
-					/>
-				</div>
-				<div id={ANCHOR.wikiModel} data-settings-anchor={ANCHOR.wikiModel}>
-					<SettingsRow
-						label="Wiki 生成模型"
-						description="用于 Wiki 自动整理、知识地图扩写与页面生成。"
-						action={
-							<Select
-								value={wikiModel}
-								onChange={(e) => handleWikiModelChange(e.target.value)}
 								variant="inline"
 								containerClassName="w-auto min-w-[220px]"
 								options={modelOptions}

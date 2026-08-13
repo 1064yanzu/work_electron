@@ -53,8 +53,6 @@ import { SourceListView } from "./SourceListView";
 import { ThreadsView } from "./ThreadsView";
 import { ProjectFilesView } from "./ProjectFilesView";
 import { SkillsView } from "./SkillsView";
-import { WikiView } from "../wiki/WikiView";
-
 interface ResourceSidebarProps {
 	onOpenSettings: () => void;
 }
@@ -225,7 +223,7 @@ export default function ResourceSidebar({
 	const sourceImport = useSourceImport({
 		fetchSources,
 		// 仅当用户激活了资料库相关视图时，才注册全局 window drop 监听
-		// 其他面板（技能库、wiki 等）有自己的拖拽逻辑，不应被此处拦截
+		// 其他面板（技能库等）有自己的拖拽逻辑，不应被此处拦截
 		enabled: ["sources", "detail", "research", "websearch"].includes(
 			leftSidebarView,
 		),
@@ -570,7 +568,7 @@ export default function ResourceSidebar({
 				/>
 			) : null}
 
-			{/* 「知识」区一级 tab（资料库 / 卡片 / Wiki）——rail 上它们合成了一个入口。
+			{/* 「知识」区一级 tab（资料库 / 卡片）——rail 上它们合成了一个入口。
 					    放在 ViewTransition 外面：切 tab 时只有下方内容做进场过渡，tab 条本身不闪。 */}
 			{isKnowledgeTabView(leftSidebarView) ? (
 				<KnowledgeTabBar
@@ -608,8 +606,6 @@ export default function ResourceSidebar({
 					<ProjectFilesView />
 				) : leftSidebarView === "skills" ? (
 					<SkillsView />
-				) : leftSidebarView === "wiki" ? (
-					<WikiView />
 				) : (
 					<SourceListView
 						sources={sources}

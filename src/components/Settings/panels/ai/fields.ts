@@ -29,13 +29,6 @@ export const FIELDS: FieldDescriptor[] = [
 	},
 	{
 		tabId: "ai.defaults",
-		anchorId: "ai.defaults.model.wiki",
-		label: "Wiki 生成模型",
-		description: "Wiki 自动整理与知识地图扩写使用的模型。",
-		keywords: ["wiki", "wiki_generation_model", "知识", "知识库"],
-	},
-	{
-		tabId: "ai.defaults",
 		anchorId: "ai.defaults.model.skill",
 		label: "Skill 执行模型",
 		description: "Agent 执行技能（skill_llm_model）时优先使用的模型。",

@@ -21,7 +21,6 @@ import {
 	Plus,
 	Rows2,
 	SquareTerminal,
-	Waypoints,
 	Workflow,
 	X,
 	type LucideIcon,
@@ -58,7 +57,6 @@ const STATIC_TAB_META: Record<string, { title: string; icon: LucideIcon }> = {
 	graph: { title: "运行图", icon: Workflow },
 	preview: { title: "预览", icon: Eye },
 	browser: { title: "浏览器", icon: Globe },
-	"wiki-graph": { title: "知识图谱", icon: Waypoints },
 	hub: { title: "Agent 接力", icon: Network },
 };
 
@@ -262,11 +260,6 @@ export function CenterTabBar({ groupId }: { groupId: string }) {
 				label: "浏览器",
 				icon: <Globe className="h-4 w-4" strokeWidth={1.5} />,
 				onClick: () => centerTabsStore.openBrowser(groupId),
-			},
-			{
-				label: "知识图谱",
-				icon: <Waypoints className="h-4 w-4" strokeWidth={1.5} />,
-				onClick: () => centerTabsStore.openWikiGraph(groupId),
 			},
 		];
 

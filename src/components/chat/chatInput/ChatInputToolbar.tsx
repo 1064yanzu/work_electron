@@ -148,11 +148,12 @@ export function ChatInputToolbar({
 							aria-label="发送消息"
 							className={cn(
 								"w-8 h-8 flex items-center justify-center rounded-full",
+								"bg-primary text-primary-foreground",
 								"transition-[background-color,color,opacity,transform] duration-150",
 								"cursor-pointer active:scale-95 disabled:cursor-not-allowed",
-								hasContent
-									? "bg-primary text-primary-foreground hover:opacity-90"
-									: "bg-warm-300 text-text-muted",
+								// 空态保持品牌色、只降不透明度（Claude 同款），
+								// 而不是一颗与底色几乎同色的米色圆盘
+								submitDisabled ? "opacity-35" : "hover:opacity-90",
 							)}
 						>
 							<ArrowUp className="w-[17px] h-[17px]" strokeWidth={2.2} />

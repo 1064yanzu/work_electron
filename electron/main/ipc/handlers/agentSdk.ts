@@ -6,8 +6,6 @@ import type { IPCSchema } from "../../../shared/ipc-schema";
 import type { DbContext } from "../../db/client";
 import type { Logger } from "../../logging/types";
 import { isRetryableError, DEFAULT_RETRY_CONFIG } from "../../utils/retryUtils";
-import { isWikiDirExists } from "../../kb/wiki/wikiFs";
-
 import { interactionBroker } from "./agentSdk/interactionBroker";
 import { runRegistry } from "./agentSdk/runRegistry";
 import { normalizeSdkSessionId } from "./agentSdk/sessionId";
@@ -235,14 +233,6 @@ export function createAgentSdkHandlers(options: {
 				console.log(`[agent_sdk] Starting with cwd='${cwd}'`);
 				const skillsFromInput = normalizeStringArray((input as any).skills);
 				const appSkillSelectionProvided = Array.isArray((input as any).skills);
-
-				// 验证 wiki_scope_path（需要实际存在 .llm-wiki/ 目录才生效）
-				const resolvedWikiScopePath =
-					input.wiki_scope_path && input.wiki_scope_path.trim()
-						? (await isWikiDirExists(input.wiki_scope_path.trim()))
-							? input.wiki_scope_path.trim()
-							: undefined
-						: undefined;
 
 				// 默认 false：与 Claude Code CLI 的 --dangerously-skip-permissions 等效。
 				// 把权限决策权交还给 SDK 的 permissionMode（bypassPermissions）和 OS 文件权限，
@@ -503,7 +493,6 @@ export function createAgentSdkHandlers(options: {
 						permissionMode: permissionModeForRun as any,
 						additionalDirectories: resolveAdditionalDirectories(
 							additionalDirectories,
-							resolvedWikiScopePath,
 						),
 						plugins: plugins.length > 0 ? plugins : undefined,
 						sandbox: sandboxSettings as any,
