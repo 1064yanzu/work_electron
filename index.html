@@ -2,6 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      内容安全策略。这里的重点不是把渲染端锁死（Electron 渲染端本来就是我们自己的
+      代码），而是**堵住外部注入的执行面**：知识库/剪藏/Agent 输出里混进来的第三方
+      HTML 一旦被渲染，就不能再从任意源拉脚本、也不能改 <base> 劫持相对路径。
+
+      几处刻意的放宽，改动前请先确认对应功能：
+      - script-src 的 'unsafe-inline'：上面那段防闪白的内联脚本需要它。
+      - script-src 的 'unsafe-eval'：dev 模式的 React Fast Refresh 依赖 eval。
+      - script-src 的 https://unpkg.com：WebPreviewCard 生成的 React 预览
+        （src/components/chat/WebPreviewCard.tsx）通过 srcdoc iframe 从 unpkg
+        加载 React/Babel，而 srcdoc iframe 继承父文档 CSP。
+      - connect-src / img-src 放开 https:：渲染端会直连远程图片与部分只读接口。
+      - frame-src 含本机 http：沙盒预览服务（127.0.0.1 高位端口）用 iframe 内嵌。
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com;
+               style-src 'self' 'unsafe-inline';
+               font-src 'self' data:;
+               img-src 'self' data: blob: mascot: file: https: http://127.0.0.1:* http://localhost:*;
+               media-src 'self' data: blob: file: https: http://127.0.0.1:* http://localhost:*;
+               connect-src 'self' data: blob: https: wss: http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:*;
+               frame-src 'self' data: blob: http://127.0.0.1:* http://localhost:*;
+               worker-src 'self' blob:;
+               object-src 'none';
+               base-uri 'self';
+               form-action 'none';
+               frame-ancestors 'none';"
+    />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IPO Workbench</title>

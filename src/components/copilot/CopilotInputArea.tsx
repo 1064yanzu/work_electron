@@ -21,6 +21,8 @@ interface CopilotInputAreaProps {
 	onSendMessage: (content: string, options?: SubmitOptions) => void;
 	onSelectModel: (id: string) => void;
 	onOpenPromptLibrary: () => void;
+	/** 停止流式 / Agent 执行 —— 响应期间发送键原位变停止键 */
+	onStop: () => void;
 }
 
 function CopilotInputAreaImpl({
@@ -35,22 +37,24 @@ function CopilotInputAreaImpl({
 	onSendMessage,
 	onSelectModel,
 	onOpenPromptLibrary,
+	onStop,
 }: CopilotInputAreaProps) {
 	const disabled = isStreaming || isAgentExecuting;
-	const isDraggingRef = useRef(false);
+	// 响应期间输入框保持可打字（起草下一条），发送被拦截、发送键变停止键
 	const placeholder = isAgentExecuting
 		? agentTaskType === "research"
-			? "研究进行中..."
-			: "Agent 执行中..."
+			? "研究进行中 — 可先起草，完成后发送"
+			: "执行中 — 可先起草，完成后发送"
 		: chatMode === "agent"
 			? "描述你的需求，或用 / 唤起命令..."
 			: "输入消息，或用 / 唤起命令...";
 	// 窄栏用短文案，避免占位文字被截成半句
 	const compactPlaceholder = isAgentExecuting
 		? agentTaskType === "research"
-			? "研究进行中..."
-			: "执行中..."
+			? "研究中，可起草"
+			: "执行中，可起草"
 		: "描述需求，/ 唤起命令";
+	const isDraggingRef = useRef(false);
 
 	const addFileToContext = workspaceStore.addFileToContext.bind(workspaceStore);
 
@@ -121,7 +125,8 @@ function CopilotInputAreaImpl({
 				models={enabledModels}
 				onModelSelect={onSelectModel}
 				onOpenPromptLibrary={onOpenPromptLibrary}
-				isAgentExecuting={isAgentExecuting}
+				isResponding={disabled}
+				onStop={onStop}
 				planMode={planModeEnabled}
 				onTogglePlanMode={onTogglePlanMode}
 			/>

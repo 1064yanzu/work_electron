@@ -1,7 +1,7 @@
 /**
  * StatusDot — 统一状态小圆点
  * 用于通道 / 会话 / 配对状态的一致视觉表达。
- * B.AI 暖调：保留 mint(在线) / peach(警告) / 错误用 #b53333 / sky 中性 / cream 灰。
+ * B.AI 暖调：保留 mint(在线) / peach(警告) / error 语义色 / violetx 中性 / warm 灰。
  */
 
 import { cn } from "../../../../lib/utils";
@@ -26,8 +26,8 @@ const TONE_CLASS: Record<StatusTone, { solid: string; ring: string }> = {
 		ring: "ring-violetx-500/20",
 	},
 	zinc: {
-		solid: "bg-cream-500",
-		ring: "ring-cream-500/20",
+		solid: "bg-warm-500",
+		ring: "ring-border/20",
 	},
 };
 

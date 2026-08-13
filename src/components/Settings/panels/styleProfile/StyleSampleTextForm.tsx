@@ -39,14 +39,14 @@ export function StyleSampleTextForm({ onSubmit, onCancel }: Props) {
 	);
 
 	return (
-		<div className="rounded-xl border border-mint-300/60 dark:border-mint-500/30 bg-mint-50/40 dark:bg-mint-900/10 p-3 space-y-2.5">
+		<div className="rounded-xl border border-mint-300/60 bg-mint-500/10 p-3 space-y-2.5">
 			<input
 				type="text"
 				value={title}
 				onChange={(e) => setTitle(e.target.value)}
 				onKeyDown={handleKeyDown}
 				placeholder="样本标题（可选）"
-				className="w-full text-xs bg-white/70 dark:bg-cream-800/50 rounded-lg px-3 py-1.5 text-text-primary placeholder-text-muted/50 focus:outline-none focus:ring-1 focus:ring-mint-400/50 dark:focus:ring-mint-500/40 border border-cream-200/60 dark:border-cream-600/30 transition-shadow duration-150"
+				className="w-full text-xs bg-surface/70 rounded-lg px-3 py-1.5 text-text-primary placeholder-text-muted/50 focus:outline-none focus:ring-1 focus:ring-mint-500/40 border border-border/60 transition-shadow duration-150"
 			/>
 			<textarea
 				ref={textareaRef}
@@ -57,10 +57,10 @@ export function StyleSampleTextForm({ onSubmit, onCancel }: Props) {
 				onKeyDown={handleKeyDown}
 				placeholder="在此粘贴样本文章内容…"
 				rows={6}
-				className="w-full text-xs bg-white/70 dark:bg-cream-800/50 rounded-lg px-3 py-2 text-text-primary placeholder-text-muted/50 resize-none focus:outline-none focus:ring-1 focus:ring-mint-400/50 dark:focus:ring-mint-500/40 border border-cream-200/60 dark:border-cream-600/30 transition-shadow duration-150"
+				className="w-full text-xs bg-surface/70 rounded-lg px-3 py-2 text-text-primary placeholder-text-muted/50 resize-none focus:outline-none focus:ring-1 focus:ring-mint-500/40 border border-border/60 transition-shadow duration-150"
 			/>
 			<div className="flex items-center justify-between">
-				<span className="text-[11px] text-text-muted">
+				<span className="text-2xs text-text-muted">
 					{content.trim().length > 0
 						? `${content.trim().length.toLocaleString()} 字符`
 						: ""}
@@ -78,7 +78,7 @@ export function StyleSampleTextForm({ onSubmit, onCancel }: Props) {
 						type="button"
 						onClick={() => void handleSubmit()}
 						disabled={submitting || !content.trim()}
-						className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-mint-700 dark:bg-mint-600 text-white hover:bg-mint-800 dark:hover:bg-mint-700 disabled:opacity-40 transition-colors duration-150"
+						className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-mint-600 text-white hover:bg-mint-500 disabled:opacity-40 transition-colors duration-150"
 					>
 						<Check size={10} />
 						{submitting ? "添加中…" : "添加样本"}

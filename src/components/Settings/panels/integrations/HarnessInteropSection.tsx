@@ -280,7 +280,7 @@ export function HarnessInteropSection() {
 									{mcp.install_commands.map((item) => (
 										<div
 											key={item.label}
-											className="flex items-center gap-2 rounded-lg border border-border bg-cream-50 px-3 py-2 dark:bg-cream-900/40"
+											className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2"
 										>
 											<span className="w-[86px] shrink-0 text-xs text-text-muted">
 												{item.label}
@@ -292,7 +292,7 @@ export function HarnessInteropSection() {
 												type="button"
 												onClick={() => void copy(item.command, item.label)}
 												title="复制命令"
-												className="shrink-0 rounded-md p-1.5 text-text-light transition duration-150 hover:bg-warm-200/70 hover:text-text-secondary dark:hover:bg-cream-800/40"
+												className="shrink-0 rounded-lg p-1.5 text-text-light transition duration-150 hover:bg-warm-200/70 hover:text-text-secondary"
 											>
 												{copiedLabel === item.label ? (
 													<Check className="h-3.5 w-3.5 text-success" />
@@ -312,7 +312,7 @@ export function HarnessInteropSection() {
 								<ul className="space-y-1">
 									{mcp.tools.map((tool) => (
 										<li key={tool.name} className="flex items-start gap-2">
-											<code className="mt-px shrink-0 rounded bg-warm-200/70 px-1.5 py-0.5 font-mono text-[11px] text-text-secondary dark:bg-cream-800/50">
+											<code className="mt-px shrink-0 rounded-lg bg-warm-200/70 px-1.5 py-0.5 font-mono text-2xs text-text-secondary">
 												{tool.name}
 											</code>
 											<span className="text-xs leading-relaxed text-text-muted">
@@ -415,7 +415,7 @@ export function HarnessInteropSection() {
 										{(rule?.harnesses ?? []).map((harness, index) => (
 											<span
 												key={`${harness}-${index}`}
-												className="inline-flex items-center gap-1 rounded-md bg-warm-200/70 px-2 py-0.5 text-xs text-text-secondary dark:bg-cream-800/50"
+												className="inline-flex items-center gap-1 rounded-lg bg-warm-200/70 px-2 py-0.5 text-xs text-text-secondary"
 											>
 												<span className="tabular-nums text-text-light">
 													{index + 1}
@@ -595,7 +595,7 @@ export function HarnessInteropSection() {
 											<summary className="cursor-pointer text-xs text-text-light hover:text-text-secondary">
 												查看判定依据
 											</summary>
-											<p className="mt-1 rounded-lg bg-cream-50 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-text-secondary dark:bg-cream-900/40">
+											<p className="mt-1 rounded-lg bg-surface px-2.5 py-2 font-mono text-2xs leading-relaxed text-text-secondary">
 												{quota.evidence}
 											</p>
 										</details>
@@ -640,7 +640,7 @@ function TimeoutInput({
 					}
 					onCommit(Math.round(Math.min(900, seconds) * 1000));
 				}}
-				className="w-[72px] rounded-lg border border-border bg-surface px-2.5 py-1 text-right text-xs tabular-nums text-text-secondary focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/8 dark:bg-cream-900/40"
+				className="w-[72px] rounded-lg border border-border bg-surface px-2.5 py-1 text-right text-xs tabular-nums text-text-secondary focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/8"
 			/>
 			<span className="text-xs text-text-light">秒</span>
 		</div>

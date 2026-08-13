@@ -168,7 +168,7 @@ export function CommandsCategoryView({
 						<span className="text-xs font-medium text-text-light">
 							{GROUP_LABEL[section.groupId] ?? section.groupId}
 						</span>
-						<span className="ml-1.5 text-[11px] text-text-light">
+						<span className="ml-1.5 text-2xs text-text-light">
 							{section.items.length}
 						</span>
 					</div>
@@ -212,7 +212,7 @@ export function CommandsCategoryView({
 											}`}
 									>
 										<span
-											className={`font-mono text-[11px] transition-colors duration-120
+											className={`font-mono text-2xs transition-colors duration-120
                         ${isSelected && !disabled ? "text-text-secondary" : "text-text-muted"}`}
 										>
 											/
@@ -243,7 +243,7 @@ export function CommandsCategoryView({
 													),
 												)}
 											</span>
-											<span className="text-[11px] text-text-light font-mono truncate">
+											<span className="text-2xs text-text-light font-mono truncate">
 												/{definition.id}
 											</span>
 										</div>
@@ -257,7 +257,7 @@ export function CommandsCategoryView({
                         ${isSelected && !disabled ? "text-text-muted opacity-100" : "text-text-light opacity-60"}`}
 										/>
 									) : isSelected && !disabled ? (
-										<span className="text-[11px] font-mono text-text-light flex-shrink-0">
+										<span className="text-2xs font-mono text-text-light flex-shrink-0">
 											↵
 										</span>
 									) : null}

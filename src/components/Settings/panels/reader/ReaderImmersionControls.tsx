@@ -105,7 +105,7 @@ export function ReaderImmersionControls({
 					/>
 				}
 			>
-				<p className="mt-1 text-[11px] leading-relaxed text-text-light">
+				<p className="mt-1 text-2xs leading-relaxed text-text-light">
 					系统级提醒不受影响。
 				</p>
 			</TileCard>
@@ -191,7 +191,7 @@ export function ReaderImmersionControls({
 					/>
 				}
 			>
-				<p className="mt-1 text-[11px] leading-relaxed text-text-light">
+				<p className="mt-1 text-2xs leading-relaxed text-text-light">
 					关闭后卡片仅作浏览，不再排期。
 				</p>
 			</TileCard>
@@ -249,7 +249,7 @@ function TileCard({
 	children?: React.ReactNode;
 }) {
 	return (
-		<div className="rounded-2xl border border-border bg-cream-50 p-4 transition-colors hover:border-cream-500 hover:bg-surface">
+		<div className="rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-warm-500 hover:bg-surface">
 			<div className="flex items-start justify-between gap-3">
 				<div className="flex min-w-0 flex-1 items-start gap-2.5">
 					{icon && (

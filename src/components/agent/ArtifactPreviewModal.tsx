@@ -2,7 +2,7 @@
  * ArtifactPreviewModal - 产物预览弹窗
  * 支持多种文件类型的全屏预览
  */
-import { Download, FolderOpen, Library, X } from "lucide-react";
+import { Download, FileText, FolderOpen, Library, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
 import type { ArtifactFileType } from "./ArtifactCard";
@@ -101,7 +101,7 @@ function TextPreview({ filePath }: { filePath: string }) {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center h-full">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cream-500" />
+				<div className="animate-spin rounded-full h-8 w-8 border-2 border-border border-t-text-secondary" />
 			</div>
 		);
 	}
@@ -157,7 +157,7 @@ function HtmlPreview({ filePath }: { filePath: string }) {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center h-full">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cream-500" />
+				<div className="animate-spin rounded-full h-8 w-8 border-2 border-border border-t-text-secondary" />
 			</div>
 		);
 	}
@@ -195,12 +195,10 @@ function GenericPreview({
 	return (
 		<div className="flex flex-col items-center justify-center h-full gap-4">
 			<div className="w-24 h-24 rounded-2xl bg-warm-200 flex items-center justify-center">
-				<span className="text-4xl">📄</span>
+				<FileText className="w-10 h-10 text-text-muted" strokeWidth={1.25} />
 			</div>
 			<div className="text-center">
-				<h3 className="text-lg font-semibold text-text-primary dark:text-cream-200">
-					{fileName}
-				</h3>
+				<h3 className="text-lg font-semibold text-text-primary">{fileName}</h3>
 				<p className="text-sm text-text-muted mt-1">
 					{fileType.toUpperCase()} · {formatFileSize(fileSize)}
 					{mimeType && ` · ${mimeType}`}
@@ -298,7 +296,7 @@ export default function ArtifactPreviewModal({
 				{/* 顶部工具栏 */}
 				<div className="flex items-center justify-between px-6 py-4 border-b border-border">
 					<div className="flex items-center gap-3">
-						<h2 className="text-lg font-semibold text-text-primary dark:text-cream-200 truncate max-w-md">
+						<h2 className="text-lg font-semibold text-text-primary truncate max-w-md">
 							{fileName}
 						</h2>
 						<span className="px-2 py-0.5 text-xs font-medium rounded-md bg-warm-200 text-text-muted">

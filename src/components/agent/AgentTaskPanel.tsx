@@ -28,7 +28,7 @@ import {
 import React from "react";
 import { agentExecutor } from "../../lib/agent/executor";
 import { settingsStore } from "../../lib/settingsStore";
-import { useAgentStore } from "../../lib/agent/store";
+import { useAgentStoreSelector } from "../../lib/agent/store";
 import {
 	TOOL_ICONS,
 	type ToolArtifact,
@@ -70,7 +70,7 @@ function ToolStatusIcon({ status }: { status: ToolCall["status"] }) {
 		case "running":
 			return <Loader2 className="w-4 h-4 animate-spin text-focus" />;
 		case "completed":
-			return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+			return <CheckCircle2 className="w-4 h-4 text-success" />;
 		case "error":
 			return <XCircle className="w-4 h-4 text-error" />;
 		case "cancelled":
@@ -104,9 +104,9 @@ function ToolCallCard({
 	const Icon = isSubagentCall ? GitBranch : getToolIcon(toolCall.type);
 	const statusColors = {
 		pending: "bg-warm-50/50",
-		running: "bg-focus/8 dark:bg-blue-900/20",
-		completed: "bg-green-50/50 dark:bg-green-900/10",
-		error: "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10",
+		running: "bg-focus/8",
+		completed: "bg-success-muted/50",
+		error: "bg-error/8",
 		cancelled: "bg-warm-50/50",
 	};
 
@@ -173,7 +173,7 @@ function ToolCallCard({
 
 					{/* 错误信息 */}
 					{toolCall.error && (
-						<div className="p-2 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 rounded-lg">
+						<div className="p-2 bg-error/8 rounded-lg">
 							<p className="text-xs font-medium text-error dark:text-error">
 								{toolCall.error}
 							</p>
@@ -207,7 +207,7 @@ function ArtifactCard({
 			onClick={onClick}
 			className="w-full flex items-start gap-3 p-3 bg-surface/50 hover:bg-warm-50 rounded-xl text-left transition-colors group"
 		>
-			<div className="w-8 h-8 rounded-lg bg-focus/8 dark:bg-blue-900/20 flex items-center justify-center text-focus shrink-0">
+			<div className="w-8 h-8 rounded-lg bg-focus/8 flex items-center justify-center text-focus shrink-0">
 				<Icon className="w-4 h-4" />
 			</div>
 			<div className="flex-1 min-w-0">
@@ -233,7 +233,9 @@ export default function AgentTaskPanel({
 	onBack?: () => void;
 	onArtifactClick?: (artifact: ToolArtifact) => void;
 }) {
-	const { currentTask, isExecuting, currentSkill } = useAgentStore();
+	const currentTask = useAgentStoreSelector((s) => s.currentTask);
+	const isExecuting = useAgentStoreSelector((s) => s.isExecuting);
+	const currentSkill = useAgentStoreSelector((s) => s.currentSkill);
 	const [expandedToolCall, setExpandedToolCall] = React.useState<string | null>(
 		null,
 	);
@@ -255,7 +257,7 @@ export default function AgentTaskPanel({
 				{onBack && (
 					<button
 						onClick={onBack}
-						className="mt-4 px-4 py-2 text-sm text-focus hover:bg-focus/8 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+						className="mt-4 px-4 py-2 text-sm text-focus hover:bg-focus/8 rounded-lg transition-colors"
 					>
 						返回资料库
 					</button>
@@ -270,7 +272,7 @@ export default function AgentTaskPanel({
 		planning: "text-focus",
 		executing: "text-focus",
 		waiting: "text-peach-500",
-		completed: "text-green-500",
+		completed: "text-success",
 		error: "text-error",
 		cancelled: "text-text-light",
 	};
@@ -353,7 +355,7 @@ export default function AgentTaskPanel({
 							<Tooltip content="取消任务" placement="bottom">
 								<button
 									onClick={() => agentExecutor.cancel()}
-									className="p-1.5 text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-lg transition-colors"
+									className="p-1.5 text-error hover:bg-error/8 rounded-lg transition-colors"
 								>
 									<Square className="w-4 h-4" />
 								</button>
@@ -464,7 +466,7 @@ export default function AgentTaskPanel({
 
 				{/* 错误信息 */}
 				{currentTask.error && (
-					<div className="p-4 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 rounded-xl">
+					<div className="p-4 bg-error/8 rounded-xl">
 						<p className="text-sm text-error dark:text-error">
 							⚠️ {currentTask.error}
 						</p>

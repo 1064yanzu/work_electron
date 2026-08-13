@@ -4,7 +4,7 @@
  * 所有 Settings 面板的输入控件都应该走这里，禁止再直接用 <input> / <textarea>。
  * 视觉与 Select / SettingsSwitch / SettingsSlider 一致：
  *  - rounded-xl（控件） / rounded-2xl（容器）
- *  - border-border + 暖灰底色，hover 时 cream-400 边框
+ *  - border-border + 暖灰底色，hover 时 warm-500 边框
  *  - focus 时 primary 主色 ring（与 Select 完全相同的反馈）
  *  - 字号 13px，hint 11.5px，label 12.5px
  */
@@ -52,7 +52,7 @@ const baseControlClass = cn(
 
 const restingClass = cn(
 	"border-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)]",
-	"hover:border-cream-400 hover:bg-warm-50/60 hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
+	"hover:border-warm-500 hover:bg-warm-50/60 hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
 	"focus:border-primary/50 focus:bg-surface focus:ring-2 focus:ring-primary/10",
 );
 
@@ -161,7 +161,7 @@ export const SettingsTextInput = forwardRef<HTMLInputElement, TextInputProps>(
 					error
 						? "border-error/40 focus-within:border-error focus-within:ring-2 focus-within:ring-error/15"
 						: cn(
-								"border-border/80 hover:border-cream-400",
+								"border-border/80 hover:border-warm-500",
 								"focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10",
 							),
 					disabled && disabledClass,
@@ -241,7 +241,7 @@ export function SettingsPasswordInput({
 					type="button"
 					tabIndex={-1}
 					onClick={() => setReveal((v) => !v)}
-					className="-mr-1 flex h-7 w-7 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-cream-200 hover:text-text-primary"
+					className="-mr-1 flex h-7 w-7 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-warm-200 hover:text-text-primary"
 					title={reveal ? "隐藏" : "显示"}
 				>
 					{reveal ? (
@@ -440,7 +440,7 @@ export function SettingsNumberInput({
 				error
 					? "border-error/40 focus-within:border-error focus-within:ring-2 focus-within:ring-error/15"
 					: cn(
-							"border-border/80 hover:border-cream-400",
+							"border-border/80 hover:border-warm-500",
 							"focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10",
 						),
 				disabled && disabledClass,
@@ -481,7 +481,7 @@ export function SettingsNumberInput({
 						tabIndex={-1}
 						disabled={disabled || upDisabled}
 						onClick={() => handleStep(1)}
-						className="flex h-1/2 w-6 items-center justify-center text-text-muted transition-colors hover:bg-cream-100 hover:text-text-primary disabled:opacity-30"
+						className="flex h-1/2 w-6 items-center justify-center text-text-muted transition-colors hover:bg-background hover:text-text-primary disabled:opacity-30"
 					>
 						<ChevronUp className="h-3 w-3" strokeWidth={1.5} />
 					</button>
@@ -490,7 +490,7 @@ export function SettingsNumberInput({
 						tabIndex={-1}
 						disabled={disabled || downDisabled}
 						onClick={() => handleStep(-1)}
-						className="flex h-1/2 w-6 items-center justify-center border-t border-border/70 text-text-muted transition-colors hover:bg-cream-100 hover:text-text-primary disabled:opacity-30"
+						className="flex h-1/2 w-6 items-center justify-center border-t border-border/70 text-text-muted transition-colors hover:bg-background hover:text-text-primary disabled:opacity-30"
 					>
 						<ChevronDown className="h-3 w-3" strokeWidth={1.5} />
 					</button>
@@ -539,10 +539,10 @@ export function SettingsCheckbox({
 				disabled={disabled}
 				onClick={() => !disabled && onChange(!checked)}
 				className={cn(
-					"mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border transition-[background-color,border-color,color] duration-150 ease-out",
+					"mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-lg border transition-[background-color,border-color,color] duration-150 ease-out",
 					checked
 						? "border-primary bg-primary text-primary-foreground shadow-bai-card"
-						: "border-cream-500 bg-surface group-hover:border-primary/40",
+						: "border-warm-500 bg-surface group-hover:border-primary/40",
 					disabled && "cursor-not-allowed",
 				)}
 			>

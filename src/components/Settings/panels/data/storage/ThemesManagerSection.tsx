@@ -135,7 +135,7 @@ export function ThemesManagerSection({
 						{themes.map((theme) => (
 							<div
 								key={theme.id}
-								className="flex items-center justify-between rounded-lg border border-border/60 bg-cream-50/60 px-3 py-2"
+								className="flex items-center justify-between rounded-lg border border-border/60 bg-surface/60 px-3 py-2"
 							>
 								<div className="min-w-0">
 									<div className="truncate text-sm text-text-secondary">

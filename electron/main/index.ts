@@ -80,6 +80,9 @@ const preloadPath = path.join(MAIN_DIST, "index.mjs");
 			rendererUrl: VITE_DEV_SERVER_URL,
 			rendererDist: RENDERER_DIST,
 		},
+		security: {
+			devServerUrl: VITE_DEV_SERVER_URL,
+		},
 	});
 })().catch((err) => {
 	_writeCrash("bootstrap", err);

@@ -35,7 +35,7 @@ import {
 import { StatusDot } from "./StatusDot";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-400 dark:hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-warm-500";
 
 type FeishuChannelConfig = RemoteControlConfig["channels"]["feishu"];
 
@@ -93,13 +93,11 @@ export function FeishuChannelCard({
 
 	return (
 		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
-			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-feishu via-brand-feishu-mid to-brand-feishu-deep opacity-70" />
-
 			<div className="p-5 space-y-5">
-				{/* 标题 + 开关 */}
+				{/* 标题 + 开关（品牌识别靠单色 logo 图标，容器保持中性） */}
 				<div className="flex items-center justify-between gap-3">
 					<div className="flex items-center gap-3">
-						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-feishu/20 to-brand-feishu-deep/15">
+						<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warm-200 border border-border">
 							<MessageSquareMore className="h-4.5 w-4.5 text-brand-feishu-icon dark:text-brand-feishu-icon-dark" />
 						</div>
 						<div>

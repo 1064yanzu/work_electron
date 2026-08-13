@@ -40,6 +40,8 @@ import {
 	stopPerfEventsCleanup,
 } from "./services/perfEvents";
 import { installApplicationMenu } from "./menu";
+import { installWebContentsGuard } from "./security/webContentsGuard";
+import { migratePlaintextSecrets } from "./storage/secretMigration";
 import {
 	installWindowsCloseBehavior,
 	markAppQuittingForWindowClose,
@@ -48,12 +50,17 @@ import {
 export async function bootstrapApp({
 	createWindow,
 	petWindowConfig,
+	security,
 }: {
 	createWindow: () => BrowserWindow;
 	petWindowConfig?: {
 		preloadPath: string;
 		rendererUrl?: string;
 		rendererDist: string;
+	};
+	/** 导航白名单需要知道 dev server origin，见 security/webContentsGuard.ts */
+	security: {
+		devServerUrl?: string;
 	};
 }) {
 	const logger = createLogger();
@@ -81,6 +88,13 @@ export async function bootstrapApp({
 
 	// mascot:// protocol 特权必须在 app.whenReady() 之前注册
 	registerMascotProtocolPrivileges();
+
+	// 导航 / window-open / 权限守卫必须在任何窗口创建之前挂上，
+	// 否则 `web-contents-created` 已经错过第一个窗口了。
+	installWebContentsGuard({
+		devServerUrl: security.devServerUrl,
+		logger,
+	});
 
 	app.on("window-all-closed", () => {
 		if (process.platform !== "darwin" && process.platform !== "win32") {
@@ -151,20 +165,6 @@ export async function bootstrapApp({
 		}
 	}
 
-	// DB 就绪后，两项独立的文件 IO 任务并行：内置 skill 同步 / agent 记忆文件
-	// 两者无依赖关系；任一失败不阻塞主窗口创建。
-	await Promise.allSettled([
-		import("./ipc/handlers/agentSdk/memoryFileStore")
-			.then(({ ensureMemoryFiles }) => ensureMemoryFiles(db))
-			.then(() => logger.info({ msg: "Agent memory files ensured" }))
-			.catch((err) => {
-				logger.warn({
-					msg: "Failed to ensure agent memory files",
-					error: err instanceof Error ? err.message : String(err),
-				});
-			}),
-	]);
-
 	const remoteControl = initRemoteControlOrchestrator({ db, logger });
 	const cloudNodeClient = initCloudNodeClient({ db, logger });
 
@@ -209,6 +209,34 @@ export async function bootstrapApp({
 		// 不阻止 event loop 退出
 		handle.unref?.();
 	};
+
+	// Agent 记忆文件的落盘检查是纯磁盘 IO，与首屏无关：放 idle，不挡窗口创建。
+	scheduleIdle(() => {
+		void (async () => {
+			try {
+				const { ensureMemoryFiles } = await import(
+					"./ipc/handlers/agentSdk/memoryFileStore"
+				);
+				await ensureMemoryFiles(db);
+				logger.info({ msg: "Agent memory files ensured" });
+			} catch (err) {
+				logger.warn({
+					msg: "Failed to ensure agent memory files",
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}
+		})();
+	});
+
+	// 存量明文凭证 → safeStorage 密文的一次性迁移（幂等，失败下次启动重试）
+	scheduleIdle(() => {
+		void migratePlaintextSecrets(db, logger).catch((err) => {
+			logger.warn({
+				msg: "凭证加密迁移异常",
+				error: err instanceof Error ? err.message : String(err),
+			});
+		});
+	});
 
 	scheduleIdle(() => {
 		void (async () => {

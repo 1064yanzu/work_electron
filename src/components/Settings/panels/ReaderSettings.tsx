@@ -125,7 +125,7 @@ export function ReaderSettings() {
 			</SettingsCardSection>
 
 			<SettingsSectionCard className="px-5 py-5">
-				<div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-dashed border-cream-500/60 bg-cream-50 p-4">
+				<div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-dashed border-warm-500/60 bg-surface p-4">
 					<div className="flex items-start gap-3">
 						<span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-text-secondary">
 							<Volume2 className="h-4 w-4" strokeWidth={1.6} />

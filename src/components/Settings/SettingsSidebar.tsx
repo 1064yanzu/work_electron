@@ -49,7 +49,7 @@ export function SettingsSidebar({
 					ref={backButtonRef}
 					type="button"
 					onClick={onClose}
-					className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-text-secondary transition-[background-color,color] duration-150 ease-out hover:bg-cream-200/70 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:hover:bg-cream-700/50"
+					className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-text-secondary transition-[background-color,color] duration-150 ease-out hover:bg-warm-200/70 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
 					aria-label="关闭设置，返回应用"
 				>
 					<ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={1.5} />

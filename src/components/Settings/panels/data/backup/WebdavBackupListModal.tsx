@@ -75,7 +75,7 @@ export function WebdavBackupListModal({
 										type="button"
 										onClick={() => onRestore(backup.fileName)}
 										disabled={isRestoring}
-										className="px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors duration-150 disabled:opacity-50"
+										className="px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded-lg transition-colors duration-150 disabled:opacity-50"
 									>
 										{isRestoring ? "恢复中..." : "恢复"}
 									</button>
@@ -83,7 +83,7 @@ export function WebdavBackupListModal({
 										type="button"
 										onClick={() => onDelete(backup.fileName)}
 										disabled={isDeletingFile === backup.fileName}
-										className="p-1 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] rounded transition-colors duration-150 disabled:opacity-50"
+										className="p-1 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] rounded-lg transition-colors duration-150 disabled:opacity-50"
 										title="删除备份"
 									>
 										{isDeletingFile === backup.fileName ? (

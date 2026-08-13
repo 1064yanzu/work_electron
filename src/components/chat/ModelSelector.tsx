@@ -25,11 +25,12 @@ const PROVIDER_CONFIG: Record<
 		color: string;
 	}
 > = {
-	anthropic: { label: "Anthropic", order: 1, color: "text-orange-500" },
-	openai: { label: "OpenAI", order: 2, color: "text-success" },
-	google: { label: "Google", order: 3, color: "text-focus" },
-	deepseek: { label: "DeepSeek", order: 0, color: "text-indigo-500" }, // DeepSeek 优先
-	default: { label: "Other", order: 99, color: "text-text-muted" },
+	// provider 区分靠名字不靠色相，全部收敛为中性色
+	anthropic: { label: "Anthropic", order: 1, color: "text-text-secondary" },
+	openai: { label: "OpenAI", order: 2, color: "text-text-secondary" },
+	google: { label: "Google", order: 3, color: "text-text-secondary" },
+	deepseek: { label: "DeepSeek", order: 0, color: "text-text-secondary" }, // DeepSeek 优先
+	default: { label: "Other", order: 99, color: "text-text-secondary" },
 };
 
 function getProviderInfo(provider: string) {
@@ -114,11 +115,11 @@ export function ModelSelector({
 			<div className="fixed inset-0 z-40" onClick={onClose} />
 
 			<div
-				className={`absolute z-50 flex flex-col bg-cream-50 dark:bg-cream-900 border border-cream-400 dark:border-cream-500 rounded-2xl shadow-bai-pop overflow-hidden w-72 animate-in fade-in zoom-in-95 duration-150 origin-bottom-left ${className}`}
+				className={`absolute z-50 flex flex-col bg-surface border border-border rounded-2xl shadow-bai-pop overflow-hidden w-72 animate-in fade-in zoom-in-95 duration-150 origin-bottom-left ${className}`}
 				style={{ maxHeight: "400px" }}
 			>
 				{/* 搜索头 */}
-				<div className="shrink-0 p-3 border-b border-cream-300 dark:border-cream-500/50">
+				<div className="shrink-0 p-3 border-b border-border">
 					<div className="relative">
 						<Search
 							className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted"
@@ -128,7 +129,7 @@ export function ModelSelector({
 							ref={inputRef}
 							type="text"
 							placeholder="Search models..."
-							className="w-full bg-cream-100 dark:bg-cream-800 text-text-primary text-sm rounded-full pl-8 pr-3 py-1.5 border border-cream-300 dark:border-cream-500 focus:outline-none focus:ring-2 focus:ring-cream-400/40 focus:border-cream-500 placeholder:text-text-muted"
+							className="w-full bg-background text-text-primary text-sm rounded-full pl-8 pr-3 py-1.5 border border-border focus:outline-none focus:ring-2 focus:ring-border/40 focus:border-border placeholder:text-text-muted"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 						/>
@@ -153,15 +154,15 @@ export function ModelSelector({
 									{!searchQuery && (
 										<button
 											onClick={() => toggleProvider(provider)}
-											className="w-full flex items-center justify-between px-2.5 py-2 hover:bg-cream-100 dark:hover:bg-cream-800 transition-colors group rounded-lg"
+											className="w-full flex items-center justify-between px-2.5 py-2 hover:bg-background transition-colors group rounded-lg"
 										>
 											<div className="flex items-center gap-2">
 												<span
-													className={`text-[11px] font-bold uppercase tracking-wider ${info.color}`}
+													className={`text-2xs font-bold uppercase tracking-wider ${info.color}`}
 												>
 													{info.label}
 												</span>
-												<span className="text-[11px] text-text-muted bg-cream-200 dark:bg-cream-700 px-1.5 py-0.5 rounded-full tabular-nums">
+												<span className="text-2xs text-text-muted bg-warm-200 px-1.5 py-0.5 rounded-full tabular-nums">
 													{providerModels.length}
 												</span>
 											</div>
@@ -188,8 +189,8 @@ export function ModelSelector({
 														}}
 														className={`w-full text-left flex items-start gap-3 px-2.5 py-2 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] border ${
 															isActive
-																? "bg-cream-100 dark:bg-cream-800 border-cream-400 dark:border-cream-500"
-																: "hover:bg-cream-100/60 dark:hover:bg-cream-800/60 text-text-secondary border-transparent"
+																? "bg-background border-border"
+																: "hover:bg-background/60 text-text-secondary border-transparent"
 														}`}
 													>
 														{/* 模型图标 */}
@@ -214,7 +215,7 @@ export function ModelSelector({
 															>
 																{formatModelName(model.id)}
 															</div>
-															<div className="text-[11px] text-text-muted truncate opacity-70">
+															<div className="text-2xs text-text-muted truncate opacity-70">
 																{model.id}
 															</div>
 														</div>

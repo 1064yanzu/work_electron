@@ -6,10 +6,21 @@
  * 混排才还原真实。
  *
  * 每一行都是**拖拽源**：拖到顶部任意入口上即完成接力。
+ * 拖拽只有鼠标能用，所以每行还提供一个「移交到…」菜单作为键盘可达的等价路径，
+ * 走的是同一个 `onHandoff` 回调，不存在两套接力逻辑。
  */
-import { ArrowUpRight, FileUp, Loader2, RotateCcw, Trash2 } from "lucide-react";
+import {
+	ArrowUpRight,
+	FileUp,
+	Loader2,
+	RotateCcw,
+	Share2,
+	Trash2,
+} from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { HarnessSessionRow } from "../../lib/api";
 import { cn } from "../../lib/utils";
+import type { HubEntry } from "./hubUtils";
 import {
 	SESSION_DRAG_MIME,
 	formatRelativeTime,
@@ -23,10 +34,12 @@ export function HubTimeline({
 	labelOf,
 	activeSessionId,
 	resumableIds,
+	handoffTargets,
 	onSelect,
 	onResume,
 	onExport,
 	onDelete,
+	onHandoff,
 	onDragStart,
 	onDragEnd,
 }: {
@@ -36,10 +49,14 @@ export function HubTimeline({
 	activeSessionId: string | null;
 	/** 支持原生续接（无损）的会话 id 集合 */
 	resumableIds: Set<string>;
+	/** 可作为接力目标的入口（已过滤掉不可用 / 限额中的） */
+	handoffTargets: HubEntry[];
 	onSelect: (session: HarnessSessionRow) => void;
 	onResume: (session: HarnessSessionRow) => void;
 	onExport: (session: HarnessSessionRow) => void;
 	onDelete: (session: HarnessSessionRow) => void;
+	/** 与拖拽落点同一条链路：选定目标入口后发起接力 */
+	onHandoff: (session: HarnessSessionRow, target: HubEntry) => void;
 	onDragStart: (session: HarnessSessionRow) => void;
 	onDragEnd: () => void;
 }) {
@@ -66,7 +83,7 @@ export function HubTimeline({
 	}
 
 	return (
-		<ul className="px-2 pb-8">
+		<ul className="px-2 pb-8" aria-label="跨入口会话时间线">
 			{sessions.map((session) => {
 				const isActive = activeSessionId === session.id;
 				const resumable = resumableIds.has(session.id);
@@ -112,12 +129,12 @@ export function HubTimeline({
 							<div className="flex items-start justify-between gap-2">
 								<div className="min-w-0 flex-1">
 									<div className="flex items-center gap-1.5">
-										<span className="text-[11px] font-medium tracking-wide text-text-light uppercase shrink-0">
+										<span className="text-2xs font-medium tracking-wide text-text-light uppercase shrink-0">
 											{labelOf(session.harness)}
 										</span>
 										{resumable && (
 											<span
-												className="text-[11px] px-1 py-px rounded bg-success/10 text-success shrink-0"
+												className="text-2xs px-1 py-px rounded bg-success/10 text-success shrink-0"
 												title="该会话可原生续接：直接载入原会话，上下文无损"
 											>
 												可无损续接
@@ -127,7 +144,7 @@ export function HubTimeline({
 									<div className="text-xs text-text-primary truncate mt-0.5">
 										{sessionTitle(session)}
 									</div>
-									<div className="flex items-center gap-1.5 text-[11px] text-text-light mt-0.5">
+									<div className="flex items-center gap-1.5 text-2xs text-text-light mt-0.5">
 										<span className="tabular-nums">
 											{session.message_count} 条
 										</span>
@@ -156,6 +173,12 @@ export function HubTimeline({
 											<RotateCcw className="w-3 h-3" />
 										</IconAction>
 									)}
+									<HandoffMenu
+										session={session}
+										targets={handoffTargets}
+										labelOf={labelOf}
+										onHandoff={onHandoff}
+									/>
 									<IconAction
 										label="导出为交换文件"
 										onClick={() => onExport(session)}
@@ -173,7 +196,7 @@ export function HubTimeline({
 							</div>
 
 							{/* 拖拽引导：只在悬停时轻声提示一次，不做常驻噪音 */}
-							<div className="pointer-events-none absolute right-3 bottom-1 text-[11px] text-text-light/0 group-hover:text-text-light/60 transition duration-150 flex items-center gap-0.5">
+							<div className="pointer-events-none absolute right-3 bottom-1 text-2xs text-text-light/0 group-hover:text-text-light/60 transition duration-150 flex items-center gap-0.5">
 								<ArrowUpRight className="w-2.5 h-2.5" />
 								拖到上方入口即接力
 							</div>
@@ -182,6 +205,103 @@ export function HubTimeline({
 				);
 			})}
 		</ul>
+	);
+}
+
+/**
+ * 「移交到…」——拖拽接力的键盘可达等价物。
+ *
+ * 拖拽是鼠标专属交互，只有它的话键盘和读屏用户就完全够不到接力这个核心功能。
+ * 这个菜单落到 `onHandoff`，与 HarnessRail 的 drop 落到同一个 `handleDropSession`，
+ * 后续弹出的接力确认抽屉也完全一致。
+ */
+function HandoffMenu({
+	session,
+	targets,
+	labelOf,
+	onHandoff,
+}: {
+	session: HarnessSessionRow;
+	targets: HubEntry[];
+	labelOf: (harness: string) => string;
+	onHandoff: (session: HarnessSessionRow, target: HubEntry) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const menuId = useId();
+
+	useEffect(() => {
+		if (!open) return;
+		const onPointerDown = (event: MouseEvent) => {
+			if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+		};
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") setOpen(false);
+		};
+		document.addEventListener("mousedown", onPointerDown);
+		document.addEventListener("keydown", onKeyDown);
+		return () => {
+			document.removeEventListener("mousedown", onPointerDown);
+			document.removeEventListener("keydown", onKeyDown);
+		};
+	}, [open]);
+
+	if (targets.length === 0) return null;
+
+	return (
+		<div ref={containerRef} className="relative">
+			<button
+				type="button"
+				title="移交到…"
+				aria-label={`把「${sessionTitle(session)}」移交到其他入口`}
+				aria-haspopup="menu"
+				aria-expanded={open}
+				aria-controls={open ? menuId : undefined}
+				onClick={(event) => {
+					event.stopPropagation();
+					setOpen((v) => !v);
+				}}
+				className={cn(
+					"p-1.5 rounded-lg transition duration-150",
+					open
+						? "text-terracotta bg-terracotta/[0.12]"
+						: "text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40",
+				)}
+			>
+				<Share2 className="w-3 h-3" />
+			</button>
+
+			{open && (
+				<div
+					id={menuId}
+					role="menu"
+					aria-label="选择接力目标"
+					className="absolute right-0 top-full z-30 mt-1 min-w-[160px] rounded-xl border border-border bg-surface py-1 shadow-lg"
+					onClick={(event) => event.stopPropagation()}
+				>
+					<div className="px-3 py-1.5 text-2xs uppercase tracking-wide text-text-light">
+						移交到
+					</div>
+					{targets.map((entry) => (
+						<button
+							key={entry.id}
+							type="button"
+							role="menuitem"
+							onClick={() => {
+								setOpen(false);
+								onHandoff(session, entry);
+							}}
+							className="block w-full px-3 py-1.5 text-left text-xs text-text-primary transition duration-150 hover:bg-warm-200/60 dark:hover:bg-cream-800/40"
+						>
+							{entry.label}
+							<span className="ml-1.5 text-2xs text-text-light">
+								{labelOf(entry.harness)}
+							</span>
+						</button>
+					))}
+				</div>
+			)}
+		</div>
 	);
 }
 
@@ -200,6 +320,7 @@ function IconAction({
 		<button
 			type="button"
 			title={label}
+			aria-label={label}
 			onClick={(event) => {
 				event.stopPropagation();
 				onClick();

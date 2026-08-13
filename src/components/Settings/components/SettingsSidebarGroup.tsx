@@ -69,8 +69,8 @@ export function SettingsSidebarCategory({
 							"transition-[background-color,color] duration-150 ease-out",
 							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
 							isActive
-								? "bg-cream-300 font-medium text-text-primary dark:bg-cream-700"
-								: "text-text-secondary hover:bg-cream-200/70 hover:text-text-primary dark:hover:bg-cream-700/50",
+								? "bg-warm-200 font-medium text-text-primary"
+								: "text-text-secondary hover:bg-warm-200/70 hover:text-text-primary",
 						)}
 					>
 						<SubIcon

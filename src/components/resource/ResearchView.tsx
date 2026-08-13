@@ -38,7 +38,7 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 			return <Loader2 className="w-4 h-4 animate-spin text-focus" />;
 		}
 		if (step.status === "completed") {
-			return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+			return <CheckCircle2 className="w-4 h-4 text-success" />;
 		}
 		if (step.status === "error") {
 			return <AlertCircle className="w-4 h-4 text-error" />;
@@ -98,7 +98,7 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 			</div>
 
 			{/* Research Progress */}
-			<div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4">
+			<div className="flex-1 overflow-y-auto p-4 space-y-4">
 				{/* Steps Timeline */}
 				<div className="space-y-3">
 					<h3 className="text-xs font-semibold text-text-light uppercase tracking-wider">
@@ -110,11 +110,11 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 								key={step.id}
 								className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
 									step.status === "running"
-										? "bg-focus/8 dark:bg-blue-900/20"
+										? "bg-focus/8"
 										: step.status === "completed"
-											? "bg-green-50/50 dark:bg-green-900/10"
+											? "bg-success-muted/50"
 											: step.status === "error"
-												? "bg-[rgba(181,51,51,0.08)]/50 dark:bg-red-900/10"
+												? "bg-error/8"
 												: "bg-warm-50/50"
 								}`}
 							>
@@ -147,7 +147,7 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 									onClick={() => onOpenResearchSource(source)}
 									className="w-full flex items-start gap-3 p-3 bg-surface/50 hover:bg-warm-50 rounded-xl text-left transition-colors group"
 								>
-									<div className="w-8 h-8 rounded-lg bg-focus/8 dark:bg-blue-900/20 flex items-center justify-center text-focus shrink-0">
+									<div className="w-8 h-8 rounded-lg bg-focus/8 flex items-center justify-center text-focus shrink-0">
 										{source.type === "search_result" ? (
 											<Globe className="w-4 h-4" />
 										) : (

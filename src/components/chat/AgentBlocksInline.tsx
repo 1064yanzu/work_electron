@@ -65,7 +65,7 @@ function renderText(
 			return (
 				<div
 					key={`${keyBase}-md-${idx}`}
-					className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-indigo-500 hover:prose-a:text-indigo-600 transition-colors my-1.5"
+					className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-primary hover:prose-a:text-primary-hover transition-colors my-1.5"
 				>
 					<MarkdownRenderer content={part} isStreaming={isStreaming} />
 				</div>
@@ -135,7 +135,7 @@ function AgentBlocksInlineImpl({
 			nodes.push(
 				<div
 					key={i}
-					className="text-sm text-text-primary dark:text-cream-200 leading-7 w-full overflow-hidden"
+					className="text-sm text-text-primary leading-7 w-full overflow-hidden"
 				>
 					{renderText(b.text, `text-${i}`, isStreaming)}
 				</div>,

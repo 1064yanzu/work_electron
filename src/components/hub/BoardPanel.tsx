@@ -83,7 +83,7 @@ export function BoardPanel({ cwd }: { cwd: string | null }) {
 		<div className="flex flex-col h-full min-h-0">
 			{/* 作用域说明 + 落盘路径：让人知道这份白板归谁、存在哪 */}
 			<div className="px-5 pt-4 pb-3 shrink-0 space-y-2.5">
-				<div className="flex items-start gap-1.5 text-[11px] text-text-light leading-relaxed">
+				<div className="flex items-start gap-1.5 text-2xs text-text-light leading-relaxed">
 					<FileText className="w-3 h-3 mt-px shrink-0" strokeWidth={1.6} />
 					<span className="min-w-0">
 						{cwd ? (
@@ -112,7 +112,7 @@ export function BoardPanel({ cwd }: { cwd: string | null }) {
 								type="button"
 								onClick={() => setDraftKind(kind)}
 								className={cn(
-									"px-2 py-1 rounded-md text-[11px] transition duration-150",
+									"px-2 py-1 rounded-md text-2xs transition duration-150",
 									draftKind === kind
 										? "bg-terracotta/[0.12] text-terracotta font-medium"
 										: "text-text-light hover:text-text-secondary hover:bg-warm-200/60 dark:hover:bg-cream-800/40",
@@ -159,7 +159,7 @@ export function BoardPanel({ cwd }: { cwd: string | null }) {
 				{!loading && entries.length === 0 && (
 					<div className="text-center py-14">
 						<p className="text-xs text-text-secondary">白板还是空的</p>
-						<p className="text-[11px] text-text-light mt-1.5 leading-relaxed">
+						<p className="text-2xs text-text-light mt-1.5 leading-relaxed">
 							定下方案记「决策」，踩坑并搞清原因记「踩坑」——
 							<br />
 							下一个接手的 agent 就不用重新发现一遍
@@ -172,10 +172,10 @@ export function BoardPanel({ cwd }: { cwd: string | null }) {
 					if (!list?.length) return null;
 					return (
 						<section key={kind}>
-							<h4 className="text-[11px] font-medium tracking-wide text-text-light uppercase mb-1.5">
+							<h4 className="text-2xs font-medium tracking-wide text-text-light uppercase mb-1.5">
 								{BOARD_KIND_LABEL[kind]}
 							</h4>
-							<ul className="space-y-px">
+							<ul className="space-y-px" aria-label={BOARD_KIND_LABEL[kind]}>
 								{list.map((entry) => (
 									<li
 										key={entry.id}
@@ -187,6 +187,10 @@ export function BoardPanel({ cwd }: { cwd: string | null }) {
 												title={
 													entry.state === "done" ? "标记为未完成" : "标记完成"
 												}
+												aria-label={
+													entry.state === "done" ? "标记为未完成" : "标记完成"
+												}
+												aria-pressed={entry.state === "done"}
 												onClick={() =>
 													void updateBoardEntry({
 														id: entry.id,
@@ -215,7 +219,7 @@ export function BoardPanel({ cwd }: { cwd: string | null }) {
 											>
 												{entry.content}
 											</p>
-											<div className="flex items-center gap-1.5 text-[11px] text-text-light mt-0.5">
+											<div className="flex items-center gap-1.5 text-2xs text-text-light mt-0.5">
 												{entry.author && <span>{entry.author}</span>}
 												<span>{formatStamp(entry.created_at)}</span>
 												{entry.scope === "" && cwd && (

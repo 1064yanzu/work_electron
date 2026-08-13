@@ -159,7 +159,7 @@ export function GraphInspectorPanel({
 					: "w-[min(420px,calc(100%-1.5rem))] bottom-3",
 			)}
 		>
-			<div className="h-full rounded-3xl bg-surface/90 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] shadow-[0_18px_60px_-35px_rgba(0,0,0,0.45)] ring-1 ring-black/[0.02] dark:ring-white/[0.06] overflow-hidden flex flex-col animate-in slide-in-from-right-3 fade-in duration-150">
+			<div className="h-full rounded-3xl bg-surface/90 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] shadow-float ring-1 ring-black/[0.02] dark:ring-white/[0.06] overflow-hidden flex flex-col animate-in slide-in-from-right-3 fade-in duration-150">
 				<div className="px-4 py-3 border-b border-border/60 flex items-start justify-between gap-3">
 					<div className="min-w-0">
 						<div className="text-sm font-semibold text-text-primary truncate">
@@ -190,7 +190,7 @@ export function GraphInspectorPanel({
 							className={cn(
 								"p-2 rounded-xl transition-colors",
 								pinned
-									? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20"
+									? "text-primary bg-primary-muted"
 									: "text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200/80",
 							)}
 							title={pinned ? "取消固定" : "固定详情"}
@@ -225,7 +225,7 @@ export function GraphInspectorPanel({
 												source: "graph",
 											});
 										}}
-										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-dark-muted text-white text-xs font-medium hover:opacity-90 transition-opacity"
+										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-dark-muted text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
 									>
 										<ChevronRight className="w-4 h-4" />
 										定位右栏
@@ -324,7 +324,7 @@ export function GraphInspectorPanel({
 										<button
 											type="button"
 											onClick={() => onOpenArtifact(selectedArtifact.url!)}
-											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-dark-muted text-white text-xs font-medium hover:opacity-90 transition-opacity"
+											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-dark-muted text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
 										>
 											<Eye className="w-4 h-4" />
 											打开预览
@@ -375,10 +375,10 @@ export function GraphInspectorPanel({
 									tc.status === "completed"
 										? "bg-success"
 										: tc.status === "running"
-											? "bg-primary animate-pulse"
+											? "bg-terracotta animate-pulse"
 											: tc.status === "error"
 												? "bg-error"
-												: "bg-cream-500";
+												: "bg-warm-400";
 								return (
 									<button
 										key={tc.id}

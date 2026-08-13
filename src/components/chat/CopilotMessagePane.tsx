@@ -8,6 +8,7 @@ import { Button } from "../ui/Button";
 import { ScrollToBottomFab } from "../copilot/ScrollToBottomFab";
 import { CopilotMessageJumper } from "../copilot/CopilotMessageJumper";
 import { CopilotMessageList } from "./CopilotMessageList";
+import { ShinyText } from "../ui/ShinyText";
 import { WelcomeScreen } from "./WelcomeScreen";
 
 interface CopilotMessagePaneProps {
@@ -70,7 +71,7 @@ function CopilotMessagePaneImpl({
 			<div
 				ref={scrollContainerRef}
 				onScroll={onScroll}
-				className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+				className="flex-1 overflow-y-auto px-4 py-4"
 			>
 				{messages.length === 0 ? (
 					<div className="h-full relative">
@@ -107,7 +108,9 @@ function CopilotMessagePaneImpl({
 						)}
 					</div>
 				) : (
-					<>
+					/* 中心阅读列：消息不随面板宽度无限拉伸（Codex/Claude 同款约束），
+					   超宽显示器上正文行长保持在舒适阅读范围 */
+					<div className="mx-auto w-full max-w-[44rem] space-y-4">
 						<CopilotMessageList
 							scrollContainerRef={scrollContainerRef}
 							messagesEndRef={messagesEndRef}
@@ -122,44 +125,23 @@ function CopilotMessagePaneImpl({
 							onDeleteMessage={onDeleteMessage}
 						/>
 
+						{/* 等待态刻意安静：一行扫光文字足够，堆动画只会显得廉价（Codex 同款处理） */}
 						{isWaitingForLLM && chatMode === "agent" && (
-							<div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-250">
-								<div className="w-8 h-8 rounded-full bg-gradient-to-br from-cream-600 to-cream-800 dark:from-cream-300 dark:to-cream-500 flex items-center justify-center shrink-0 shadow-md">
-									<CircleUser className="w-4 h-4 text-white" />
+							<div className="flex items-center gap-3 px-1 py-1 animate-in fade-in duration-250">
+								<div className="w-6 h-6 rounded-full bg-warm-200 flex items-center justify-center shrink-0">
+									<CircleUser className="w-3.5 h-3.5 text-text-secondary" />
 								</div>
-								<div className="flex-1 min-w-0">
-									<div className="inline-flex items-center gap-3 px-4 py-3 bg-surface/50 rounded-2xl border border-border shadow-sm">
-										<div className="relative flex items-center justify-center">
-											<div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-											<div className="absolute w-2 h-2 bg-primary rounded-full animate-pulse" />
-										</div>
-										<div className="flex flex-col">
-											<span className="text-sm font-medium text-text-primary">
-												正在思考中...
-											</span>
-											<span className="text-xs text-text-muted">
-												正在分析您的请求
-											</span>
-										</div>
-										<div className="flex gap-1 ml-2">
-											<span
-												className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-bounce"
-												style={{ animationDelay: "0ms" }}
-											/>
-											<span
-												className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-bounce"
-												style={{ animationDelay: "150ms" }}
-											/>
-											<span
-												className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-bounce"
-												style={{ animationDelay: "300ms" }}
-											/>
-										</div>
-									</div>
-								</div>
+								<ShinyText
+									className="text-sm"
+									color="var(--t-text-muted, #9D9D98)"
+									shineColor="var(--t-text-primary, #1A1A19)"
+									speed={1.8}
+								>
+									正在思考中
+								</ShinyText>
 							</div>
 						)}
-					</>
+					</div>
 				)}
 			</div>
 
@@ -191,28 +173,6 @@ function CopilotMessagePaneImpl({
 	);
 }
 
-export const CopilotMessagePane = memo(
-	CopilotMessagePaneImpl,
-	(prev, next) =>
-		prev.scrollContainerRef === next.scrollContainerRef &&
-		prev.messagesEndRef === next.messagesEndRef &&
-		prev.messages === next.messages &&
-		prev.hiddenMessageCount === next.hiddenMessageCount &&
-		prev.currentResearch === next.currentResearch &&
-		prev.isStreaming === next.isStreaming &&
-		prev.isAgentExecuting === next.isAgentExecuting &&
-		prev.isWaitingForLLM === next.isWaitingForLLM &&
-		prev.chatMode === next.chatMode &&
-		prev.preferBlocks === next.preferBlocks &&
-		prev.sessionHasError === next.sessionHasError &&
-		prev.pendingAskUserRequests === next.pendingAskUserRequests &&
-		prev.shouldAutoScrollRef === next.shouldAutoScrollRef &&
-		prev.onScroll === next.onScroll &&
-		prev.onLoadOlderMessages === next.onLoadOlderMessages &&
-		prev.onRegenerateMessage === next.onRegenerateMessage &&
-		prev.onEditMessage === next.onEditMessage &&
-		prev.onDeleteMessage === next.onDeleteMessage &&
-		prev.onOpenResearch === next.onOpenResearch &&
-		prev.onAllowAskUserQuestion === next.onAllowAskUserQuestion &&
-		prev.onDenyAskUserQuestion === next.onDenyAskUserQuestion,
-);
+// 逐字段 `===` 的比较器与 memo 默认浅比较等价，只是多了一份会腐化的清单
+// （新增 prop 忘记补一行 = 组件静默不更新）。用默认比较。
+export const CopilotMessagePane = memo(CopilotMessagePaneImpl);

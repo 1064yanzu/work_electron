@@ -29,7 +29,7 @@ export function MascotMotionGallery({ accentColor }: MascotMotionGalleryProps) {
 	return (
 		<div className="space-y-3">
 			<div
-				className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-cream-50 px-3.5 py-2"
+				className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-surface px-3.5 py-2"
 				style={{ borderColor: `${accentColor}22` }}
 			>
 				<div className="flex items-center gap-2">
@@ -42,7 +42,7 @@ export function MascotMotionGallery({ accentColor }: MascotMotionGalleryProps) {
 						Spritesheet 实时驱动
 					</span>
 				</div>
-				<div className="flex items-center gap-2 text-[11px] tabular-nums text-text-muted">
+				<div className="flex items-center gap-2 text-2xs tabular-nums text-text-muted">
 					<span>codex hatch-pet · 1536×1872 · 192×208</span>
 				</div>
 			</div>
@@ -57,9 +57,9 @@ export function MascotMotionGallery({ accentColor }: MascotMotionGalleryProps) {
 					/>
 				))}
 			</div>
-			<p className="text-[11px] leading-relaxed text-text-muted">
+			<p className="text-2xs leading-relaxed text-text-muted">
 				每帧时长不等（120–360ms），最后一帧延长以模拟「活物呼吸感」。系统检测到{" "}
-				<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[11px]">
+				<code className="rounded-lg bg-warm-200 px-1 py-0.5 font-mono text-2xs">
 					prefers-reduced-motion
 				</code>{" "}
 				时会停在第一帧。
@@ -81,7 +81,7 @@ function MotionCell({
 }) {
 	return (
 		<div
-			className="group flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-cream-500 hover:shadow-bai-card"
+			className="group flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-warm-500 hover:shadow-bai-card"
 			style={{
 				background: `linear-gradient(180deg, ${accentColor}0E 0%, var(--t-bg-surface, #FFFFFF) 70%)`,
 			}}
@@ -98,14 +98,12 @@ function MotionCell({
 			</div>
 			<div className="flex flex-col items-center gap-0.5">
 				<span
-					className="text-[11px] font-semibold uppercase tracking-[0.14em]"
+					className="text-2xs font-semibold uppercase tracking-[0.14em]"
 					style={{ color: accentColor }}
 				>
 					{label}
 				</span>
-				<span className="text-[11px] leading-tight text-text-light">
-					{hint}
-				</span>
+				<span className="text-2xs leading-tight text-text-light">{hint}</span>
 			</div>
 		</div>
 	);

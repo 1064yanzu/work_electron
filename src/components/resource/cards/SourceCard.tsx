@@ -91,7 +91,7 @@ function Favicon({
 			className={`relative shrink-0 inline-flex items-center justify-center ${className}`}
 		>
 			{showFallback ? (
-				<Icon className={`${className} text-text-light dark:text-cream-500`} />
+				<Icon className={`${className} text-text-light`} />
 			) : null}
 			{host && !errored ? (
 				<img
@@ -155,31 +155,19 @@ function MetaLine({
 	if (isProject) {
 		tokens.push({
 			key: "scope",
-			node: (
-				<span className="shrink-0 text-amber-700/80 dark:text-amber-400/70">
-					项目
-				</span>
-			),
+			node: <span className="shrink-0 text-text-secondary/80">项目</span>,
 		});
 	}
 
 	if (isClip) {
 		tokens.push({
 			key: "clip",
-			node: (
-				<span className="shrink-0 text-success/75 dark:text-success/70">
-					剪存
-				</span>
-			),
+			node: <span className="shrink-0 text-success/75">剪存</span>,
 		});
 	} else if (isSearch) {
 		tokens.push({
 			key: "search",
-			node: (
-				<span className="shrink-0 text-sky-700/75 dark:text-sky-400/70">
-					搜索
-				</span>
-			),
+			node: <span className="shrink-0 text-focus/75">搜索</span>,
 		});
 	}
 
@@ -188,7 +176,7 @@ function MetaLine({
 		tokens.push({
 			key: `tag-${userTags[0]}`,
 			node: (
-				<span className="shrink-0 text-text-light/90 dark:text-cream-500/90 truncate">
+				<span className="shrink-0 text-text-light/90 truncate">
 					#{userTags[0]}
 				</span>
 			),
@@ -196,7 +184,7 @@ function MetaLine({
 	}
 
 	return (
-		<div className="flex items-center gap-1.5 text-xs leading-[1.3] text-text-light dark:text-cream-500 min-w-0">
+		<div className="flex items-center gap-1.5 text-xs leading-[1.3] text-text-light min-w-0">
 			{withFavicon ? (
 				<Favicon
 					url={source.url}
@@ -210,10 +198,7 @@ function MetaLine({
 					className="inline-flex items-center gap-1.5 min-w-0"
 				>
 					{i > 0 ? (
-						<span
-							aria-hidden
-							className="text-text-light/40 dark:text-cream-700 select-none"
-						>
+						<span aria-hidden className="text-text-light/40 select-none">
 							·
 						</span>
 					) : null}
@@ -259,7 +244,7 @@ function SourceCardImpl({
 						? isSelected
 							? "border-primary/50 bg-primary/[0.04] dark:bg-primary/[0.08]"
 							: "border-border/40 border-dashed"
-						: "border-transparent hover:border-border/50 dark:hover:border-cream-500 hover:bg-warm-50/60 dark:hover:bg-cream-900/40",
+						: "border-transparent hover:border-border/50 hover:bg-warm-50/60",
 					isDraggingThis ? "opacity-40" : "",
 				].join(" ")}
 			>
@@ -272,7 +257,7 @@ function SourceCardImpl({
 				) : null}
 
 				{/* 标题 */}
-				<h3 className="text-sm font-medium text-text-primary dark:text-cream-100 line-clamp-3 leading-[1.5] tracking-[-0.005em]">
+				<h3 className="text-sm font-medium text-text-primary line-clamp-3 leading-[1.5] tracking-[-0.005em]">
 					{source.title}
 				</h3>
 
@@ -289,7 +274,7 @@ function SourceCardImpl({
 							e.stopPropagation();
 							onDelete();
 						}}
-						className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded-md text-text-light/70 hover:text-error hover:bg-[rgba(181,51,51,0.08)]/60 dark:hover:bg-red-900/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
+						className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 rounded-md text-text-light/70 hover:text-error hover:bg-error/8 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
 						aria-label="删除"
 					>
 						<Trash2 className="w-3 h-3" />
@@ -318,7 +303,7 @@ function SourceCardImpl({
 					? isSelected
 						? "bg-primary/[0.04] dark:bg-primary/[0.08]"
 						: ""
-					: "hover:bg-warm-50/60 dark:hover:bg-cream-900/40",
+					: "hover:bg-warm-50/60",
 				isDraggingThis ? "opacity-40" : "",
 			].join(" ")}
 		>
@@ -333,7 +318,7 @@ function SourceCardImpl({
 			<Favicon url={source.url} kind={source.kind} className="w-4 h-4 mt-0.5" />
 
 			<div className="flex-1 min-w-0">
-				<h3 className="text-sm font-medium text-text-primary dark:text-cream-100 truncate leading-[1.45]">
+				<h3 className="text-sm font-medium text-text-primary truncate leading-[1.45]">
 					{source.title}
 				</h3>
 				<div className="mt-0.5">
@@ -348,7 +333,7 @@ function SourceCardImpl({
 						e.stopPropagation();
 						onDelete();
 					}}
-					className="self-center opacity-0 group-hover:opacity-100 p-1 rounded text-text-light/70 hover:text-error hover:bg-[rgba(181,51,51,0.08)]/60 dark:hover:bg-red-900/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 shrink-0"
+					className="self-center opacity-0 group-hover:opacity-100 p-1 rounded text-text-light/70 hover:text-error hover:bg-error/8 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 shrink-0"
 					aria-label="删除"
 				>
 					<Trash2 className="w-3 h-3" />

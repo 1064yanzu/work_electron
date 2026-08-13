@@ -386,11 +386,11 @@ export function PerformanceSettings() {
 						更改后会把现有缓存迁移到新位置，可换到外置硬盘 / NAS
 						释放系统盘空间。
 					</p>
-					<div className="rounded-lg border border-border bg-cream-50 px-3 py-2.5">
+					<div className="rounded-lg border border-border bg-surface px-3 py-2.5">
 						<div className="text-xs text-text-muted mb-0.5">
 							当前位置
 							{cacheRoot && !cacheRoot.isDefault && (
-								<span className="ml-1.5 rounded bg-peach-500/10 text-peach-500 px-1.5 py-0.5 text-[11px]">
+								<span className="ml-1.5 rounded-lg bg-peach-500/10 text-peach-500 px-1.5 py-0.5 text-2xs">
 									自定义
 								</span>
 							)}
@@ -408,7 +408,7 @@ export function PerformanceSettings() {
 								type="button"
 								onClick={() => void handleResetCacheRoot()}
 								disabled={cacheRootBusy}
-								className="text-xs rounded-md border border-border bg-surface px-3 py-1.5 hover:bg-warm-200 disabled:opacity-50"
+								className="text-xs rounded-lg border border-border bg-surface px-3 py-1.5 hover:bg-warm-200 disabled:opacity-50"
 							>
 								恢复默认
 							</button>
@@ -417,7 +417,7 @@ export function PerformanceSettings() {
 							type="button"
 							onClick={() => void handleChangeCacheRoot()}
 							disabled={cacheRootBusy || !cacheRoot}
-							className="text-xs rounded-md bg-peach-500/10 border border-peach-500/40 text-peach-500 px-3 py-1.5 hover:bg-peach-500/20 disabled:opacity-50"
+							className="text-xs rounded-lg bg-peach-500/10 border border-peach-500/40 text-peach-500 px-3 py-1.5 hover:bg-peach-500/20 disabled:opacity-50"
 						>
 							{cacheRootBusy ? "处理中…" : "更改…"}
 						</button>
@@ -457,7 +457,7 @@ export function PerformanceSettings() {
 							{janitorScopes.map((scope) => (
 								<li
 									key={scope.key}
-									className="flex items-center justify-between rounded-lg border border-border bg-cream-50 px-3 py-2"
+									className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2"
 								>
 									<div className="min-w-0">
 										<div className="text-sm text-text-primary">
@@ -472,7 +472,7 @@ export function PerformanceSettings() {
 											<div className="text-sm tabular-nums text-text-primary">
 												{formatBytes(scope.bytes)}
 											</div>
-											<div className="text-[11px] text-text-muted">
+											<div className="text-2xs text-text-muted">
 												{scope.files} 个文件
 											</div>
 										</div>
@@ -480,7 +480,7 @@ export function PerformanceSettings() {
 											type="button"
 											onClick={() => void executeJanitor([scope.key])}
 											disabled={scope.bytes === 0 || janitorExecuting}
-											className="text-xs rounded-md border border-border bg-surface px-2 py-1 hover:bg-warm-200 disabled:opacity-50"
+											className="text-xs rounded-lg border border-border bg-surface px-2 py-1 hover:bg-warm-200 disabled:opacity-50"
 										>
 											清理
 										</button>
@@ -498,7 +498,7 @@ export function PerformanceSettings() {
 								type="button"
 								onClick={() => void executeJanitor()}
 								disabled={janitorExecuting || janitorLoading}
-								className="text-xs rounded-md bg-peach-500/10 border border-peach-500/40 text-peach-500 px-3 py-1.5 hover:bg-peach-500/20 disabled:opacity-50"
+								className="text-xs rounded-lg bg-peach-500/10 border border-peach-500/40 text-peach-500 px-3 py-1.5 hover:bg-peach-500/20 disabled:opacity-50"
 							>
 								{janitorExecuting ? "清理中…" : "全部清理"}
 							</button>
@@ -527,40 +527,41 @@ export function PerformanceSettings() {
 						</button>
 					</div>
 					{latestSample ? (
-						<div className="grid grid-cols-2 gap-3 text-xs">
-							<div className="rounded-lg border border-border bg-cream-50 px-3 py-2">
-								<div className="text-text-muted">当前 RSS</div>
-								<div className="text-base tabular-nums text-text-primary">
+						/* 键值行列表:label 左、数值右,替代指标小卡网格 */
+						<div className="divide-y divide-border/60 text-xs">
+							<div className="flex items-center justify-between py-2">
+								<span className="text-text-secondary">当前 RSS</span>
+								<span className="tabular-nums text-sm font-medium text-text-primary">
 									{formatBytes(latestSample.rss)}
-								</div>
+								</span>
 							</div>
-							<div className="rounded-lg border border-border bg-cream-50 px-3 py-2">
-								<div className="text-text-muted">7 天峰值 RSS</div>
-								<div className="text-base tabular-nums text-text-primary">
+							<div className="flex items-center justify-between py-2">
+								<span className="text-text-secondary">7 天峰值 RSS</span>
+								<span className="tabular-nums text-sm font-medium text-text-primary">
 									{formatBytes(peakRss)}
-								</div>
+								</span>
 							</div>
-							<div className="rounded-lg border border-border bg-cream-50 px-3 py-2">
-								<div className="text-text-muted">Heap 已用</div>
-								<div className="text-base tabular-nums text-text-primary">
+							<div className="flex items-center justify-between py-2">
+								<span className="text-text-secondary">Heap 已用</span>
+								<span className="tabular-nums text-sm font-medium text-text-primary">
 									{formatBytes(latestSample.heap_used)} /{" "}
 									{formatBytes(latestSample.heap_total)}
-								</div>
+								</span>
 							</div>
-							<div className="rounded-lg border border-border bg-cream-50 px-3 py-2">
-								<div className="text-text-muted">活跃句柄 / 请求</div>
-								<div className="text-base tabular-nums text-text-primary">
+							<div className="flex items-center justify-between py-2">
+								<span className="text-text-secondary">活跃句柄 / 请求</span>
+								<span className="tabular-nums text-sm font-medium text-text-primary">
 									{latestSample.active_handles} / {latestSample.active_requests}
-								</div>
+								</span>
 							</div>
 							{typeof latestSample.event_loop_lag_ms === "number" && (
-								<div className="rounded-lg border border-border bg-cream-50 px-3 py-2 col-span-2">
-									<div className="text-text-muted">
+								<div className="flex items-center justify-between py-2">
+									<span className="text-text-secondary">
 										Event loop 延迟（最近 1 分钟均值）
-									</div>
-									<div className="text-base tabular-nums text-text-primary">
+									</span>
+									<span className="tabular-nums text-sm font-medium text-text-primary">
 										{latestSample.event_loop_lag_ms.toFixed(2)} ms
-									</div>
+									</span>
 								</div>
 							)}
 						</div>
@@ -571,7 +572,7 @@ export function PerformanceSettings() {
 								: "暂无样本（启动 30s 后开始采集）"}
 						</p>
 					)}
-					<p className="text-[11px] text-text-light mt-3">
+					<p className="text-2xs text-text-light mt-3">
 						采样频率每分钟一次，保留最近 7 天。仅本地展示，不上报。
 					</p>
 				</div>

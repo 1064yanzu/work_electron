@@ -5,6 +5,8 @@ import {
 	PanelRightClose,
 	Plus,
 } from "lucide-react";
+import { useEffect } from "react";
+import { isTopOverlay, popOverlay, pushOverlay } from "../../lib/overlayStack";
 import { shortcut } from "../../lib/platform";
 import { workspaceStore } from "../../lib/workspaceStore";
 import { IconButton } from "../ui/Button";
@@ -29,24 +31,40 @@ export function CopilotHeader({
 	onOpenPromptLibrary,
 	onNewSession,
 }: CopilotHeaderProps) {
+	// 「更多」菜单接入全局 overlay 栈：Esc 可关且只关栈顶（此前键盘关不掉）
+	useEffect(() => {
+		if (!isMoreMenuOpen) return;
+		const overlayId = pushOverlay();
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key !== "Escape" || e.defaultPrevented) return;
+			if (!isTopOverlay(overlayId)) return;
+			e.preventDefault();
+			onCloseMoreMenu();
+		};
+		document.addEventListener("keydown", onKey);
+		return () => {
+			popOverlay(overlayId);
+			document.removeEventListener("keydown", onKey);
+		};
+	}, [isMoreMenuOpen, onCloseMoreMenu]);
+
 	return (
-		<div className="px-4 py-3.5 flex items-center justify-between shrink-0 bg-cream-50/80 dark:bg-cream-900/80 z-10 border-b border-cream-300/60 dark:border-cream-500/60">
-			<div className="flex items-center gap-3">
+		// h-header：与左栏/中栏头部共用 --header-h，三栏第一条分隔线落在同一基线
+		<div className="h-header px-4 flex items-center justify-between shrink-0 bg-surface/80 z-10 border-b border-border/60">
+			<div className="flex items-center gap-2.5 min-w-0">
 				<div
 					data-copilot-celebrate-anchor
-					className="w-8 h-8 rounded-full bai-avatar-glow shrink-0"
+					className="w-6 h-6 rounded-full bai-avatar-glow shrink-0"
 				/>
-				<div>
-					<h2 className="font-semibold text-sm text-text-primary tracking-[-0.01em]">
-						AI 助手
-					</h2>
-					{isAgentExecuting ? (
-						<span className="flex items-center gap-1 text-[11px] text-text-secondary font-medium animate-pulse">
-							<Loader2 className="w-2.5 h-2.5 animate-spin" strokeWidth={1.5} />
-							{agentTaskType === "research" ? "正在深度研究" : "Agent 执行中"}
-						</span>
-					) : null}
-				</div>
+				<h2 className="font-semibold text-sm text-text-primary tracking-[-0.01em] truncate">
+					AI 助手
+				</h2>
+				{isAgentExecuting ? (
+					<span className="flex items-center gap-1 text-2xs text-text-secondary font-medium animate-pulse shrink-0">
+						<Loader2 className="w-2.5 h-2.5 animate-spin" strokeWidth={1.5} />
+						{agentTaskType === "research" ? "正在深度研究" : "Agent 执行中"}
+					</span>
+				) : null}
 			</div>
 			<div className="flex items-center gap-1">
 				<CopilotTtsToggle />
@@ -72,11 +90,11 @@ export function CopilotHeader({
 					{isMoreMenuOpen ? (
 						<>
 							<div className="fixed inset-0 z-40" onClick={onCloseMoreMenu} />
-							<div className="absolute right-0 top-full mt-1 w-48 bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-bai-pop border border-cream-400 dark:border-cream-500 py-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+							<div className="absolute right-0 top-full mt-1 w-48 bg-surface rounded-2xl shadow-bai-pop border border-border py-1 z-50 animate-in fade-in zoom-in-95 duration-150">
 								<button
 									type="button"
 									onClick={onOpenPromptLibrary}
-									className="w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:bg-cream-100 dark:hover:bg-cream-800 transition-colors cursor-pointer"
+									className="w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:bg-warm-200 transition-colors cursor-pointer"
 								>
 									<MessageSquare className="w-4 h-4" strokeWidth={1.5} />
 									<span>提示词仓库</span>

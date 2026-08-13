@@ -70,7 +70,7 @@ export function HarnessRail({
 				)}
 			>
 				<div className="text-xs font-medium text-text-primary">全部</div>
-				<div className="text-[11px] text-text-light mt-0.5">所有入口</div>
+				<div className="text-2xs text-text-light mt-0.5">所有入口</div>
 			</button>
 
 			{entries.map((entry) => {
@@ -149,7 +149,7 @@ export function HarnessRail({
 								/>
 							)}
 						</div>
-						<div className="text-[11px] text-text-light mt-0.5 tabular-nums">
+						<div className="text-2xs text-text-light mt-0.5 tabular-nums">
 							{runtimeMeta
 								? runtimeMeta.label
 								: entry.blocked

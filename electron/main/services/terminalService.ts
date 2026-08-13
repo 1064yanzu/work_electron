@@ -4,6 +4,12 @@
  */
 import * as pty from "node-pty";
 import os from "node:os";
+import { createLogger } from "../logging/logger";
+import {
+	MAX_TERMINALS,
+	resolveShell,
+	sanitizeTerminalEnv,
+} from "../security/terminalGuard";
 
 export interface TerminalCreateOptions {
 	cwd?: string;
@@ -27,6 +33,8 @@ interface IDisposable {
 }
 
 class TerminalService {
+	private readonly logger = createLogger();
+
 	private terminals = new Map<
 		string,
 		{
@@ -37,18 +45,6 @@ class TerminalService {
 			disposables: IDisposable[];
 		}
 	>();
-
-	/**
-	 * 获取当前平台默认 shell
-	 * Windows 默认改用 PowerShell：cmd.exe 默认 GBK 代码页，中文输出乱码；
-	 * PowerShell 对 UTF-8 的处理好得多。用户显式指定 shell 时仍然尊重。
-	 */
-	private getDefaultShell(): string {
-		if (process.platform === "win32") {
-			return "powershell.exe";
-		}
-		return process.env.SHELL || "/bin/zsh";
-	}
 
 	/** 是否是 cmd.exe（用户显式指定时需要注入 UTF-8 代码页） */
 	private isCmdShell(shell: string): boolean {
@@ -67,15 +63,43 @@ class TerminalService {
 			this.destroyTerminal(id);
 		}
 
-		const shell = options.shell || this.getDefaultShell();
+		// 每个 pty 都是一个真实子进程 + 常驻监听器。没有上限时，
+		// 一段循环调用（或远控侧的失控重试）就能把机器的进程表打满。
+		if (this.terminals.size >= MAX_TERMINALS) {
+			throw new Error(
+				`终端数量已达上限（${MAX_TERMINALS}）。请先关闭一些终端再新建。`,
+			);
+		}
+
+		const shellResolution = resolveShell(options.shell);
+		if (shellResolution.rejected) {
+			this.logger.warn({
+				msg: "终端 shell 参数不在白名单内，已回落到平台默认 shell",
+				scope: "terminal",
+				requested: shellResolution.rejectedValue,
+				fallback: shellResolution.shell,
+			});
+		}
+		const shell = shellResolution.shell;
 		const cwd = options.cwd || os.homedir();
 		const cols = options.cols || 80;
 		const rows = options.rows || 24;
 
+		// 调用方传进来的 env 先过一遍净化：DYLD_INSERT_LIBRARIES / LD_PRELOAD /
+		// NODE_OPTIONS 这类变量能让任意代码在 shell 的每个子进程里执行。
+		const sanitized = sanitizeTerminalEnv(options.env);
+		if (sanitized.removed.length > 0) {
+			this.logger.warn({
+				msg: "已剔除终端环境变量中的注入类变量",
+				scope: "terminal",
+				removed: sanitized.removed,
+			});
+		}
+
 		// 合并环境变量
 		const env = {
 			...process.env,
-			...options.env,
+			...sanitized.env,
 			// 确保终端类型正确
 			TERM: "xterm-256color",
 			COLORTERM: "truecolor",

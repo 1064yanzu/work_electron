@@ -65,7 +65,7 @@ export function TokenDisplay({
 				</span>
 			)}
 			{costUsd !== undefined && costUsd > 0 && (
-				<span className="text-violet-400/70 font-mono">
+				<span className="text-text-muted/70 font-mono">
 					${costUsd < 0.01 ? costUsd.toFixed(4) : costUsd.toFixed(2)}
 				</span>
 			)}

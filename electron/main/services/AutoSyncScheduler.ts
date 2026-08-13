@@ -12,6 +12,7 @@ import {
 	getDeviceName,
 } from "../utils/deviceId";
 import { backupHistoryManager } from "./BackupHistoryManager";
+import { decryptSecret } from "../storage/secretVault";
 import { exportAllDataForBackup } from "../ipc/handlers/localBackup";
 import {
 	cleanupStaleIncrementals,
@@ -194,7 +195,7 @@ export class AutoSyncScheduler {
 			webdav_max_backups: Number(row.webdav_max_backups) || 0,
 			webdav_url: row.webdav_url as string | null,
 			webdav_username: row.webdav_username as string | null,
-			webdav_password: row.webdav_password as string | null,
+			webdav_password: decryptSecret(row.webdav_password as string | null),
 			webdav_path: (row.webdav_path as string) || "/",
 			webdav_skip_backup_file: Boolean(row.webdav_skip_backup_file),
 			webdav_disable_stream: Boolean(row.webdav_disable_stream),

@@ -28,6 +28,7 @@ function ConfirmDialogView({
 }: ConfirmDialogProps) {
 	const [isClosing, setIsClosing] = useState(false);
 	const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
+	const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
 
 	useEffect(() => {
 		document.body.style.overflow = "hidden";
@@ -45,25 +46,18 @@ function ConfirmDialogView({
 		switch (type) {
 			case "danger":
 				return {
-					icon: (
-						<AlertTriangle size={20} className="text-error dark:text-error" />
-					),
-					bg: "bg-[rgba(181,51,51,0.08)] dark:bg-error/10",
+					icon: <AlertTriangle size={20} className="text-error" />,
+					bg: "bg-error-muted",
 				};
 			case "warning":
 				return {
-					icon: (
-						<AlertTriangle
-							size={20}
-							className="text-peach-500 dark:text-amber-400"
-						/>
-					),
-					bg: "bg-peach-100 dark:bg-peach-500/10",
+					icon: <AlertTriangle size={20} className="text-warning" />,
+					bg: "bg-warning-muted",
 				};
 			default:
 				return {
-					icon: <Info size={20} className="text-focus dark:text-focus" />,
-					bg: "bg-focus/8 dark:bg-focus/10",
+					icon: <Info size={20} className="text-info" />,
+					bg: "bg-info-muted",
 				};
 		}
 	})();
@@ -73,11 +67,11 @@ function ConfirmDialogView({
 			"rounded-xl px-5 py-2.5 text-sm font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
 		switch (type) {
 			case "danger":
-				return `${base} bg-error text-white hover:bg-error shadow-red-500/20`;
+				return `${base} bg-error text-white hover:bg-error/90`;
 			case "warning":
-				return `${base} bg-peach-500 text-white hover:bg-peach-500 shadow-amber-500/20`;
+				return `${base} bg-warning text-white hover:bg-warning/90`;
 			default:
-				return `${base} bg-cream-800 text-white hover:bg-cream-900 shadow-black/10 dark:bg-cream-200 dark:text-cream-900 dark:hover:bg-white dark:shadow-white/10`;
+				return `${base} bg-primary text-primary-foreground hover:bg-primary-hover`;
 		}
 	})();
 
@@ -95,12 +89,14 @@ function ConfirmDialogView({
 
 			<FocusTrap
 				className={cn(
-					"relative w-full max-w-[440px] rounded-3xl border border-cream-300 dark:border-cream-500 bg-cream-50 dark:bg-cream-900 shadow-bai-pop overflow-hidden",
+					"relative w-full max-w-[440px] rounded-3xl border border-border bg-surface shadow-bai-pop overflow-hidden",
 					"transition-[opacity,transform] duration-150",
 					isClosing ? "scale-[0.98] opacity-0" : "opacity-100",
 				)}
 				onEscape={() => close(false)}
-				initialFocusRef={confirmButtonRef}
+				// 错误预防：危险操作默认聚焦「取消」——用户手还在键盘上时，
+				// 一个习惯性 Enter 不该完成不可逆删除；确认需要显式移动焦点或点击
+				initialFocusRef={type === "danger" ? cancelButtonRef : confirmButtonRef}
 			>
 				<div
 					role="alertdialog"
@@ -136,6 +132,7 @@ function ConfirmDialogView({
 
 					<div className="mt-8 flex items-center justify-end gap-3">
 						<button
+							ref={cancelButtonRef}
 							type="button"
 							onClick={() => close(false)}
 							className="rounded-xl px-5 py-2.5 text-sm font-medium text-text-secondary transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/5 dark:hover:bg-white/5"

@@ -63,7 +63,7 @@ export function InlineEditBubble({
 				defaultValue={initialValue}
 				onKeyDown={handleKeyDown}
 				onInput={handleInput}
-				className="w-full rounded-2xl rounded-tr-sm px-5 py-3 text-sm leading-6 bg-warm-200 dark:bg-cream-800 text-text-primary border border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none min-h-[48px] shadow-sm"
+				className="w-full rounded-2xl rounded-tr-sm px-5 py-3 text-sm leading-6 bg-warm-200 text-text-primary border border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none min-h-[48px] shadow-sm"
 				rows={1}
 			/>
 			<div className="flex items-center gap-2 text-xs text-text-muted">

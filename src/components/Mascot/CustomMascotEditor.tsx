@@ -150,7 +150,7 @@ export function CustomMascotEditor({
 					</FormField>
 
 					{error && (
-						<div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+						<div className="rounded-lg bg-error-muted px-3 py-2 text-xs text-error">
 							{error}
 						</div>
 					)}
@@ -197,7 +197,7 @@ function FormField({
 				<label className="text-xs font-semibold text-text-primary">
 					{label}
 				</label>
-				{hint && <span className="text-[11px] text-text-light">{hint}</span>}
+				{hint && <span className="text-2xs text-text-light">{hint}</span>}
 			</div>
 			{children}
 		</div>

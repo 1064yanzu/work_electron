@@ -154,7 +154,7 @@ export function AutomationPanel({
 	return (
 		<div className="flex flex-col h-full min-h-0">
 			<div className="flex items-center justify-between px-5 pt-3.5 pb-2.5 shrink-0">
-				<span className="text-[11px] text-text-light">
+				<span className="text-2xs text-text-light">
 					{jobs.length ? `${jobs.length} 个任务` : "还没有自动化任务"}
 				</span>
 				<button
@@ -176,7 +176,7 @@ export function AutomationPanel({
 					<p className="text-xs text-text-muted">
 						让 AI 在你不在的时候把活干了
 					</p>
-					<p className="text-[11px] text-text-light leading-relaxed">
+					<p className="text-2xs text-text-light leading-relaxed">
 						定一个时间（比如每天凌晨两点），到点自动起一个 CLI 跑你写好的指令。
 						中途遇到限流、上游 5xx、连接中断，会按类别等待并
 						<b className="font-medium">接着上次的进度续跑</b>，而不是从头重来。
@@ -296,7 +296,7 @@ function JobCard({
 								{job.name}
 							</span>
 							{runMeta && (
-								<span className={cn("text-[11px] shrink-0", runMeta.text)}>
+								<span className={cn("text-2xs shrink-0", runMeta.text)}>
 									{runMeta.label}
 									{activeRun && activeRun.attempt_count > 1 && (
 										<> · 第 {activeRun.attempt_count} 次尝试</>
@@ -304,7 +304,7 @@ function JobCard({
 								</span>
 							)}
 						</div>
-						<div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-text-light">
+						<div className="flex items-center gap-1.5 mt-0.5 text-2xs text-text-light">
 							<span>{job.target_harness}</span>
 							<span>· {EXEC_MODE_LABEL[job.exec_mode] ?? job.exec_mode}</span>
 							{job.cwd && <span>· {shortCwd(job.cwd)}</span>}
@@ -312,7 +312,7 @@ function JobCard({
 								<span className="text-warning">· 可改文件</span>
 							)}
 						</div>
-						<div className="flex items-center gap-1.5 mt-1 text-[11px]">
+						<div className="flex items-center gap-1.5 mt-1 text-2xs">
 							<span className="text-text-muted">{job.trigger_label}</span>
 							{job.enabled && (
 								<span className="text-text-light">
@@ -368,7 +368,7 @@ function JobCard({
 
 				{/* 等待重试时把「还要等多久」明确写出来——不然看着像卡住了 */}
 				{activeRun?.status === "waiting" && activeRun.next_attempt_at && (
-					<p className="mt-2 text-[11px] text-warning">
+					<p className="mt-2 text-2xs text-warning">
 						上一次失败（
 						{activeRun.last_failure_kind ?? "原因未知"}），
 						{formatSchedule(activeRun.next_attempt_at)} 自动重试

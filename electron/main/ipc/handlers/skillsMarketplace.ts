@@ -40,6 +40,7 @@ import type {
 	MarketplaceEntry,
 	MarketplaceSource,
 } from "../../skills-marketplace/types";
+import { sendToLiveWebContents } from "../../utils/safeWebContentsSend";
 
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
@@ -237,7 +238,7 @@ export function createSkillsMarketplaceHandlers({
 		const win = getMainWindow();
 		const send = (payload: unknown) => {
 			try {
-				win?.webContents.send("skill-install-progress", payload);
+				sendToLiveWebContents(win, "skill-install-progress", payload);
 			} catch {
 				// noop
 			}
@@ -333,7 +334,7 @@ export function createSkillsMarketplaceHandlers({
 		// 推一次事件给前端角标（即使 0 条也推，以便清掉旧角标）
 		try {
 			const win = getMainWindow();
-			win?.webContents.send("skill-update-available", { updates });
+			sendToLiveWebContents(win, "skill-update-available", { updates });
 		} catch {
 			// noop
 		}

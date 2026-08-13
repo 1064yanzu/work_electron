@@ -215,7 +215,7 @@ export function ContextRuntimeSection({
 					<p className="mb-2 text-xs text-text-muted">
 						Agent 启动时读取的设置来源；至少保留一个。
 					</p>
-					<div className="flex flex-wrap gap-4 rounded-2xl border border-border bg-cream-50 px-4 py-3">
+					<div className="flex flex-wrap gap-4 rounded-2xl border border-border bg-surface px-4 py-3">
 						{(["user", "project", "local"] as const).map((source) => (
 							<SettingsCheckbox
 								key={source}

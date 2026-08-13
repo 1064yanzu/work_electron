@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useIpcListen } from "../../../hooks/useIpcListen";
 import { invoke } from "../../../lib/tauriCompat";
-import { listen } from "../../../lib/tauriEventCompat";
 import type { ReaderBook } from "../../../lib/api/reader";
 import { readerCreateDraftCards } from "../../../lib/api/reader";
 import { readerStoreApi } from "../../../lib/stores/readerStore";
@@ -124,78 +124,50 @@ export function useCardGenerator({
 		}
 	}, []);
 
-	useEffect(() => {
-		let cancelled = false;
-		let off: (() => void) | null = null;
-		(async () => {
-			try {
-				const unlisten = await listen<StreamChunk>(
-					"llm-stream-chunk",
-					(event) => {
-						const chunk = event?.payload;
-						if (!chunk || !streamIdRef.current) return;
-						if (chunk.streamId && chunk.streamId !== streamIdRef.current) {
-							return;
-						}
+	// useIpcListen 统一处理订阅竞态与卸载清理；
+	// handler 内部经 ref 取最新闭包，finalizeAndSave 变化无需重新订阅
+	useIpcListen<StreamChunk>("llm-stream-chunk", (chunk) => {
+		if (!chunk || !streamIdRef.current) return;
+		if (chunk.streamId && chunk.streamId !== streamIdRef.current) {
+			return;
+		}
 
-						if (chunk.done) {
-							const finalContent = (chunk.content || "").trim();
-							const raw = bufferRef.current;
-							bufferRef.current = "";
-							streamIdRef.current = null;
+		if (chunk.done) {
+			const finalContent = (chunk.content || "").trim();
+			const raw = bufferRef.current;
+			bufferRef.current = "";
+			streamIdRef.current = null;
 
-							if (finalContent.includes("__llm_error__")) {
-								setGenerating(false);
-								itemsRef.current = [];
-								try {
-									const err = JSON.parse(finalContent);
-									toast.error(`卡片生成失败：${err.message || "未知错误"}`);
-								} catch {
-									toast.error("卡片生成失败");
-								}
-								return;
-							}
-
-							const remaining = extractCompletedObjects(
-								raw,
-								itemsRef.current.length,
-							);
-							if (remaining.length > 0) {
-								itemsRef.current.push(...remaining);
-								setExtractedCount(itemsRef.current.length);
-							}
-							finalizeAndSave();
-						} else {
-							bufferRef.current += chunk.content || "";
-							const newItems = extractCompletedObjects(
-								bufferRef.current,
-								itemsRef.current.length,
-							);
-							if (newItems.length > 0) {
-								itemsRef.current.push(...newItems);
-								setExtractedCount(itemsRef.current.length);
-							}
-						}
-					},
-				);
-				if (cancelled) {
-					try {
-						unlisten();
-					} catch {}
-					return;
-				}
-				off = unlisten as () => void;
-			} catch {}
-		})();
-		return () => {
-			cancelled = true;
-			if (off) {
+			if (finalContent.includes("__llm_error__")) {
+				setGenerating(false);
+				itemsRef.current = [];
 				try {
-					off();
-				} catch {}
+					const err = JSON.parse(finalContent);
+					toast.error(`卡片生成失败：${err.message || "未知错误"}`);
+				} catch {
+					toast.error("卡片生成失败");
+				}
+				return;
 			}
-		};
-	}, [finalizeAndSave]);
+
+			const remaining = extractCompletedObjects(raw, itemsRef.current.length);
+			if (remaining.length > 0) {
+				itemsRef.current.push(...remaining);
+				setExtractedCount(itemsRef.current.length);
+			}
+			finalizeAndSave();
+		} else {
+			bufferRef.current += chunk.content || "";
+			const newItems = extractCompletedObjects(
+				bufferRef.current,
+				itemsRef.current.length,
+			);
+			if (newItems.length > 0) {
+				itemsRef.current.push(...newItems);
+				setExtractedCount(itemsRef.current.length);
+			}
+		}
+	});
 
 	const generate = useCallback(
 		async (

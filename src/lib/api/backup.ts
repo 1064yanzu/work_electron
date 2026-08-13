@@ -61,11 +61,3 @@ export async function listBackupHistory(
 ): Promise<BackupHistory[]> {
 	return await safeInvoke("list_backup_history", { limit });
 }
-
-export async function backupToLocal(targetPath?: string): Promise<string> {
-	return await safeInvoke("backup_to_local", { targetPath });
-}
-
-export async function restoreFromLocal(filePath: string): Promise<void> {
-	return await safeInvoke("restore_from_local", { filePath });
-}

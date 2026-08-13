@@ -144,7 +144,7 @@ export function CouncilPanel({
 				</div>
 
 				<div className="flex items-center justify-between gap-2">
-					<span className="text-[11px] text-text-light">
+					<span className="text-2xs text-text-light">
 						每一路都是真实调用，会花时间也可能花钱
 					</span>
 					<button
@@ -164,7 +164,7 @@ export function CouncilPanel({
 
 				{progress && (
 					<div className="space-y-1">
-						<div className="flex items-center justify-between text-[11px] text-text-muted">
+						<div className="flex items-center justify-between text-2xs text-text-muted">
 							<span>
 								{progress.phase === "reducing"
 									? "正在裁决合并…"
@@ -204,7 +204,7 @@ export function CouncilPanel({
 							<h4 className="text-xs font-medium text-text-primary">
 								裁决结论
 							</h4>
-							<span className="text-[11px] text-text-light tabular-nums">
+							<span className="text-2xs text-text-light tabular-nums">
 								{succeededCount}/{answers.length} 路作答
 							</span>
 						</div>
@@ -216,7 +216,7 @@ export function CouncilPanel({
 
 				{answers.length > 0 && (
 					<section className="space-y-2">
-						<h4 className="text-[11px] font-medium tracking-wide text-text-light uppercase">
+						<h4 className="text-2xs font-medium tracking-wide text-text-light uppercase">
 							各路原始回答
 						</h4>
 						{answers.map((answer) => (
@@ -239,7 +239,7 @@ export function CouncilPanel({
 									<span className="text-xs font-medium text-text-primary">
 										{answer.label}
 									</span>
-									<span className="text-[11px] text-text-light tabular-nums ml-auto shrink-0">
+									<span className="text-2xs text-text-light tabular-nums ml-auto shrink-0">
 										{formatDuration(answer.duration_ms)}
 									</span>
 								</summary>
@@ -256,7 +256,7 @@ export function CouncilPanel({
 				{!running && !answers.length && !error && (
 					<div className="text-center py-14">
 						<p className="text-xs text-text-secondary">还没有开过议会</p>
-						<p className="text-[11px] text-text-light mt-1.5 leading-relaxed">
+						<p className="text-2xs text-text-light mt-1.5 leading-relaxed">
 							同一个问题问多家，结论会明确标出哪里有共识、哪里有分歧
 						</p>
 					</div>

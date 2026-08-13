@@ -39,13 +39,13 @@ export function DataOverview({ dataStats, formatSize }: DataOverviewProps) {
 
 	return (
 		<SettingsCardSection title="数据概览" bodyClassName="p-5">
-			<div ref={scopeRef} className="grid grid-cols-3 gap-4">
-				<StatCard
+			<div ref={scopeRef} className="divide-y divide-border/60">
+				<StatRow
 					value={(dataStats.sources_count ?? 0) + (dataStats.notes_count ?? 0)}
 					label="资料与笔记"
 				/>
-				<StatCard value={dataStats.outputs_count ?? 0} label="输出文稿" />
-				<StatCard
+				<StatRow value={dataStats.outputs_count ?? 0} label="输出文稿" />
+				<StatRow
 					value={formatSize(
 						(dataStats.database_size ?? 0) + (dataStats.media_size ?? 0),
 					)}
@@ -56,8 +56,9 @@ export function DataOverview({ dataStats, formatSize }: DataOverviewProps) {
 	);
 }
 
-function StatCard({ value, label }: { value: string | number; label: string }) {
-	const valueRef = useRef<HTMLDivElement>(null);
+// 紧凑键值行:label 左、数值右,替代大数字统计卡;保留数字滚动补间
+function StatRow({ value, label }: { value: string | number; label: string }) {
+	const valueRef = useRef<HTMLSpanElement>(null);
 
 	// 只有纯数字才滚；"总占用"是带单位的字符串，滚起来单位会跟着乱跳
 	useGsapMotion(
@@ -72,11 +73,14 @@ function StatCard({ value, label }: { value: string | number; label: string }) {
 	);
 
 	return (
-		<div data-stat-card className="text-center p-4 bg-warm-50 rounded-xl">
-			<div ref={valueRef} className="text-2xl font-semibold text-text-primary">
+		<div data-stat-card className="flex items-center justify-between py-2">
+			<span className="text-xs text-text-secondary">{label}</span>
+			<span
+				ref={valueRef}
+				className="tabular-nums text-sm font-medium text-text-primary"
+			>
 				{value}
-			</div>
-			<div className="text-xs text-text-light mt-1">{label}</div>
+			</span>
 		</div>
 	);
 }

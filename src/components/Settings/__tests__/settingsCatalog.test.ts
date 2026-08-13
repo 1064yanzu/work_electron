@@ -2,7 +2,7 @@
  * settingsCatalog.test.ts — 设置体系骨架层单元测试
  *
  * 覆盖：
- *   - 5 个一级分类、23 个二级 Tab 的数量断言
+ *   - 5 个一级分类、24 个二级 Tab 的数量断言
  *   - 每个 subtab.id 都在 `SUBTAB_ID_SET` 里
  *   - `normalizeSettingsTabId` 对新 id 原样放行、对空/未知 id 降级
  *
@@ -30,8 +30,9 @@ test("SETTINGS_CATEGORIES 固定 5 条", () => {
 	assert.deepEqual(ids, ["general", "ai", "workshop", "integrations", "data"]);
 });
 
-test("SETTINGS_SUBTABS 固定 23 条", () => {
-	assert.equal(SETTINGS_SUBTABS.length, 23);
+test("SETTINGS_SUBTABS 固定 24 条", () => {
+	// 2026-08 新增「剪藏服务」（integrations.clipService）：23 → 24
+	assert.equal(SETTINGS_SUBTABS.length, 24);
 });
 
 test("SETTINGS_SUBTABS 每条 id 都能被 SUBTAB_ID_SET 命中", () => {

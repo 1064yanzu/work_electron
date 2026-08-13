@@ -74,27 +74,23 @@ const LANG_IMPORTS: Record<string, () => Promise<LangModule>> = {
 	diff: () => import("shiki/langs/diff.mjs"),
 };
 
-// highlighter 初始化时预加载的常用语言（约 20 种；shell/sh/zsh 是 bash 的别名）
+// highlighter 初始化时预加载的语言。
+//
+// 这里必须克制：每种语言都是一个独立 chunk，且体积差异极大（cpp 约 637 KB、
+// typescript/tsx/jsx/javascript 各约 175 KB）。之前预载 19 种，等于第一个代码块
+// 渲染时就要拉取并解析 1.3 MB+ 的语法定义，其中 cpp/java/rust/go/c 在本产品的
+// 对话里出现频率很低。
+//
+// 现在只预载「几乎每段 AI 对话都会出现」的几种，其余全部走 ensureLanguage 的
+// 按需加载（已实现，未命中表则降级 plaintext，不抛错）。
 const PRELOAD_LANGS: string[] = [
 	"typescript",
 	"tsx",
 	"javascript",
-	"jsx",
 	"json",
-	"html",
-	"css",
-	"python",
 	"bash",
-	"sql",
 	"markdown",
-	"yaml",
-	"rust",
-	"go",
-	"java",
-	"c",
-	"cpp",
 	"diff",
-	"xml",
 ];
 
 // 支持的主题（实际只按需加载一套，另一套在用户切换主题时 lazy 加载）

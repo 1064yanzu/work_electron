@@ -39,6 +39,7 @@ import { createLogger } from "../logging/logger";
 
 // ── sharp 懒加载（避免 Windows 二进制缺失时在 crash handler 注册前崩溃）──
 import type sharpDefault from "sharp";
+import { sendToLiveWebContents } from "../utils/safeWebContentsSend";
 type SharpConstructor = typeof sharpDefault;
 let _sharpFn: SharpConstructor | null = null;
 async function getSharp(): Promise<SharpConstructor> {
@@ -1105,7 +1106,7 @@ export function broadcastMascotListChanged(
 	for (const win of getWindows()) {
 		try {
 			if (!win.isDestroyed()) {
-				win.webContents.send("mascot-list-changed", { mascots });
+				sendToLiveWebContents(win, "mascot-list-changed", { mascots });
 			}
 		} catch {
 			// noop

@@ -48,22 +48,22 @@ export function statusPill(status: string): {
 		case "running":
 			return {
 				label: "运行中",
-				cls: "text-blue-600 dark:text-blue-400",
+				cls: "text-info",
 			};
 		case "completed":
 			return {
 				label: "完成",
-				cls: "text-emerald-600 dark:text-emerald-400",
+				cls: "text-success",
 			};
 		case "error":
 			return {
 				label: "失败",
-				cls: "text-rose-600 dark:text-rose-400",
+				cls: "text-error",
 			};
 		default:
 			return {
 				label: "等待",
-				cls: "text-cream-500 dark:text-cream-400",
+				cls: "text-text-muted",
 			};
 	}
 }
@@ -77,39 +77,39 @@ export function taskStatusPill(status: AgentTask["status"]): {
 		case "planning":
 			return {
 				label: "规划中",
-				cls: "text-blue-600 dark:text-blue-400",
+				cls: "text-info",
 				spinning: true,
 			};
 		case "executing":
 			return {
 				label: "执行中",
-				cls: "text-blue-600 dark:text-blue-400",
+				cls: "text-info",
 				spinning: true,
 			};
 		case "waiting":
 			return {
 				label: "等待",
-				cls: "text-cream-500 dark:text-cream-400",
+				cls: "text-text-muted",
 			};
 		case "completed":
 			return {
 				label: "完成",
-				cls: "text-emerald-600 dark:text-emerald-400",
+				cls: "text-success",
 			};
 		case "error":
 			return {
 				label: "失败",
-				cls: "text-rose-600 dark:text-rose-400",
+				cls: "text-error",
 			};
 		case "cancelled":
 			return {
 				label: "已取消",
-				cls: "text-cream-500 dark:text-cream-400",
+				cls: "text-text-muted",
 			};
 		default:
 			return {
 				label: "就绪",
-				cls: "text-cream-500 dark:text-cream-400",
+				cls: "text-text-muted",
 			};
 	}
 }

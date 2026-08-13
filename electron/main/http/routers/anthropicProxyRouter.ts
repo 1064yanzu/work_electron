@@ -21,19 +21,6 @@ import { resolveSubagentScenarioModel } from "../anthropicProxy/scenarioModelOve
 import { estimateAnthropicInputTokens } from "../anthropicProxy/tokenEstimation";
 import type { AnthropicRequest, ProviderConfig } from "../anthropicProxy/types";
 
-// 内存文件存储（重启丢失）
-const fileStore = new Map<
-	string,
-	{
-		id: string;
-		filename?: string;
-		media_type?: string;
-		size_bytes: number;
-		content: Buffer;
-		created_at: number;
-	}
->();
-
 function parseJsonArray(value: unknown): string[] {
 	try {
 		if (typeof value === "string") return JSON.parse(value) as string[];
@@ -141,87 +128,30 @@ export function createAnthropicProxyRouter(options?: {
 		}
 	});
 
-	// Files API
-	router.get("/files", (_req: Request, res: Response) => {
-		const files = Array.from(fileStore.values()).map((f) => ({
-			type: "file",
-			id: f.id,
-			filename: f.filename,
-			media_type: f.media_type,
-			size_bytes: f.size_bytes,
-			created_at: f.created_at,
-		}));
-		res.json({ data: files, has_more: false });
-	});
-
-	router.post("/files", (_req: Request, res: Response) => {
-		// 简化处理：从 body 中读取文件
-		const id = `file_${crypto.randomUUID()}`;
-		const now = Date.now();
-
-		// 这里应该处理 multipart/form-data，暂时简化
-		const file = {
-			id,
-			filename: "upload",
-			media_type: "application/octet-stream",
-			size_bytes: 0,
-			content: Buffer.from([]),
-			created_at: now,
-		};
-		fileStore.set(id, file);
-
-		res.json({
-			type: "file",
-			id,
-			filename: file.filename,
-			media_type: file.media_type,
-			size_bytes: file.size_bytes,
-			created_at: file.created_at,
+	// Files API —— 未实现。
+	//
+	// 历史实现是个"看起来能跑"的空壳：POST /files 无视 multipart 请求体，
+	// 无条件写入一条 0 字节记录并返回 200，GET content 也只会回空 Buffer。
+	// 对上游 SDK 来说这比 404 更糟——它会以为上传成功，然后在真正引用文件时
+	// 拿到无法解释的空内容。这里改成明确的 501，让调用方立刻知道该走别的路径。
+	//
+	// 真要支持的话，需要 multipart 解析 + 落盘存储 + 引用计数回收，
+	// 而当前所有内部消费方（Agent SDK / 渲染端）都不走 Files API。
+	const filesNotImplemented = (_req: Request, res: Response) => {
+		res.status(501).json({
+			type: "error",
+			error: {
+				type: "not_implemented_error",
+				message:
+					"本地 Anthropic 兼容代理未实现 Files API。请直接在 messages 请求体里内联文件内容（image / document content block）。",
+			},
 		});
-	});
-
-	router.get("/files/:id", (req: Request<{ id: string }>, res: Response) => {
-		const file = fileStore.get(req.params.id);
-		if (!file) {
-			return res
-				.status(404)
-				.json({ error: { type: "not_found", message: "File not found" } });
-		}
-		res.json({
-			type: "file",
-			id: file.id,
-			filename: file.filename,
-			media_type: file.media_type,
-			size_bytes: file.size_bytes,
-			created_at: file.created_at,
-		});
-	});
-
-	router.get(
-		"/files/:id/content",
-		(req: Request<{ id: string }>, res: Response) => {
-			const file = fileStore.get(req.params.id);
-			if (!file) {
-				return res
-					.status(404)
-					.json({ error: { type: "not_found", message: "File not found" } });
-			}
-			res.setHeader("Content-Type", "application/binary");
-			res.send(file.content);
-		},
-	);
-
-	router.delete("/files/:id", (req: Request<{ id: string }>, res: Response) => {
-		const existed = fileStore.has(req.params.id);
-		fileStore.delete(req.params.id);
-		if (existed) {
-			res.json({ id: req.params.id, deleted: true });
-		} else {
-			res
-				.status(404)
-				.json({ error: { type: "not_found", message: "File not found" } });
-		}
-	});
+	};
+	router.get("/files", filesNotImplemented);
+	router.post("/files", filesNotImplemented);
+	router.get("/files/:id", filesNotImplemented);
+	router.get("/files/:id/content", filesNotImplemented);
+	router.delete("/files/:id", filesNotImplemented);
 
 	// 核心：消息 API
 	router.post("/messages", async (req: Request, res: Response) => {

@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { moveSourcesToFolder } from "../../../lib/api";
 import { EVENTS, events } from "../../../lib/events";
 import type { Source } from "../../../types";
+import { confirmDialog } from "../../ui/ConfirmDialog";
 import { toast } from "../../ui/Toast";
 import { UNASSIGNED_FOLDER_ID } from "./useFolderManagement";
 
@@ -20,9 +21,6 @@ export function useSourceSelection({
 }: UseSourceSelectionOptions) {
 	const [selectionMode, setSelectionMode] = useState(false);
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
-	const [batchDeleteConfirm, setBatchDeleteConfirm] = useState<string[] | null>(
-		null,
-	);
 	const [isMoveFolderModalOpen, setIsMoveFolderModalOpen] = useState(false);
 	const [moveFolderTargetId, setMoveFolderTargetId] = useState<string>("");
 
@@ -62,28 +60,27 @@ export function useSourceSelection({
 		exitSelectionMode();
 	}, [selectedSources, exitSelectionMode]);
 
-	// 批量删除
+	// 批量删除 —— 走共享 ConfirmDialog，不再自己维护一份确认态 + 手写弹层
 	const handleDeleteSelected = useCallback(async () => {
 		if (selectedSources.length === 0) return;
-		setBatchDeleteConfirm(selectedSources.map((item) => item.id));
-	}, [selectedSources]);
+		const ids = selectedSources.map((item) => item.id);
+		const confirmed = await confirmDialog.show({
+			type: "danger",
+			title: "批量删除",
+			message: `将删除选中的 ${ids.length} 条资料。删除后可在 5 秒内撤销。`,
+			confirmText: "删除",
+			cancelText: "取消",
+		});
+		if (!confirmed) return;
 
-	const handleConfirmBatchDelete = useCallback(async () => {
-		if (!batchDeleteConfirm) return;
 		try {
-			await deleteSourcesWithUndo(batchDeleteConfirm);
+			await deleteSourcesWithUndo(ids);
 			exitSelectionMode();
 		} catch (error) {
 			console.error("批量删除失败:", error);
 			toast.error("批量删除失败，请重试");
-		} finally {
-			setBatchDeleteConfirm(null);
 		}
-	}, [batchDeleteConfirm, deleteSourcesWithUndo, exitSelectionMode]);
-
-	const handleCancelBatchDelete = useCallback(() => {
-		setBatchDeleteConfirm(null);
-	}, []);
+	}, [selectedSources, deleteSourcesWithUndo, exitSelectionMode]);
 
 	const handleMoveSelectedToFolder = useCallback(async () => {
 		if (!selectedIds.length) return;
@@ -115,8 +112,6 @@ export function useSourceSelection({
 		setSelectedIds,
 		selectedIdSet,
 		selectedSources,
-		batchDeleteConfirm,
-		setBatchDeleteConfirm,
 		isMoveFolderModalOpen,
 		setIsMoveFolderModalOpen,
 		moveFolderTargetId,
@@ -126,8 +121,6 @@ export function useSourceSelection({
 		handleSelectAll,
 		handleBulkAddToContext,
 		handleDeleteSelected,
-		handleConfirmBatchDelete,
-		handleCancelBatchDelete,
 		handleMoveSelectedToFolder,
 	};
 }

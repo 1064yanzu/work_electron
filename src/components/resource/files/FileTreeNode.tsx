@@ -86,9 +86,7 @@ export function FileTreeNode({
 			onContextMenu={(e) => onContextMenu(e, entry)}
 			className={cn(
 				"flex items-center w-full px-2 py-1.5 text-left group transition-colors text-sm",
-				isSelected
-					? "bg-warm-200/80 dark:bg-cream-700"
-					: "hover:bg-warm-200/50",
+				isSelected ? "bg-warm-200/80" : "hover:bg-warm-200/50",
 			)}
 			style={{ paddingLeft: indent }}
 		>
@@ -117,9 +115,7 @@ export function FileTreeNode({
 			<span
 				className={cn(
 					"truncate",
-					entry.isDir
-						? "text-text-primary dark:text-cream-200"
-						: "text-text-secondary",
+					entry.isDir ? "text-text-primary" : "text-text-secondary",
 				)}
 			>
 				{entry.name}

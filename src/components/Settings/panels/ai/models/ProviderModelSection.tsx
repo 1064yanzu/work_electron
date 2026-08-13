@@ -132,7 +132,7 @@ export function ProviderModelSection({
 			<div className="mb-4 flex items-center justify-between">
 				<div className="flex items-center gap-3">
 					<span className="text-sm font-medium text-text-secondary">模型</span>
-					<span className="rounded-md bg-warm-200 px-2 py-0.5 text-xs text-text-muted">
+					<span className="rounded-lg bg-warm-200 px-2 py-0.5 text-xs text-text-muted">
 						({provider.models.length})
 					</span>
 				</div>

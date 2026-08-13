@@ -37,6 +37,7 @@ import { toast } from "./ui/Toast";
 import { useFocusTrap } from "./ui/FocusTrap";
 import { Select } from "./ui/Select";
 import { Tooltip } from "./ui/Tooltip";
+import { AutoVirtualGrid } from "./ui/AutoVirtualGrid";
 
 // ============================================================================
 // Types & Constants
@@ -48,12 +49,13 @@ interface PromptLibraryModalProps {
 	onSelectPrompt?: (prompt: CustomPrompt) => void;
 }
 
+// 文件夹图标不再按名字配色相 —— 近单色体系下全部中性，区分靠名称
 const FOLDER_COLORS: Record<string, string> = {
-	blue: "text-focus dark:text-focus",
-	orange: "text-orange-600 dark:text-orange-400",
-	green: "text-green-600 dark:text-green-400",
-	purple: "bai-icon-violet dark:bai-icon-violet",
-	pink: "text-pink-600 dark:text-pink-400",
+	blue: "text-text-secondary",
+	orange: "text-text-secondary",
+	green: "text-text-secondary",
+	purple: "text-text-secondary",
+	pink: "text-text-secondary",
 };
 
 // ============================================================================
@@ -293,6 +295,8 @@ export function PromptLibraryModal({
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const newFolderInputRef = useRef<HTMLInputElement>(null);
+	/** 提示词列表的滚动容器，供 AutoVirtualGrid 挂载虚拟化 */
+	const promptScrollRef = useRef<HTMLDivElement>(null);
 
 	// Derived State
 	const filteredPrompts = useMemo(() => {
@@ -726,7 +730,7 @@ export function PromptLibraryModal({
 							<Tooltip content="网格视图">
 								<button
 									onClick={() => setViewMode("grid")}
-									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${viewMode === "grid" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
+									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${viewMode === "grid" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-warm-200/60"}`}
 								>
 									<LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
 								</button>
@@ -734,7 +738,7 @@ export function PromptLibraryModal({
 							<Tooltip content="列表视图">
 								<button
 									onClick={() => setViewMode("list")}
-									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${viewMode === "list" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-cream-100/60"}`}
+									className={`p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${viewMode === "list" ? "bg-cream-50 dark:bg-cream-900 text-text-primary shadow-bai-card" : "text-text-muted hover:text-text-primary hover:bg-warm-200/60"}`}
 								>
 									<LayoutList className="w-4 h-4" strokeWidth={1.5} />
 								</button>
@@ -754,7 +758,7 @@ export function PromptLibraryModal({
 							<Tooltip content="导入">
 								<button
 									onClick={() => fileInputRef.current?.click()}
-									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
+									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-warm-200/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 								>
 									<Upload className="w-4.5 h-4.5" strokeWidth={1.5} />
 								</button>
@@ -762,7 +766,7 @@ export function PromptLibraryModal({
 							<Tooltip content="导出">
 								<button
 									onClick={handleExport}
-									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
+									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-warm-200/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 								>
 									<Download className="w-4.5 h-4.5" strokeWidth={1.5} />
 								</button>
@@ -770,7 +774,7 @@ export function PromptLibraryModal({
 							<Tooltip content="关闭">
 								<button
 									onClick={onClose}
-									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-cream-100/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
+									className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-text-muted hover:text-text-primary rounded-full hover:bg-warm-200/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 								>
 									<X className="w-4.5 h-4.5" strokeWidth={1.5} />
 								</button>
@@ -782,7 +786,10 @@ export function PromptLibraryModal({
 					{showSystemTemplates ? (
 						<SystemPromptTemplates />
 					) : (
-						<div className="flex-1 overflow-y-auto p-6 scroll-smooth">
+						<div
+							ref={promptScrollRef}
+							className="flex-1 overflow-y-auto p-6 scroll-smooth"
+						>
 							{filteredPrompts.length === 0 ? (
 								<div className="h-full flex flex-col items-center justify-center text-center pb-20">
 									<div className="w-20 h-20 rounded-3xl bg-cream-100 dark:bg-cream-800 flex items-center justify-center mb-6 border border-cream-300 dark:border-cream-500">
@@ -806,16 +813,20 @@ export function PromptLibraryModal({
 									</button>
 								</div>
 							) : (
-								<div
+								<AutoVirtualGrid
+									items={filteredPrompts}
+									scrollRef={promptScrollRef}
+									getItemKey={(prompt) => prompt.id}
+									estimateSize={viewMode === "grid" ? 200 : 108}
+									minColumnWidth={viewMode === "grid" ? 280 : undefined}
+									gap={viewMode === "grid" ? 16 : 12}
 									className={
 										viewMode === "grid"
 											? "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-6"
 											: "flex flex-col gap-3"
 									}
-								>
-									{filteredPrompts.map((prompt) => (
+									renderItem={(prompt) => (
 										<PromptCard
-											key={prompt.id}
 											prompt={prompt}
 											viewMode={viewMode}
 											onDragStart={handleDragStart}
@@ -844,8 +855,8 @@ export function PromptLibraryModal({
 												})();
 											}}
 										/>
-									))}
-								</div>
+									)}
+								/>
 							)}
 						</div>
 					)}

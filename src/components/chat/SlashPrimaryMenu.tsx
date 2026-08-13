@@ -27,9 +27,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "Claude Code 风格斜杠命令",
 		icon: Terminal,
 		shortcut: "c",
-		gradient:
-			"bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
-		iconColor: "text-indigo-600 dark:text-indigo-400",
+		gradient: "bg-warm-200 text-text-secondary",
+		iconColor: "text-text-secondary",
 	},
 	{
 		id: "file",
@@ -37,8 +36,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "选择文件添加到上下文",
 		icon: FileText,
 		shortcut: "f",
-		gradient: "bg-focus/8 dark:bg-focus/10 text-focus dark:text-focus",
-		iconColor: "text-focus dark:text-focus",
+		gradient: "bg-focus/8 text-focus",
+		iconColor: "text-focus",
 	},
 	{
 		id: "folder",
@@ -56,9 +55,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "插入自定义提示词",
 		icon: MessageSquare,
 		shortcut: "p",
-		gradient:
-			"bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400",
-		iconColor: "text-orange-600 dark:text-orange-400",
+		gradient: "bg-warm-200 text-text-secondary",
+		iconColor: "text-text-secondary",
 	},
 	{
 		id: "agent_skill",
@@ -66,9 +64,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "调用 Agent 技能",
 		icon: Command,
 		shortcut: "s",
-		gradient:
-			"bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400",
-		iconColor: "text-violet-600 dark:text-violet-400",
+		gradient: "bg-warm-200 text-text-secondary",
+		iconColor: "text-text-secondary",
 	},
 	{
 		id: "action",
@@ -76,9 +73,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "执行快捷操作",
 		icon: Zap,
 		shortcut: "a",
-		gradient:
-			"bg-[rgba(181,51,51,0.08)] dark:bg-error/10 text-error dark:text-error",
-		iconColor: "text-error dark:text-error",
+		gradient: "bg-error/8 text-error",
+		iconColor: "text-error",
 	},
 ];
 
@@ -254,7 +250,7 @@ export function SlashPrimaryMenu({
 										{category.name}
 									</span>
 									{category.shortcut && (
-										<span className="text-[11px] text-text-light font-mono">
+										<span className="text-2xs text-text-light font-mono">
 											/{category.shortcut}
 										</span>
 									)}
@@ -283,17 +279,17 @@ export function SlashPrimaryMenu({
 
 			{/* 底部快捷键 */}
 			<div className="px-4 py-1.5 border-t border-border">
-				<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
+				<div className="flex items-center justify-center gap-4 text-2xs text-text-light">
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[11px]">↑↓</span>
+						<span className="font-mono text-2xs">↑↓</span>
 						<span>导航</span>
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[11px]">↵</span>
+						<span className="font-mono text-2xs">↵</span>
 						<span>选择</span>
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[11px]">esc</span>
+						<span className="font-mono text-2xs">esc</span>
 						<span>关闭</span>
 					</span>
 				</div>

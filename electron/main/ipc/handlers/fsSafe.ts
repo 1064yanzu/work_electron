@@ -4,6 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { IpcMainInvokeEvent } from "electron";
 import { shell } from "electron";
+import { createLogger } from "../../logging/logger";
+import { assertPathAllowed, type FsAccessMode } from "../../security/pathGuard";
 import { getCacheDir } from "../../storage/cacheRoots";
 
 type ReadFileInput = { path: string; encoding?: "utf-8" | "base64" };
@@ -121,11 +123,20 @@ function normalizePathInput(p: string): string {
 	return raw;
 }
 
-function requireAbsolute(p: string) {
+/**
+ * 归一化 + 安全校验的统一入口。
+ *
+ * 返回**归一化后的路径**而不是 realpath：realpath 只用于黑名单判定，
+ * 真正的读写仍走用户给的路径，返回值里的 `path` 字段也保持原有语义
+ * （否则符号链接工作区会突然返回目标真实路径，破坏上层的路径比较）。
+ */
+async function guardPath(p: string, mode: FsAccessMode): Promise<string> {
 	const normalized = normalizePathInput(p);
 	if (!path.isAbsolute(normalized)) {
 		throw new Error(`路径必须是绝对路径: ${p} -> ${normalized}`);
 	}
+	await assertPathAllowed(normalized, mode);
+	return normalized;
 }
 
 async function listDirOnce(dirPath: string): Promise<ListFilesOutput> {
@@ -162,13 +173,14 @@ async function listDirRecursive(dirPath: string): Promise<ListFilesOutput> {
 }
 
 export function createFsSafeHandlers() {
+	const logger = createLogger();
+
 	const read_file_safe = async (
 		_event: IpcMainInvokeEvent,
 		rawInput: ReadFileInput | { payload?: ReadFileInput },
 	): Promise<ReadFileOutput> => {
 		const input = unwrapPayload(rawInput);
-		const filePath = normalizePathInput(input.path);
-		requireAbsolute(filePath);
+		const filePath = await guardPath(input.path, "read");
 		const encoding = input.encoding === "base64" ? "base64" : "utf-8";
 		const buf = await fs.readFile(filePath);
 		const st = await fs.stat(filePath);
@@ -189,8 +201,7 @@ export function createFsSafeHandlers() {
 		rawInput: ReadFileBytesInput | { payload?: ReadFileBytesInput },
 	): Promise<ReadFileBytesOutput> => {
 		const input = unwrapPayload(rawInput);
-		const filePath = normalizePathInput(input.path);
-		requireAbsolute(filePath);
+		const filePath = await guardPath(input.path, "read");
 		const buf = await fs.readFile(filePath);
 		const st = await fs.stat(filePath);
 		// Buffer 是 Uint8Array 的子类，但底层 ArrayBuffer 可能来自 Node 的共享内存池，
@@ -210,8 +221,7 @@ export function createFsSafeHandlers() {
 		rawInput: WriteFileInput | { payload?: WriteFileInput },
 	): Promise<WriteFileOutput> => {
 		const input = unwrapPayload(rawInput);
-		const filePath = normalizePathInput(input.path);
-		requireAbsolute(filePath);
+		const filePath = await guardPath(input.path, "write");
 		const encoding = input.encoding === "base64" ? "base64" : "utf-8";
 		const createDirs = Boolean(input.create_dirs);
 		if (createDirs) {
@@ -278,9 +288,12 @@ export function createFsSafeHandlers() {
 			throw error;
 		}
 		const nextStat = await fs.stat(filePath);
-		console.log(
-			`[write_file_safe] Written ${buf.length} bytes to: ${filePath}`,
-		);
+		logger.info({
+			msg: "write_file_safe 写入完成",
+			scope: "fs-safe",
+			path: filePath,
+			bytes: buf.length,
+		});
 		return {
 			success: true,
 			bytes_written: buf.length,
@@ -295,8 +308,7 @@ export function createFsSafeHandlers() {
 		rawInput: ListFilesInput | { payload?: ListFilesInput },
 	): Promise<ListFilesOutput> => {
 		const input = unwrapPayload(rawInput);
-		const targetPath = normalizePathInput(input.path);
-		requireAbsolute(targetPath);
+		const targetPath = await guardPath(input.path, "read");
 		const recursive = Boolean(input.recursive);
 
 		let st: Awaited<ReturnType<typeof fs.stat>>;
@@ -332,8 +344,7 @@ export function createFsSafeHandlers() {
 		rawInput: MkdirInput | { payload?: MkdirInput },
 	): Promise<MkdirOutput> => {
 		const input = unwrapPayload(rawInput);
-		const dirPath = normalizePathInput(input.path);
-		requireAbsolute(dirPath);
+		const dirPath = await guardPath(input.path, "write");
 		const recursive = input.recursive !== false;
 		await fs.mkdir(dirPath, { recursive });
 		return { success: true };
@@ -344,10 +355,8 @@ export function createFsSafeHandlers() {
 		rawInput: CopyFileInput | { payload?: CopyFileInput },
 	): Promise<CopyFileOutput> => {
 		const input = unwrapPayload(rawInput);
-		const src = normalizePathInput(input.src);
-		const dest = normalizePathInput(input.dest);
-		requireAbsolute(src);
-		requireAbsolute(dest);
+		const src = await guardPath(input.src, "read");
+		const dest = await guardPath(input.dest, "write");
 		const createDirs = Boolean(input.create_dirs);
 		if (createDirs) {
 			await fs.mkdir(path.dirname(dest), { recursive: true });
@@ -361,10 +370,9 @@ export function createFsSafeHandlers() {
 		rawInput: MoveFileInput | { payload?: MoveFileInput },
 	): Promise<MoveFileOutput> => {
 		const input = unwrapPayload(rawInput);
-		const src = normalizePathInput(input.src);
-		const dest = normalizePathInput(input.dest);
-		requireAbsolute(src);
-		requireAbsolute(dest);
+		// move 会移走源文件，对源的破坏性等同删除 → 源按 delete 级别校验
+		const src = await guardPath(input.src, "delete");
+		const dest = await guardPath(input.dest, "write");
 		if (input.create_dirs) {
 			await fs.mkdir(path.dirname(dest), { recursive: true });
 		}
@@ -382,8 +390,7 @@ export function createFsSafeHandlers() {
 		rawInput: DeleteFileInput | { payload?: DeleteFileInput },
 	): Promise<DeleteFileOutput> => {
 		const input = unwrapPayload(rawInput);
-		const filePath = normalizePathInput(input.path);
-		requireAbsolute(filePath);
+		const filePath = await guardPath(input.path, "delete");
 		await fs.rm(filePath, { force: true, recursive: true });
 		return { success: true };
 	};
@@ -393,8 +400,7 @@ export function createFsSafeHandlers() {
 		rawInput: RevealFileInput | { payload?: RevealFileInput },
 	): Promise<RevealFileOutput> => {
 		const input = unwrapPayload(rawInput);
-		const filePath = normalizePathInput(input.path);
-		requireAbsolute(filePath);
+		const filePath = await guardPath(input.path, "read");
 		shell.showItemInFolder(filePath);
 		return { success: true };
 	};
@@ -404,8 +410,7 @@ export function createFsSafeHandlers() {
 		_event: IpcMainInvokeEvent,
 		input: { path: string },
 	): Promise<string> => {
-		const filePath = normalizePathInput(input.path);
-		requireAbsolute(filePath);
+		const filePath = await guardPath(input.path, "read");
 		const content = await fs.readFile(filePath, "utf-8");
 		return content;
 	};
@@ -435,13 +440,20 @@ export function createFsSafeHandlers() {
 			// 保存文件
 			const buffer = Buffer.from(rawBase64, "base64");
 			await fs.writeFile(savePath, buffer);
-			console.log(
-				`[save_base64_image] Saved ${buffer.length} bytes to: ${savePath}`,
-			);
+			logger.info({
+				msg: "save_base64_image 保存完成",
+				scope: "fs-safe",
+				path: savePath,
+				bytes: buffer.length,
+			});
 
 			return savePath;
 		} catch (err) {
-			console.error("[save_base64_image] Error:", err);
+			logger.warn({
+				msg: "save_base64_image 失败",
+				scope: "fs-safe",
+				error: err instanceof Error ? err.message : String(err),
+			});
 			return null;
 		}
 	};

@@ -25,8 +25,23 @@
     "!**/*.{map,ts,tsx,md}",
     // node_modules 瘦身：测试 / 文档 / 示例目录与类型声明对运行时无用
     "!node_modules/**/{test,tests,__tests__,docs,doc,example,examples,coverage,.github}/**",
+    "!node_modules/**/{demo,demos,benchmark,benchmarks,fixture,fixtures,man}/**",
     "!node_modules/**/*.{d.ts,d.mts,d.cts,flow,markdown}",
-    "!node_modules/**/{.editorconfig,.npmignore,.eslintrc.json,.prettierrc}"
+    "!node_modules/**/{.editorconfig,.npmignore,.eslintrc.json,.prettierrc}",
+    "!node_modules/**/*.{mdx,map}",
+    // 纯渲染端的大包：Vite 已经把它们编译进 dist/，node_modules 里那份是纯冗余。
+    // 这些包已经迁到 devDependencies（electron-builder 默认不打 devDependencies），
+    // 这里再显式排一次，防止 hoist / 传递依赖把它们又带进来。
+    "!node_modules/monaco-editor/**",
+    "!node_modules/mermaid/**",
+    "!node_modules/shiki/**",
+    "!node_modules/@shikijs/**",
+    "!node_modules/pdfjs-dist/**",
+    "!node_modules/typescript/**",
+    "!node_modules/@types/**",
+    "!node_modules/.bin/**",
+    "!node_modules/.cache/**",
+    "!node_modules/**/*.min.js.map"
   ],
   "asarUnpack": [
     "**/*.{node,dll,dylib,so}",

@@ -39,9 +39,16 @@ function CountdownBar({
 	const isUrgent = remaining <= 10;
 	return (
 		<div className="auq-countdown-bar">
+			{/* 用 transform: scaleX 代替 width 过渡 —— width 是布局属性，
+			    每秒触发 reflow；scaleX 走合成器，零布局成本 */}
 			<div
 				className={cn("auq-countdown-fill", isUrgent && "auq-countdown-urgent")}
-				style={{ width: `${progress}%`, transition: "width 1s linear" }}
+				style={{
+					width: "100%",
+					transform: `scaleX(${progress / 100})`,
+					transformOrigin: "left",
+					transition: "transform 1s linear",
+				}}
 			/>
 		</div>
 	);

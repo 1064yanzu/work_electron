@@ -57,7 +57,7 @@ export function StyleProfileCreateModal({ onClose, onCreated }: Props) {
 			<button
 				type="button"
 				onClick={onClose}
-				className="px-4 py-2 text-sm font-medium rounded-full text-text-secondary hover:text-text-primary hover:bg-warm-200/70 dark:hover:bg-cream-700/40 transition-colors duration-150"
+				className="px-4 py-2 text-sm font-medium rounded-full text-text-secondary hover:text-text-primary hover:bg-warm-200/70 transition-colors duration-150"
 			>
 				取消
 			</button>
@@ -65,7 +65,7 @@ export function StyleProfileCreateModal({ onClose, onCreated }: Props) {
 				type="button"
 				onClick={() => void handleSubmit()}
 				disabled={saving}
-				className="px-5 py-2 text-sm font-medium rounded-full bg-cream-900 dark:bg-cream-100 text-cream-50 dark:text-cream-900 hover:opacity-90 disabled:opacity-50 transition-opacity duration-150"
+				className="px-5 py-2 text-sm font-medium rounded-full bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity duration-150"
 			>
 				{saving ? "创建中…" : "创建风格包"}
 			</button>
@@ -118,8 +118,8 @@ export function StyleProfileCreateModal({ onClose, onCreated }: Props) {
 								onClick={() => setLanguage(opt.value)}
 								className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors duration-150 ${
 									language === opt.value
-										? "border-cream-900/30 dark:border-cream-300/30 bg-cream-900/8 dark:bg-cream-100/8 text-text-primary"
-										: "border-cream-300 dark:border-cream-500/50 text-text-secondary hover:text-text-primary hover:border-cream-400 dark:hover:border-cream-400/50"
+										? "border-primary/30 bg-primary/8 text-text-primary"
+										: "border-border text-text-secondary hover:text-text-primary hover:border-warm-500"
 								}`}
 							>
 								{opt.label}
@@ -129,7 +129,7 @@ export function StyleProfileCreateModal({ onClose, onCreated }: Props) {
 				</div>
 
 				{error && (
-					<p className="text-xs text-peach-600 dark:text-peach-400 bg-peach-50 dark:bg-peach-900/20 rounded-lg px-3 py-2">
+					<p className="text-xs text-warning bg-warning-muted rounded-lg px-3 py-2">
 						{error}
 					</p>
 				)}

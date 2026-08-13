@@ -14,8 +14,7 @@ import {
 } from "lucide-react";
 import { useSkillsStore } from "../../lib/skillsStore";
 import { useUpdateBadge } from "../../lib/skillsMarketplaceStore";
-import { openDirectory } from "../../lib/dialogCompat";
-import { revealFileSafe } from "../../lib/api/storage";
+import { pickSystemDirectory, revealFileSafe } from "../../lib/api/storage";
 import { confirmDialog } from "../ui/ConfirmDialog";
 import { IllustratedEmptyState } from "../ui/EmptyState";
 import { cn } from "../../lib/utils";
@@ -85,11 +84,11 @@ export function SkillsView(_props: SkillsViewProps) {
 
 	const handleImport = async () => {
 		try {
-			const selected = await openDirectory({ title: "选择技能文件夹" });
-			if (!selected) return;
+			const { path } = await pickSystemDirectory("选择技能文件夹");
+			if (!path) return;
 			setIsLoading(true);
 			setError(null);
-			await importSkill(selected as string);
+			await importSkill(path);
 		} catch (err) {
 			setError(`导入失败: ${err}`);
 		} finally {
@@ -162,7 +161,7 @@ export function SkillsView(_props: SkillsViewProps) {
 						<div className="w-full max-w-sm rounded-3xl bg-surface/85 shadow-[0_8px_30px_rgb(0,0,0,0.10)] ring-1 ring-black/5 dark:ring-white/10 px-5 py-4">
 							<div className="flex items-center gap-4">
 								<div className="w-11 h-11 rounded-2xl bg-warm-200 flex items-center justify-center">
-									<ArrowDownToLine className="w-5 h-5 text-text-secondary dark:text-cream-200" />
+									<ArrowDownToLine className="w-5 h-5 text-text-secondary" />
 								</div>
 								<div className="flex-1">
 									<p className="text-sm font-semibold text-text-primary">
@@ -181,7 +180,7 @@ export function SkillsView(_props: SkillsViewProps) {
 			<div className="px-5 pt-6 pb-3 shrink-0">
 				<div className="flex items-start justify-between gap-2">
 					<div className="min-w-0">
-						<div className="text-[11px] font-semibold tracking-[0.22em] text-text-light uppercase">
+						<div className="text-2xs font-semibold tracking-[0.22em] text-text-light uppercase">
 							Agent Skills
 						</div>
 						<h2 className="font-serif text-[20px] leading-[1.15] text-text-primary mt-1.5 tracking-tight">
@@ -206,7 +205,7 @@ export function SkillsView(_props: SkillsViewProps) {
 									<button
 										type="button"
 										onClick={() => setTab("marketplace")}
-										className="text-amber-700 dark:text-amber-300 hover:underline underline-offset-2"
+										className="text-warning hover:underline underline-offset-2"
 									>
 										{updateCount} 个更新
 									</button>
@@ -247,7 +246,7 @@ export function SkillsView(_props: SkillsViewProps) {
 			</div>
 
 			{/* Tabs — underline editorial */}
-			<div className="px-5 shrink-0 border-b border-cream-300/70 dark:border-cream-500/20">
+			<div className="px-5 shrink-0 border-b border-border/70">
 				<div className="flex items-center gap-5">
 					<UnderlineTab
 						active={tab === "installed"}
@@ -296,13 +295,13 @@ export function SkillsView(_props: SkillsViewProps) {
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								placeholder="搜索技能…"
-								className="w-full pl-9 pr-8 py-2 text-xs bg-surface dark:bg-cream-900/40 border border-cream-300/80 dark:border-cream-500/30 rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition"
+								className="w-full pl-9 pr-8 py-2 text-xs bg-surface border border-border/80 rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition"
 							/>
 							{searchQuery && (
 								<button
 									type="button"
 									onClick={() => setSearchQuery("")}
-									className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-text-light hover:text-text-secondary hover:bg-cream-200/70"
+									className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-text-light hover:text-text-secondary hover:bg-warm-200/70"
 								>
 									<X className="w-3 h-3" />
 								</button>
@@ -318,7 +317,7 @@ export function SkillsView(_props: SkillsViewProps) {
 										"px-2.5 py-1 text-xs rounded-md transition-colors font-medium shrink-0",
 										filter === f.value
 											? "bg-primary text-primary-foreground"
-											: "text-text-muted hover:text-text-secondary hover:bg-cream-200/70",
+											: "text-text-muted hover:text-text-secondary hover:bg-warm-200/70",
 									)}
 								>
 									{f.label}
@@ -328,7 +327,7 @@ export function SkillsView(_props: SkillsViewProps) {
 					</div>
 
 					{/* Skills List — editorial directory */}
-					<div className="flex-1 overflow-y-auto scrollbar-hide px-2 pb-6">
+					<div className="flex-1 overflow-y-auto px-2 pb-6">
 						<ul className="space-y-px">
 							{filteredSkills.map((skill) => {
 								const isExpanded = expandedSkillId === skill.name;
@@ -338,8 +337,8 @@ export function SkillsView(_props: SkillsViewProps) {
 											className={cn(
 												"group rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 												isExpanded
-													? "bg-surface ring-1 ring-cream-300/70 dark:ring-cream-500/30 shadow-bai-card"
-													: "hover:bg-cream-200/60 dark:hover:bg-cream-800/30",
+													? "bg-surface ring-1 ring-border/70 shadow-bai-card"
+													: "hover:bg-warm-200/60",
 											)}
 										>
 											<div
@@ -360,9 +359,7 @@ export function SkillsView(_props: SkillsViewProps) {
 												<span
 													className={cn(
 														"w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
-														skill.enabled
-															? "bg-success"
-															: "bg-cream-400 dark:bg-cream-700",
+														skill.enabled ? "bg-success" : "bg-border",
 													)}
 												/>
 												<div className="flex-1 min-w-0">
@@ -379,7 +376,7 @@ export function SkillsView(_props: SkillsViewProps) {
 														</span>
 														{skill.modeClass === "design" && (
 															<span
-																className="shrink-0 px-1.5 py-px text-[11px] uppercase tracking-[0.12em] rounded-sm bg-primary/10 text-primary/80 leading-tight"
+																className="shrink-0 px-1.5 py-px text-2xs uppercase tracking-[0.12em] rounded-sm bg-primary/10 text-primary/80 leading-tight"
 																title={
 																	skill.modeTag
 																		? `od.mode: ${skill.modeTag}`
@@ -392,7 +389,7 @@ export function SkillsView(_props: SkillsViewProps) {
 													</div>
 													<p
 														className={cn(
-															"text-[11px] truncate mt-0.5 leading-snug",
+															"text-2xs truncate mt-0.5 leading-snug",
 															skill.enabled
 																? "text-text-light"
 																: "text-text-light/70",
@@ -425,9 +422,9 @@ export function SkillsView(_props: SkillsViewProps) {
 													<p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
 														{skill.description || "（暂无描述）"}
 													</p>
-													<div className="flex items-center justify-between gap-2 pt-1 border-t border-cream-300/70 dark:border-cream-500/20">
+													<div className="flex items-center justify-between gap-2 pt-1 border-t border-border/70">
 														<code
-															className="text-[11px] text-text-light font-mono truncate pt-2"
+															className="text-2xs text-text-light font-mono truncate pt-2"
 															title={skill.location}
 														>
 															{skill.location}
@@ -436,7 +433,7 @@ export function SkillsView(_props: SkillsViewProps) {
 															<button
 																type="button"
 																onClick={() => handleReveal(skill.location)}
-																className="flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary transition-colors px-2 py-1 rounded-md hover:bg-cream-200/70 dark:hover:bg-cream-800/40"
+																className="flex items-center gap-1 text-2xs text-text-muted hover:text-text-secondary transition-colors px-2 py-1 rounded-md hover:bg-warm-200/70"
 																title="在系统文件管理器中打开"
 															>
 																<FolderOpen className="w-3 h-3" />
@@ -445,7 +442,7 @@ export function SkillsView(_props: SkillsViewProps) {
 															<button
 																type="button"
 																onClick={() => handleDelete(skill.name)}
-																className="flex items-center gap-1 text-[11px] text-text-muted hover:text-error transition-colors px-2 py-1 rounded-md hover:bg-error/8"
+																className="flex items-center gap-1 text-2xs text-text-muted hover:text-error transition-colors px-2 py-1 rounded-md hover:bg-error/8"
 															>
 																<Trash2 className="w-3 h-3" />
 																删除
@@ -492,7 +489,7 @@ function IconButton({
 			onClick={onClick}
 			disabled={disabled}
 			title={title}
-			className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-cream-200/70 dark:hover:bg-cream-800/40 transition disabled:opacity-40 disabled:cursor-not-allowed"
+			className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 transition disabled:opacity-40 disabled:cursor-not-allowed"
 		>
 			{children}
 		</button>
@@ -528,12 +525,12 @@ function UnderlineTab({
 			{icon}
 			<span>{label}</span>
 			{typeof count === "number" && (
-				<span className="text-[11px] tabular-nums text-text-light/80">
+				<span className="text-2xs tabular-nums text-text-light/80">
 					{count}
 				</span>
 			)}
 			{badge && badge > 0 ? (
-				<span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-amber-500/90 text-[11px] font-semibold text-white tabular-nums">
+				<span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-warning/90 text-2xs font-semibold text-white tabular-nums">
 					{badge > 99 ? "99+" : badge}
 				</span>
 			) : null}
@@ -564,7 +561,7 @@ function ToggleSwitch({
 			}
 			className={cn(
 				"relative w-7 h-4 rounded-full transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/15",
-				enabled ? "bg-success" : "bg-cream-400/80 dark:bg-cream-700",
+				enabled ? "bg-success" : "bg-warm-300",
 			)}
 		>
 			<span
@@ -609,7 +606,7 @@ function EmptyState({
 						<button
 							type="button"
 							onClick={onImport}
-							className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cream-200/80 text-text-secondary text-xs font-medium hover:bg-cream-300 transition"
+							className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warm-200/80 text-text-secondary text-xs font-medium hover:bg-warm-300 transition"
 						>
 							<FolderOpen className="w-3 h-3" />
 							导入本地

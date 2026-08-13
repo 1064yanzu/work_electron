@@ -14,6 +14,7 @@ import {
 	workspaceStore,
 } from "../../../lib/workspaceStore";
 import type { Folder, Source } from "../../../types";
+import { confirmDialog } from "../../ui/ConfirmDialog";
 import { toast } from "../../ui/Toast";
 
 export const UNASSIGNED_FOLDER_ID = "__unassigned__";
@@ -29,9 +30,6 @@ export function useFolderManagement(rawSources: Source[]) {
 		y: number;
 		folder: Folder;
 	} | null>(null);
-	const [folderDeleteConfirm, setFolderDeleteConfirm] = useState<Folder | null>(
-		null,
-	);
 	const [isRenameFolderModalOpen, setIsRenameFolderModalOpen] = useState(false);
 	const [renameFolderTarget, setRenameFolderTarget] = useState<Folder | null>(
 		null,
@@ -246,17 +244,23 @@ export function useFolderManagement(rawSources: Source[]) {
 		}
 	}, [renameFolderTarget, renameFolderName, fetchFolders]);
 
-	// 删除文件夹
+	// 删除文件夹 —— 走共享 ConfirmDialog（skipConfirm 供已经确认过的调用方复用）
 	const handleDeleteFolder = useCallback(
 		async (folder: Folder, skipConfirm = false) => {
 			if (!skipConfirm) {
-				setFolderDeleteConfirm(folder);
-				return;
+				const confirmed = await confirmDialog.show({
+					type: "danger",
+					title: "删除文件夹",
+					// sources.folder_id 是 ON DELETE SET NULL，所以资料本身不会跟着没
+					message: `确定要删除「${folder.name}」吗？文件夹内的资料将变为未归类状态，不会被删除。`,
+					confirmText: "删除",
+					cancelText: "取消",
+				});
+				if (!confirmed) return;
 			}
 
 			try {
 				await deleteFolder(folder.id);
-				setFolderDeleteConfirm(null);
 				// 如果删除的是当前选中的文件夹，切换到全部
 				if (currentFolderId === folder.id) {
 					setCurrentFolder(null);
@@ -357,8 +361,6 @@ export function useFolderManagement(rawSources: Source[]) {
 		setIsFolderModalOpen,
 		folderContextMenu,
 		setFolderContextMenu,
-		folderDeleteConfirm,
-		setFolderDeleteConfirm,
 		isRenameFolderModalOpen,
 		setIsRenameFolderModalOpen,
 		renameFolderTarget,

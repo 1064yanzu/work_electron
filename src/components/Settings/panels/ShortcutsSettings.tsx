@@ -52,11 +52,11 @@ function ShortcutRow({ entry }: { entry: RegisteredShortcut }) {
 			<div className="flex shrink-0 items-center gap-1">
 				{keys.map((key, idx) => (
 					<span key={`${entry.id}-${idx}`} className="flex items-center gap-1">
-						<kbd className="rounded-md border border-border bg-cream-200 px-2 py-1 text-xs font-medium text-text-secondary">
+						<kbd className="rounded-lg border border-border bg-warm-200 px-2 py-1 text-xs font-medium text-text-secondary">
 							{key}
 						</kbd>
 						{idx < keys.length - 1 && (
-							<span className="text-[11px] text-text-muted">+</span>
+							<span className="text-2xs text-text-muted">+</span>
 						)}
 					</span>
 				))}
@@ -145,7 +145,7 @@ export function ShortcutsSettings() {
 			{!filtering && (
 				<SettingsSectionCard>
 					<div className="flex items-start gap-3.5 px-5 py-4">
-						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cream-200 text-text-secondary">
+						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warm-200 text-text-secondary">
 							<Command className="h-4 w-4" strokeWidth={1.5} />
 						</div>
 						<div className="min-w-0 flex-1">
@@ -156,7 +156,7 @@ export function ShortcutsSettings() {
 							<button
 								type="button"
 								onClick={() => shortcutRegistry.openCheatSheet()}
-								className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-cream-200 px-3.5 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-cream-300 active:scale-[0.98]"
+								className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-warm-200 px-3.5 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-warm-200 active:scale-[0.98]"
 							>
 								<SquareSlash className="h-3.5 w-3.5" strokeWidth={1.5} />
 								打开速查表（{modKey}+/）

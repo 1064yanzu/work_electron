@@ -305,7 +305,7 @@ export function MCPSettings() {
 										{envCheck.shell || "Default"}
 									</SettingsBadge>
 								</div>
-								<code className="block w-full p-2 bg-surface border border-border rounded text-[11px] text-text-secondary font-mono break-all max-h-20 overflow-y-auto">
+								<code className="block w-full p-2 bg-surface border border-border rounded-lg text-2xs text-text-secondary font-mono break-all max-h-20 overflow-y-auto">
 									{envCheck.path}
 								</code>
 							</div>

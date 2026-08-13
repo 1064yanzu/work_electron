@@ -25,8 +25,11 @@ import {
 	isBuiltinMascotId,
 	setCustomResolver,
 } from "./mascot/manifest";
+import {
+	createIpcSubscription,
+	type IpcSubscription,
+} from "./createIpcSubscription";
 import { invoke, isDesktopEnvironment } from "./tauriCompat";
-import { listen, type UnlistenFn } from "./tauriEventCompat";
 
 /** 渲染层用：选择项 = 任意 mascot id 或 "off" */
 export type MascotSelection = MascotId | "off";
@@ -62,8 +65,22 @@ class MascotManager {
 	private ipcInitialized = false;
 	/** IPC 初始化完成（自定义列表已拉取）后置 true，供 PetApp 区分"加载中"和"真的没有" */
 	private ready = false;
-	private ipcUnlisten: UnlistenFn | null = null;
-	private listUnlisten: UnlistenFn | null = null;
+	// createIpcSubscription 收口订阅竞态：dispose 在 listen resolve 前调用也能正确释放
+	private idSubscription: IpcSubscription = createIpcSubscription<{
+		id: string;
+		source: MascotChangeSource;
+	}>("mascot-id-changed", (payload) => {
+		if (!payload?.id) return;
+		if (!this.isValidSelection(payload.id)) return;
+		if (payload.id === this.currentId) return;
+		this.applyLocal(payload.id as MascotSelection);
+	});
+	private listSubscription: IpcSubscription = createIpcSubscription<{
+		mascots: CustomMascotMeta[];
+	}>("mascot-list-changed", (payload) => {
+		const list = payload?.mascots;
+		if (Array.isArray(list)) this.applyCustomList(list);
+	});
 
 	constructor() {
 		if (typeof window !== "undefined") {
@@ -205,34 +222,10 @@ class MascotManager {
 			// noop
 		}
 
-		// 3a. 订阅 mascot-id-changed（跨窗口当前 IP 同步）
-		try {
-			this.ipcUnlisten = await listen<{
-				id: string;
-				source: MascotChangeSource;
-			}>("mascot-id-changed", (event) => {
-				const payload = event.payload;
-				if (!payload?.id) return;
-				if (!this.isValidSelection(payload.id)) return;
-				if (payload.id === this.currentId) return;
-				this.applyLocal(payload.id as MascotSelection);
-			});
-		} catch {
-			// noop
-		}
-
-		// 3b. 订阅 mascot-list-changed（自定义桌宠列表同步）
-		try {
-			this.listUnlisten = await listen<{ mascots: CustomMascotMeta[] }>(
-				"mascot-list-changed",
-				(event) => {
-					const list = event.payload?.mascots;
-					if (Array.isArray(list)) this.applyCustomList(list);
-				},
-			);
-		} catch {
-			// noop
-		}
+		// 3. 订阅 mascot-id-changed / mascot-list-changed（跨窗口同步）
+		// start 幂等，electronAPI 不可用时内部静默降级
+		this.idSubscription.start();
+		this.listSubscription.start();
 
 		// 初始化完成：通知订阅者（PetApp 等待此信号后才决定是否渲染）
 		this.ready = true;
@@ -419,14 +412,8 @@ class MascotManager {
 	}
 
 	dispose(): void {
-		if (this.ipcUnlisten) {
-			this.ipcUnlisten();
-			this.ipcUnlisten = null;
-		}
-		if (this.listUnlisten) {
-			this.listUnlisten();
-			this.listUnlisten = null;
-		}
+		this.idSubscription.stop();
+		this.listSubscription.stop();
 		this.ipcInitialized = false;
 	}
 

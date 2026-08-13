@@ -23,7 +23,7 @@
  * 然后是最终态 Toast。
  */
 
-import { toast } from "../../components/ui/Toast";
+import { toast } from "../../components/ui/toastBus";
 
 // ---------------------------------------------------------------------------
 // 参数与返回类型

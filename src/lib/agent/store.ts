@@ -1,7 +1,8 @@
 // Agent 状态管理
 // 管理 Agent 任务、工具调用历史等
 
-import { useCallback, useRef, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
+import { createUseStoreSelector } from "../stores/createStore";
 import type { SkillExecution } from "./SkillExecutor";
 import {
 	type AgentEvent,
@@ -1104,7 +1105,11 @@ export const agentActions = {
 	setWaitingForLLM: agentStore.setWaitingForLLM.bind(agentStore),
 } as const;
 
-// React Hook
+/**
+ * @deprecated 全量订阅：Agent 执行期间任何字段变化都会重渲染消费组件。
+ * 改用 `useAgentStoreSelector((s) => ...)` 精确订阅，actions 直接从
+ * `agentActions` 导入（模块级稳定引用）。
+ */
 export function useAgentStore() {
 	const state = useSyncExternalStore(
 		agentStore.subscribe,
@@ -1116,21 +1121,14 @@ export function useAgentStore() {
 	return { ...state, ...agentActions };
 }
 
-// Selector Hook - 允许组件只订阅需要的状态字段，减少不必要的重渲染
-export function useAgentStoreSelector<T>(
-	selector: (state: AgentState) => T,
-): T {
-	// 使用 useRef 缓存 selector 结果，避免每次渲染都创建新的 getSnapshot
-	const selectorRef = useRef(selector);
-	selectorRef.current = selector;
-
-	const getSnapshot = useCallback(
-		() => selectorRef.current(agentStore.getState()),
-		[],
-	);
-
-	return useSyncExternalStore(agentStore.subscribe, getSnapshot, getSnapshot);
-}
+/**
+ * Selector Hook - 允许组件只订阅需要的状态字段，减少不必要的重渲染。
+ *
+ * 复用 `createUseStoreSelector` 的两层缓存，语义与 layoutStore 等
+ * createStore 系列 store 完全一致（此前是一份无缓存的手写实现）。
+ */
+export const useAgentStoreSelector =
+	createUseStoreSelector<AgentState>(agentStore);
 
 // 导出类型供外部使用
 export type { AgentState };

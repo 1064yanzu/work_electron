@@ -64,6 +64,7 @@ import {
 	buildContextualShortcuts,
 	DEFAULT_TERMINAL_SHORTCUTS,
 } from "./shortcutComposer";
+import { sendToLiveWebContents } from "../../../utils/safeWebContentsSend";
 
 export type PtyBridgeAppendEventLog = (
 	level: "info" | "warn" | "error",
@@ -1259,7 +1260,7 @@ export class PtyBridgeService {
 			// 边界事件（attached / detached / exit 等）：先冲掉批量缓冲再直发，
 			// 保证渲染端看到的 data 与边界事件顺序一致
 			this.desktopDataSender?.flush();
-			win.webContents.send(channel, payload);
+			sendToLiveWebContents(win, channel, payload);
 		} catch (error) {
 			this.log(
 				"warn",

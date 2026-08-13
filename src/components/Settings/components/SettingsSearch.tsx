@@ -171,7 +171,7 @@ export function SettingsSearch({
 					// 形状上跟下面一整列方角导航项区分开，一眼就知道这里能打字。
 					"flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2",
 					"transition-[border-color,box-shadow,background-color] duration-150",
-					"hover:border-cream-500",
+					"hover:border-warm-500",
 					"focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10",
 				)}
 			>
@@ -218,8 +218,8 @@ export function SettingsSearch({
 				) : (
 					<span
 						className={cn(
-							"hidden sm:inline-flex select-none items-center gap-0.5 rounded-md border border-border/70 bg-cream-100 px-1.5 py-0.5",
-							"text-[11px] font-sans tabular-nums text-text-muted",
+							"hidden sm:inline-flex select-none items-center gap-0.5 rounded-lg border border-border/70 bg-background px-1.5 py-0.5",
+							"text-2xs font-sans tabular-nums text-text-muted",
 						)}
 					>
 						{shortcut("F")}
@@ -295,8 +295,8 @@ function SearchResultRow({
 					"flex w-full items-start gap-2.5 px-3 py-2 text-left",
 					"transition-[background-color,color] duration-150",
 					active
-						? "bg-cream-200 text-text-primary"
-						: "text-text-secondary hover:bg-cream-100",
+						? "bg-warm-200 text-text-primary"
+						: "text-text-secondary hover:bg-background",
 				)}
 			>
 				{subtab?.icon ? (
@@ -346,9 +346,9 @@ function EmptyState({ query }: { query: string }) {
 				target="_blank"
 				rel="noreferrer"
 				className={cn(
-					"mt-2 inline-flex items-center gap-1 rounded-full border border-border bg-cream-50 px-2.5 py-1",
+					"mt-2 inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1",
 					"text-xs font-medium text-text-secondary",
-					"hover:border-cream-500 hover:bg-warm-50 hover:text-text-primary",
+					"hover:border-warm-500 hover:bg-warm-50 hover:text-text-primary",
 					"transition-[background-color,border-color,color] duration-150",
 				)}
 			>

@@ -39,7 +39,7 @@ export function PairingList(props: {
 							className={`h-1.5 w-1.5 rounded-full ${
 								props.pending.length > 0
 									? "bg-peach-500 animate-pulse"
-									: "bg-cream-500"
+									: "bg-warm-500"
 							}`}
 						/>
 						{props.pending.length} 条
@@ -56,18 +56,18 @@ export function PairingList(props: {
 							return (
 								<div
 									key={item.request_id}
-									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:border-cream-400 hover:shadow-sm"
+									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:border-warm-500 hover:shadow-sm"
 								>
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">
 											<div className="font-medium text-text-primary flex items-center gap-2">
-												<span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary uppercase tracking-wider">
+												<span className="inline-flex items-center rounded-lg bg-primary/10 px-1.5 py-0.5 text-2xs font-semibold text-primary uppercase tracking-wider">
 													{item.channel_id}
 												</span>
 												{item.peer_name || item.peer_id}
 											</div>
 											<div className="mt-1.5 text-text-muted flex items-center gap-2">
-												<span className="font-mono text-[11px] bg-warm-200 px-1.5 py-0.5 rounded">
+												<span className="font-mono text-2xs bg-warm-200 px-1.5 py-0.5 rounded-lg">
 													{item.code}
 												</span>
 												<span>到期 {formatTs(item.expires_at)}</span>
@@ -120,12 +120,12 @@ export function PairingList(props: {
 							return (
 								<div
 									key={item.pairing_id}
-									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:border-cream-400 hover:shadow-sm"
+									className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:border-warm-500 hover:shadow-sm"
 								>
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">
 											<div className="font-medium text-text-primary flex items-center gap-2">
-												<span className="inline-flex items-center rounded-md bg-mint-500/10 px-1.5 py-0.5 text-[11px] font-semibold text-mint-600 uppercase tracking-wider">
+												<span className="inline-flex items-center rounded-lg bg-mint-500/10 px-1.5 py-0.5 text-2xs font-semibold text-mint-600 uppercase tracking-wider">
 													{item.channel_id}
 												</span>
 												{item.peer_name || item.peer_id}

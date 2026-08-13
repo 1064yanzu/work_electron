@@ -97,7 +97,7 @@ export function KbRetrievalSection({
 									"transition-[background-color,border-color,box-shadow] duration-150 ease-out",
 									active
 										? "border-primary bg-primary/[0.04] shadow-bai-card"
-										: "border-border bg-surface hover:border-cream-500 hover:bg-warm-50/60",
+										: "border-border bg-surface hover:border-warm-500 hover:bg-warm-50/60",
 								)}
 							>
 								<div className="flex items-center justify-between">
@@ -189,7 +189,7 @@ export function KbRetrievalSection({
 			</SettingsDisclosure>
 
 			{/* 统计 + 重建 */}
-			<div className="rounded-2xl border border-border bg-cream-50 p-4">
+			<div className="rounded-2xl border border-border bg-surface p-4">
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
@@ -217,7 +217,7 @@ export function KbRetrievalSection({
 							</div>
 						)}
 						{kbStats && total > 0 && (
-							<div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-cream-200">
+							<div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-warm-200">
 								<div
 									className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
 									style={{ width: `${coverage.toFixed(1)}%` }}

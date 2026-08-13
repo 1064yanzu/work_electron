@@ -52,6 +52,11 @@ export function ThoughtInline({
 		isStreaming ? Date.now() : null,
 	);
 	const prevStreamingRef = useRef(Boolean(isStreaming));
+	// liveDurationMs 的 ref 镜像：下面的 effect 只在流式结束的那一刻需要读它的
+	// 兜底值，把它列进依赖会让 effect 跟着 500ms 定时器一起反复重跑
+	// （定时器 setLiveDurationMs → 依赖变化 → effect 重跑），纯属空转。
+	const liveDurationRef = useRef(liveDurationMs);
+	liveDurationRef.current = liveDurationMs;
 
 	useEffect(() => {
 		const wasStreaming = prevStreamingRef.current;
@@ -64,7 +69,7 @@ export function ThoughtInline({
 		} else if (wasStreaming) {
 			const elapsed =
 				streamStartedAtRef.current === null
-					? liveDurationMs
+					? liveDurationRef.current
 					: Date.now() - streamStartedAtRef.current;
 			setFrozenDurationMs(durationMs || elapsed);
 			streamStartedAtRef.current = null;
@@ -72,7 +77,7 @@ export function ThoughtInline({
 			setFrozenDurationMs(durationMs);
 		}
 		prevStreamingRef.current = isStreaming;
-	}, [durationMs, isStreaming, liveDurationMs]);
+	}, [durationMs, isStreaming]);
 
 	useEffect(() => {
 		if (!isStreaming) return;

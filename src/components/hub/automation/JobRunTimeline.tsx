@@ -44,7 +44,7 @@ export function JobRunTimeline({ jobId }: { jobId: string }) {
 
 	if (loading) {
 		return (
-			<div className="flex items-center gap-1.5 text-[11px] text-text-light">
+			<div className="flex items-center gap-1.5 text-2xs text-text-light">
 				<Loader2 className="w-3 h-3 animate-spin" />
 				读取运行记录…
 			</div>
@@ -52,9 +52,7 @@ export function JobRunTimeline({ jobId }: { jobId: string }) {
 	}
 
 	if (!runs.length) {
-		return (
-			<p className="text-[11px] text-text-light">这个任务还没有运行过。</p>
-		);
+		return <p className="text-2xs text-text-light">这个任务还没有运行过。</p>;
 	}
 
 	return (
@@ -107,13 +105,11 @@ function RunRow({
 					strokeWidth={1.8}
 				/>
 				<span className={cn("w-1.5 h-1.5 rounded-full shrink-0", meta.dot)} />
-				<span className="text-[11px] text-text-muted shrink-0">
+				<span className="text-2xs text-text-muted shrink-0">
 					{formatStamp(run.started_at)}
 				</span>
-				<span className={cn("text-[11px] shrink-0", meta.text)}>
-					{meta.label}
-				</span>
-				<span className="text-[11px] text-text-light truncate">
+				<span className={cn("text-2xs shrink-0", meta.text)}>{meta.label}</span>
+				<span className="text-2xs text-text-light truncate">
 					{run.attempt_count > 1 && `${run.attempt_count} 次尝试 · `}
 					{formatElapsed(run.started_at, run.finished_at)}
 					{run.trigger === "manual" ? " · 手动" : " · 定时"}
@@ -123,12 +119,12 @@ function RunRow({
 			{expanded && (
 				<div className="pl-6 pr-1 pb-2 space-y-1.5">
 					{/* 状态的确切含义写在这儿——尤其是「无错误结束」不等于「任务完成」 */}
-					<p className="text-[11px] text-text-light leading-relaxed">
+					<p className="text-2xs text-text-light leading-relaxed">
 						{meta.hint}
 					</p>
 
 					{attempts === null ? (
-						<div className="flex items-center gap-1.5 text-[11px] text-text-light">
+						<div className="flex items-center gap-1.5 text-2xs text-text-light">
 							<Loader2 className="w-3 h-3 animate-spin" />
 							读取尝试明细…
 						</div>
@@ -140,10 +136,10 @@ function RunRow({
 
 					{run.result_text && (
 						<div className="mt-2">
-							<span className="block text-[11px] text-text-light mb-1">
+							<span className="block text-2xs text-text-light mb-1">
 								最后一次的产出
 							</span>
-							<pre className="text-[11px] leading-relaxed text-text-muted font-mono whitespace-pre-wrap break-all max-h-40 overflow-y-auto scrollbar-hide rounded-lg bg-surface/60 px-2.5 py-2">
+							<pre className="text-2xs leading-relaxed text-text-muted font-mono whitespace-pre-wrap break-all max-h-40 overflow-y-auto scrollbar-hide rounded-lg bg-surface/60 px-2.5 py-2">
 								{run.result_text.slice(0, 4000)}
 							</pre>
 						</div>
@@ -162,24 +158,24 @@ function AttemptRow({ attempt }: { attempt: HarnessJobAttemptRow }) {
 	return (
 		<div className="rounded-lg border border-border/60 px-2.5 py-2">
 			<div className="flex items-center gap-1.5 flex-wrap">
-				<span className="text-[11px] text-text-muted">第 {attempt.seq} 次</span>
-				<span className="text-[11px] text-text-light">{attempt.harness}</span>
+				<span className="text-2xs text-text-muted">第 {attempt.seq} 次</span>
+				<span className="text-2xs text-text-light">{attempt.harness}</span>
 				{/* 续跑与重发是完全不同的两件事，必须让用户分得清 */}
 				{attempt.resumed_from ? (
-					<span className="flex items-center gap-0.5 text-[11px] text-info">
+					<span className="flex items-center gap-0.5 text-2xs text-info">
 						<CornerDownRight className="w-2.5 h-2.5" strokeWidth={2} />
 						续接上次会话
 					</span>
 				) : (
-					<span className="text-[11px] text-text-light">重新发起</span>
+					<span className="text-2xs text-text-light">重新发起</span>
 				)}
 				{attempt.exit_code !== null && (
-					<span className="text-[11px] text-text-light">
+					<span className="text-2xs text-text-light">
 						退出码 {attempt.exit_code}
 					</span>
 				)}
 				{attempt.wait_ms !== null && attempt.wait_ms > 0 && (
-					<span className="text-[11px] text-warning">
+					<span className="text-2xs text-warning">
 						之后等待 {formatWait(attempt.wait_ms)}
 					</span>
 				)}
@@ -188,15 +184,15 @@ function AttemptRow({ attempt }: { attempt: HarnessJobAttemptRow }) {
 			{failureMeta && (
 				<div className="mt-1.5">
 					<div className="flex items-center gap-1.5">
-						<span className="text-[11px] font-medium text-error">
+						<span className="text-2xs font-medium text-error">
 							{failureMeta.label}
 						</span>
-						<span className="text-[11px] text-text-light">
+						<span className="text-2xs text-text-light">
 							{failureMeta.advice}
 						</span>
 					</div>
 					{attempt.evidence && (
-						<pre className="mt-1 text-[11px] leading-relaxed text-text-muted font-mono whitespace-pre-wrap break-all max-h-24 overflow-y-auto scrollbar-hide">
+						<pre className="mt-1 text-2xs leading-relaxed text-text-muted font-mono whitespace-pre-wrap break-all max-h-24 overflow-y-auto scrollbar-hide">
 							{attempt.evidence}
 						</pre>
 					)}

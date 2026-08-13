@@ -139,4 +139,44 @@ export const INTEGRATIONS_FIELDS: FieldDescriptor[] = [
 			"shibai",
 		],
 	},
+
+	// ---------- 剪藏服务 ----------
+	{
+		tabId: "integrations.clip",
+		anchorId: "integrations.clip.status",
+		label: "剪藏服务状态",
+		description: "本机 Clip HTTP 服务的运行状态与实际端口",
+		keywords: [
+			"clip",
+			"剪藏",
+			"jiancang",
+			"http",
+			"port",
+			"端口",
+			"服务",
+			"bookmark",
+		],
+	},
+	{
+		tabId: "integrations.clip",
+		anchorId: "integrations.clip.token",
+		label: "剪藏访问 token",
+		description: "调用 /api/clip 所需的 token，可复制或轮换",
+		keywords: ["clip", "token", "剪藏", "密钥", "轮换", "rotate", "api key"],
+	},
+	{
+		tabId: "integrations.clip",
+		anchorId: "integrations.clip.bookmarklet",
+		label: "剪藏书签脚本",
+		description: "一键复制 bookmarklet，拖进浏览器书签栏即可剪藏网页",
+		keywords: [
+			"bookmarklet",
+			"书签",
+			"shuqian",
+			"剪藏",
+			"浏览器",
+			"browser",
+			"脚本",
+		],
+	},
 ];

@@ -84,6 +84,15 @@ export default {
 				16: "0.16",
 				92: "0.92",
 			},
+			// 收编 351 处 text-[11px] 任意值：带配套行高的具名微字号。
+			// 三档纪律：正文 text-sm / 辅助 text-xs / 徽章·时间戳 text-2xs
+			fontSize: {
+				"2xs": ["11px", { lineHeight: "15px" }],
+			},
+			// 三栏头部统一高度（index.css :root 定义 --header-h）
+			spacing: {
+				header: "var(--header-h, 40px)",
+			},
 			fontFamily: {
 				sans: [
 					"Inter",
@@ -376,6 +385,10 @@ export default {
 				"bai-card": "var(--shadow-card, 0 1px 2px 0 rgb(26 26 25 / 0.04))",
 				"bai-pop": "var(--shadow-pop, 0 4px 12px 0 rgb(26 26 25 / 0.06))",
 				"bai-ring": "var(--shadow-ring, 0 0 0 1px rgb(232 229 221))",
+				// 收编任意值阴影的两个具名档：浮层（弹出面板/悬浮卡）与画布节点
+				// （执行图/预览节点）。走变量，暗色自动获得不透明度补偿。
+				float: "var(--shadow-float, 0 10px 30px -18px rgb(26 26 25 / 0.25))",
+				node: "var(--shadow-node, 0 1px 3px 0 rgb(26 26 25 / 0.06))",
 			},
 		},
 	},

@@ -87,19 +87,6 @@ export interface AgentMessageRecord {
 	updated_at: string;
 }
 
-// 权限记录
-export interface PermissionRecord {
-	id: string;
-	toolCallId: string;
-	toolType: string;
-	toolName: string;
-	decision: "approved" | "denied" | "pending";
-	decidedBy: "user" | "policy" | "timeout";
-	reason?: string;
-	createdAt: string;
-	decidedAt?: string;
-}
-
 // Artifact 记录
 export interface ArtifactRecord {
 	id: string;
@@ -119,15 +106,6 @@ export interface AuditLogRecord {
 	event: string;
 	payload_json?: unknown;
 	created_at: string;
-}
-
-// Chunk 统计
-export interface ChunkStats {
-	total_notes: number;
-	chunked_notes: number;
-	pending_notes: number;
-	total_chunks: number;
-	fts_available: boolean;
 }
 
 // 搜索结果
@@ -305,40 +283,6 @@ export async function listToolCalls(
 	});
 }
 
-// ==================== 权限 API ====================
-
-export async function createPermission(
-	toolCallId: string,
-	toolType: string,
-	toolName: string,
-): Promise<PermissionRecord> {
-	return await safeInvoke("agent_create_permission", {
-		toolCallId,
-		toolType,
-		toolName,
-	});
-}
-
-export async function updatePermission(
-	id: string,
-	decision: "approved" | "denied",
-	decidedBy: "user" | "policy" | "timeout",
-	reason?: string,
-): Promise<PermissionRecord> {
-	return await safeInvoke("agent_update_permission", {
-		id,
-		decision,
-		decidedBy,
-		reason,
-	});
-}
-
-export async function listPermissions(
-	toolCallId?: string,
-): Promise<PermissionRecord[]> {
-	return await safeInvoke("agent_list_permissions", { toolCallId });
-}
-
 // ==================== Artifact API ====================
 
 export async function createArtifact(
@@ -385,6 +329,12 @@ export async function listAgentMessages(
 	});
 }
 
+/**
+ * ⚠️ 后端缺口：主进程当前只注册了 `agent_create_message` / `agent_list_messages`，
+ * 没有 `agent_update_message`。唯一调用方 `chatBridge.persistChatMessageToAgentSession`
+ * 用 `catch { return null }` 吞掉异常，所以表现为「消息只增不改」——流式补完与
+ * 编辑后的内容不会回写 agent 会话。封装保留不删，等主进程补齐 handler 即可自愈。
+ */
 export async function updateAgentMessage(payload: {
 	id: string;
 	content_json: unknown;
@@ -426,21 +376,6 @@ export async function searchChunks(
 	if (limit !== undefined) payload.limit = limit;
 	if (sourceId) payload.source_id = sourceId;
 	return await safeInvoke("kb_search_chunks", { payload });
-}
-
-export async function searchChunksMulti(
-	keywords: string[],
-	limit?: number,
-	sourceId?: string,
-): Promise<NoteChunkSearchHit[]> {
-	const payload: Record<string, unknown> = { keywords };
-	if (limit !== undefined) payload.limit = limit;
-	if (sourceId) payload.source_id = sourceId;
-	return await safeInvoke("kb_search_chunks_multi", { payload });
-}
-
-export async function getChunksStats(): Promise<ChunkStats> {
-	return await safeInvoke("kb_get_chunks_stats");
 }
 
 export async function rebuildChunks(noteId?: string): Promise<number> {

@@ -69,3 +69,102 @@ export function appendStallFinalizeNote(text: string): string {
 	if (trimmed.includes(AGENT_WATCHDOG_STALL_NOTE)) return trimmed;
 	return `${trimmed}\n\n${AGENT_WATCHDOG_STALL_NOTE}`;
 }
+
+// ============================================================================
+// Watchdog 判定 + 计时器
+//
+// 原来这两件事和 1200 行的 handleAgentModeMessage 闭包缠在一起：判定逻辑读
+// agentStore / streamBuilder / 局部 let，没法单独看懂也没法单独验证。
+// 这里把「判定」做成纯函数、「计时」做成小工厂，调用方只需提供一个 probe。
+// ============================================================================
+
+/** 一次 watchdog 轮询所需的全部输入。由调用方从各自的运行时状态里采集。 */
+export type AgentWatchdogSnapshot = {
+	/** 距上一次收到任何 agent 事件的毫秒数 */
+	silenceMs: number;
+	/** agent 是否仍在执行（isExecuting / 等待 LLM / task 处于 planning|executing / skill 未结束） */
+	stillRunning: boolean;
+	/** 是否有 running|pending 状态的工具调用（有就说明不是真卡死，只是在等工具） */
+	hasRunningTools: boolean;
+	/** 当前已累积的正文是否非空（全空时收口没有意义） */
+	hasText: boolean;
+};
+
+export type AgentWatchdogAction =
+	| "wait"
+	| "finalize_inactivity"
+	| "finalize_stall";
+
+/**
+ * Watchdog 判定（纯函数）。
+ *
+ * 判定顺序即优先级，不能随意调换：
+ * 1. 静默时长没到 idle 阈值 → 一律等待；
+ * 2. 有工具在跑 → 等待（长命令是正常现象，不能掐）；
+ * 3. 正文还是空的 → 等待（没内容可收口）；
+ * 4. agent 仍在执行 → 要等到更宽松的 stall 阈值才判定卡死；
+ * 5. 其余情况 → agent 已停但没发结束信号，按静默收口。
+ */
+export function decideAgentWatchdogAction(
+	snapshot: AgentWatchdogSnapshot,
+	thresholds: AgentWatchdogThresholds,
+): AgentWatchdogAction {
+	const { silenceMs, stillRunning, hasRunningTools, hasText } = snapshot;
+
+	if (silenceMs < thresholds.idleFinalizeMs) return "wait";
+	if (hasRunningTools) return "wait";
+	if (!hasText) return "wait";
+
+	if (stillRunning) {
+		if (silenceMs < thresholds.stalledExecutionMs) return "wait";
+		return "finalize_stall";
+	}
+
+	return "finalize_inactivity";
+}
+
+/** watchdog 轮询间隔 */
+export const AGENT_WATCHDOG_POLL_INTERVAL_MS = 3000;
+
+export interface AgentWatchdogHandle {
+	/** 幂等：已在运行时不会重复起定时器 */
+	start: () => void;
+	/** 幂等：未运行时调用无副作用。必须在所有收口路径 / 异常路径上调用 */
+	clear: () => void;
+}
+
+/**
+ * 创建 watchdog 计时器。
+ *
+ * @param probe 返回本轮判定所需快照；返回 null 表示「本轮跳过」
+ *              （例如已经收口过、或流式消息还没建起来）
+ * @param onFinalize 判定为需要收口时调用，source 用于日志与区分收口方式
+ */
+export function createAgentWatchdog(options: {
+	thresholds: AgentWatchdogThresholds;
+	probe: () => AgentWatchdogSnapshot | null;
+	onFinalize: (action: "finalize_inactivity" | "finalize_stall") => void;
+	intervalMs?: number;
+}): AgentWatchdogHandle {
+	const { thresholds, probe, onFinalize } = options;
+	const intervalMs = options.intervalMs ?? AGENT_WATCHDOG_POLL_INTERVAL_MS;
+	let timer: number | null = null;
+
+	return {
+		start() {
+			if (timer !== null) return;
+			timer = window.setInterval(() => {
+				const snapshot = probe();
+				if (!snapshot) return;
+				const action = decideAgentWatchdogAction(snapshot, thresholds);
+				if (action === "wait") return;
+				onFinalize(action);
+			}, intervalMs);
+		},
+		clear() {
+			if (timer === null) return;
+			clearInterval(timer);
+			timer = null;
+		},
+	};
+}

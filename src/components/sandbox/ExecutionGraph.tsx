@@ -18,6 +18,7 @@ import {
 	useState,
 	type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { formatKeys } from "../../lib/shortcuts";
 import { buildExecutionGraph } from "./graph/buildExecutionGraph";
 import { GraphInspectorPanel } from "./graph/GraphInspectorPanel";
 import { nodeTypes } from "./graph/GraphNodes";
@@ -43,20 +44,26 @@ function isTypingElement(target: EventTarget | null): boolean {
 	);
 }
 
+// 空态是这块画布最常见的样子（没跑任务时一直是它），
+// 除了说清「这里是什么」，还要顺手指一条路：任务从右栏对话发起。
 function EmptyGraph() {
 	return (
-		<div className="flex-1 flex flex-col items-center justify-center bg-warm-50">
-			<div className="text-center space-y-2 max-w-md">
-				<div className="mx-auto w-12 h-12 rounded-2xl bg-surface ring-1 ring-black/5 dark:ring-white/10 flex items-center justify-center">
-					<Workflow className="w-6 h-6 text-text-light" />
-				</div>
-				<div className="text-sm font-medium text-text-secondary">
-					暂无运行任务
-				</div>
-				<div className="text-xs text-text-light">
-					开始托管任务后，这里会展示运行图。
-				</div>
+		<div className="flex-1 flex flex-col items-center justify-center gap-4 bg-warm-50 px-8">
+			<div className="w-11 h-11 rounded-2xl border border-border bg-surface flex items-center justify-center">
+				<Workflow className="w-5 h-5 text-text-muted" strokeWidth={1.5} />
 			</div>
+			<div className="text-center max-w-md">
+				<p className="text-sm font-medium text-text-secondary">
+					还没有运行中的任务
+				</p>
+				<p className="mt-1 text-xs text-text-muted">
+					在右侧对话里发起任务后，这里会实时铺开它的执行过程 ——
+					每一步工具调用和产物都会长成一个节点
+				</p>
+			</div>
+			<p className="text-xs text-text-light">
+				{formatKeys("mod+l").join(" ")} 唤起右侧对话
+			</p>
 		</div>
 	);
 }

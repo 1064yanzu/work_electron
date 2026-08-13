@@ -31,10 +31,26 @@ if (
 if (typeof globalThis.document === "undefined") {
 	globalThis.document = {
 		documentElement: {
-			classList: { add: () => undefined, remove: () => undefined },
-			style: { setProperty: () => undefined },
+			classList: {
+				add: () => undefined,
+				remove: () => undefined,
+				toggle: () => false,
+				contains: () => false,
+			},
+			style: { setProperty: () => undefined, removeProperty: () => undefined },
 			setAttribute: () => undefined,
+			getAttribute: () => null,
 		},
+		body: {
+			appendChild: () => undefined,
+			classList: { add: () => undefined, remove: () => undefined },
+		},
+		createElement: () => ({
+			id: "",
+			style: {},
+			setAttribute: () => undefined,
+			appendChild: () => undefined,
+		}),
 		addEventListener: () => undefined,
 		removeEventListener: () => undefined,
 	};

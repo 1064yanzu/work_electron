@@ -14,7 +14,7 @@ export function MascotPackagingFooter({
 	onDownloadTemplate,
 }: MascotPackagingFooterProps) {
 	return (
-		<div className="rounded-2xl border border-dashed border-cream-500/60 bg-cream-50 p-4">
+		<div className="rounded-2xl border border-dashed border-warm-500/60 bg-surface p-4">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div className="flex items-start gap-2.5">
 					<span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-surface text-text-secondary">
@@ -26,11 +26,11 @@ export function MascotPackagingFooter({
 						</div>
 						<p className="mt-0.5 text-xs leading-relaxed text-text-muted">
 							支持 zip 包（pet.json + 17 张 PNG），或直接读取{" "}
-							<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[11px]">
+							<code className="rounded-lg bg-warm-200 px-1 py-0.5 font-mono text-2xs">
 								~/.codex/pets/&lt;id&gt;
 							</code>{" "}
 							与{" "}
-							<code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-[11px]">
+							<code className="rounded-lg bg-warm-200 px-1 py-0.5 font-mono text-2xs">
 								hatch-pet/runs/&lt;id&gt;
 							</code>{" "}
 							目录。缺失的 hero / accent 颜色会自动从 spritesheet 派生。
@@ -42,7 +42,7 @@ export function MascotPackagingFooter({
 						href="https://github.com/anthropics/claude-code/blob/main/docs/custom-mascot-pack.md"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-cream-500 hover:text-text-primary"
+						className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-warm-500 hover:text-text-primary"
 					>
 						<ExternalLink className="h-3 w-3" strokeWidth={1.8} />
 						打包规范

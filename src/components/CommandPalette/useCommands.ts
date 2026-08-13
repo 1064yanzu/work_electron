@@ -6,13 +6,20 @@
 // 动态命令来自 commandRegistry（功能面板可自行注册/反注册）。
 
 import {
+	Blocks,
+	BookOpen,
 	Columns2,
+	FolderOpen,
 	Globe,
 	Keyboard,
+	Library,
+	LayoutGrid,
 	MessageSquare,
+	MessagesSquare,
 	Moon,
 	Network,
 	PanelLeft,
+	Plus,
 	Rows2,
 	Settings,
 	Sparkles,
@@ -28,6 +35,8 @@ import {
 } from "../../lib/shortcuts";
 import { layoutStore } from "../../lib/stores/layoutStore";
 import { centerTabsStore } from "../../lib/stores/centerTabsStore";
+import { cardLibraryStoreApi } from "../../lib/stores/cardLibraryStore";
+import { getLastKnowledgeTab } from "../resource/knowledgeSection";
 import { EVENTS, events } from "../../lib/events";
 import { toast } from "../ui/Toast";
 import { themeManager } from "../../lib/theme";
@@ -238,7 +247,128 @@ export function useCommands(args: UseCommandsArgs): CommandItem[] {
 			},
 		});
 
+		// 左栏导航：与 SidebarRail 的 4 个入口一一对应
+		const railTargets: Array<{
+			id: string;
+			view: string;
+			title: string;
+			description: string;
+			icon: typeof PanelLeft;
+			keywords: string[];
+		}> = [
+			{
+				id: "nav.left.files",
+				view: "files",
+				title: "打开文件面板",
+				description: "左栏切到「文件」，浏览工作目录",
+				icon: FolderOpen,
+				keywords: ["files", "wenjian", "mulu", "zuolan"],
+			},
+			{
+				id: "nav.left.threads",
+				view: "threads",
+				title: "打开对话列表",
+				description: "左栏切到「对话」，查看历史会话",
+				icon: MessagesSquare,
+				keywords: ["threads", "duihua", "huihua", "history", "zuolan"],
+			},
+			{
+				id: "nav.left.knowledge",
+				view: "knowledge",
+				title: "打开知识面板",
+				description: "左栏切到「知识」（资料库 / 卡片 / Wiki）",
+				icon: Library,
+				keywords: ["knowledge", "zhishi", "sources", "ziliao", "wiki", "cards"],
+			},
+			{
+				id: "nav.left.skills",
+				view: "skills",
+				title: "打开技能面板",
+				description: "左栏切到「技能」，管理本地 Skill 与市场",
+				icon: Blocks,
+				keywords: ["skills", "jineng", "marketplace", "shichang", "zuolan"],
+			},
+		];
+		for (const t of railTargets) {
+			items.push({
+				id: t.id,
+				title: t.title,
+				description: t.description,
+				icon: t.icon,
+				keywords: t.keywords,
+				group: "导航",
+				action: () => {
+					// 「知识」是三个 tab 的合集，回到上次看的那个（与 rail 点击行为一致）
+					layoutStore.setLeftSidebarView(
+						(t.view === "knowledge"
+							? getLastKnowledgeTab()
+							: t.view) as ReturnType<
+							typeof layoutStore.getState
+						>["leftSidebarView"],
+					);
+					layoutStore.setLeftSidebarCollapsed(false);
+				},
+			});
+		}
+
+		items.push({
+			id: "nav.new-thread",
+			title: "新建对话",
+			description: "选择工作目录并开一个新会话",
+			icon: Plus,
+			keywords: ["new", "thread", "chat", "xinjian", "duihua", "huihua"],
+			group: "导航",
+			action: () => {
+				layoutStore.setLeftSidebarView("threads");
+				layoutStore.setLeftSidebarCollapsed(false);
+				events.emit(EVENTS.NEW_THREAD_REQUEST, undefined);
+			},
+		});
+
+		items.push({
+			id: "nav.open-card-library",
+			title: "打开知识卡片库",
+			description: "全屏浏览沉淀下来的知识卡片",
+			icon: LayoutGrid,
+			keywords: ["cards", "card", "library", "zhishi", "kapian", "quanping"],
+			group: "导航",
+			action: () => cardLibraryStoreApi.open(),
+		});
+
+		items.push({
+			id: "nav.open-reader",
+			title: "打开阅读器书架",
+			description: "左栏切到资料库，从这里挑一本书进阅读器",
+			icon: BookOpen,
+			keywords: [
+				"reader",
+				"book",
+				"epub",
+				"pdf",
+				"yuedu",
+				"shujia",
+				"dianzishu",
+			],
+			group: "导航",
+			action: () => {
+				// 阅读器是「打开某本书」才存在的全屏 overlay（readerStore.openedBookId
+				// 驱动），没有「空阅读器」这种状态，所以命令只负责把用户带到书架。
+				layoutStore.setLeftSidebarView("sources");
+				layoutStore.setLeftSidebarCollapsed(false);
+			},
+		});
+
 		// 设置
+		items.push({
+			id: "settings.open",
+			title: "打开设置",
+			description: "打开设置面板",
+			icon: Settings,
+			keywords: ["settings", "preferences", "config", "shezhi", "peizhi"],
+			group: "设置",
+			action: () => args.onOpenSettings(),
+		});
+
 		const settingsTabs: Array<{
 			tab: string;
 			title: string;

@@ -3,6 +3,8 @@ import path from "node:path";
 import { app, BrowserWindow, nativeTheme } from "electron";
 import { setMainWindow } from "../ipc/register";
 import { applyMenuBarPolicyToWindow } from "../menu";
+import { markWebContentsTrusted } from "../security/webContentsGuard";
+import { sendToLiveWebContents } from "../utils/safeWebContentsSend";
 
 /**
  * 读取持久化的窗口背景色，避免启动时白屏闪烁。
@@ -65,6 +67,9 @@ export function createMainWindow({
 		},
 	});
 
+	// 主窗口挂着 preload（拥有完整 IPC 能力），必须受导航白名单保护。
+	markWebContentsTrusted(win.webContents);
+
 	applyMenuBarPolicyToWindow(win);
 
 	win.once("ready-to-show", () => {
@@ -80,7 +85,11 @@ export function createMainWindow({
 	});
 
 	win.webContents.on("did-finish-load", () => {
-		win.webContents.send("main-process-message", new Date().toLocaleString());
+		sendToLiveWebContents(
+			win,
+			"main-process-message",
+			new Date().toLocaleString(),
+		);
 	});
 
 	if (rendererUrl) {

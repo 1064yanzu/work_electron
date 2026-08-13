@@ -103,7 +103,7 @@ export function SettingsDisclosure({
 				aria-expanded={expanded}
 				aria-controls={panelId}
 				className={cn(
-					"inline-flex items-center gap-1.5 rounded-md px-1.5 py-1",
+					"inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1",
 					"text-xs font-medium text-text-muted",
 					"hover:text-text-primary",
 					"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",

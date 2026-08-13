@@ -62,7 +62,7 @@ export function ScenarioSelectOption({
 			)}
 			<div className="flex items-center gap-2 shrink-0">
 				{option.badge && (
-					<span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border bg-warm-200 text-text-muted border-border">
+					<span className="inline-flex items-center px-2 py-0.5 rounded-lg text-2xs font-medium border bg-warm-200 text-text-muted border-border">
 						{option.badge}
 					</span>
 				)}

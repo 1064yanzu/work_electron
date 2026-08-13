@@ -283,7 +283,7 @@ export function RichContentWithStyles({
         prose-h4:text-lg prose-h4:mt-6 prose-h4:mb-2.5
 
         /* 段落样式 */
-        prose-p:text-base prose-p:leading-[1.9] prose-p:my-5 prose-p:text-text-secondary dark:prose-p:text-cream-200 prose-p:tracking-wide
+        prose-p:text-base prose-p:leading-[1.9] prose-p:my-5 prose-p:text-text-secondary prose-p:tracking-wide
 
         /* 图片样式 */
         prose-img:rounded-2xl prose-img:shadow-[0_20px_45px_rgba(0,0,0,0.08)] prose-img:my-8 prose-img:mx-auto prose-img:max-w-full
@@ -295,7 +295,7 @@ export function RichContentWithStyles({
         prose-a:text-focus dark:prose-a:text-focus prose-a:no-underline hover:prose-a:underline
 
         /* 引用块样式 */
-        prose-blockquote:border-l-[3px] prose-blockquote:border-cream-400 dark:prose-blockquote:border-cream-500
+        prose-blockquote:border-l-[3px] prose-blockquote:border-border
         prose-blockquote:pl-5 prose-blockquote:py-2 prose-blockquote:my-6
         prose-blockquote:italic prose-blockquote:text-text-secondary dark:prose-blockquote:text-text-light
         prose-blockquote:bg-warm-50/70 dark:prose-blockquote:bg-surface/5 prose-blockquote:rounded-r-2xl
@@ -309,7 +309,7 @@ export function RichContentWithStyles({
         /* 列表样式 */
         prose-ul:my-5 prose-ul:pl-7 prose-ul:space-y-2
         prose-ol:my-5 prose-ol:pl-7 prose-ol:space-y-2
-        prose-li:leading-7 prose-li:text-text-secondary dark:prose-li:text-cream-200 prose-li:marker:text-text-light
+        prose-li:leading-7 prose-li:text-text-secondary prose-li:marker:text-text-light
 
         /* 表格样式 */
         prose-table:my-6 prose-table:w-full prose-table:border-collapse

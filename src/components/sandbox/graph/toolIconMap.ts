@@ -37,7 +37,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Terminal,
 			label: "命令",
-			color: "text-amber-600 dark:text-amber-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -45,7 +45,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: FileText,
 			label: "读取",
-			color: "text-blue-600 dark:text-blue-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -53,7 +53,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: PenLine,
 			label: "写入",
-			color: "text-emerald-600 dark:text-emerald-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -61,7 +61,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Edit3,
 			label: "编辑",
-			color: "text-orange-600 dark:text-orange-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -69,7 +69,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Trash2,
 			label: "删除",
-			color: "text-rose-600 dark:text-rose-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -78,7 +78,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: FolderSearch,
 			label: "搜索",
-			color: "text-violet-600 dark:text-violet-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -86,7 +86,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Search,
 			label: "网络搜索",
-			color: "text-sky-600 dark:text-sky-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -95,7 +95,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Globe,
 			label: "浏览器",
-			color: "text-indigo-600 dark:text-indigo-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -103,7 +103,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Eye,
 			label: "查看",
-			color: "text-cyan-600 dark:text-cyan-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -112,7 +112,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: MessageSquare,
 			label: "对话",
-			color: "text-purple-600 dark:text-purple-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -124,7 +124,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Archive,
 			label: "压缩",
-			color: "text-cream-600 dark:text-cream-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -132,7 +132,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Code2,
 			label: "代码",
-			color: "text-teal-600 dark:text-teal-400",
+			color: "text-text-muted",
 		},
 	},
 	{
@@ -140,7 +140,7 @@ const toolPatterns: Array<{
 		config: {
 			icon: Plug,
 			label: "MCP",
-			color: "text-fuchsia-600 dark:text-fuchsia-400",
+			color: "text-text-muted",
 		},
 	},
 ];
@@ -148,7 +148,7 @@ const toolPatterns: Array<{
 const defaultConfig: ToolIconConfig = {
 	icon: MessageSquare,
 	label: "工具",
-	color: "text-cream-500 dark:text-cream-400",
+	color: "text-text-muted",
 };
 
 /** 根据工具名称获取图标配置 */

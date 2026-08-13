@@ -46,6 +46,7 @@ const TONE_ICON_CLASS: Record<StatusTileTone, string> = {
 	zinc: "text-text-muted bg-warm-200",
 };
 
+// 键值行:图标 + 标签/提示左,数值右;外层用 divide-y 列表卡包裹
 function StatusTile({
 	icon: Icon,
 	label,
@@ -56,37 +57,31 @@ function StatusTile({
 }: StatusTileProps) {
 	const iconCls = TONE_ICON_CLASS[tone];
 	return (
-		<div className="rounded-xl border border-border bg-surface p-4">
-			<div className="flex items-start gap-3">
-				<div
-					className={cn(
-						"relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg",
-						iconCls,
-					)}
-				>
-					<Icon className="h-4 w-4" strokeWidth={1.5} />
-					{pulse ? (
-						<span className="absolute -right-0.5 -top-0.5">
-							<StatusDot tone={tone} pulse size="xs" />
-						</span>
-					) : null}
-				</div>
-				<div className="min-w-0 flex-1">
-					<div className="text-xs font-medium uppercase tracking-wider text-text-muted">
-						{label}
-					</div>
-					<div
-						className="mt-1 text-lg font-semibold leading-tight text-text-primary tabular-nums"
-						title={String(value)}
-					>
-						<span className="block truncate">{value}</span>
-					</div>
-					{hint ? (
-						<div className="mt-0.5 truncate text-xs text-text-muted">
-							{hint}
-						</div>
-					) : null}
-				</div>
+		<div className="flex items-center gap-3 py-2.5">
+			<div
+				className={cn(
+					"relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg",
+					iconCls,
+				)}
+			>
+				<Icon className="h-4 w-4" strokeWidth={1.5} />
+				{pulse ? (
+					<span className="absolute -right-0.5 -top-0.5">
+						<StatusDot tone={tone} pulse size="xs" />
+					</span>
+				) : null}
+			</div>
+			<div className="min-w-0 flex-1">
+				<div className="text-xs font-medium text-text-secondary">{label}</div>
+				{hint ? (
+					<div className="mt-0.5 truncate text-2xs text-text-muted">{hint}</div>
+				) : null}
+			</div>
+			<div
+				className="max-w-[45%] truncate tabular-nums text-sm font-medium text-text-primary"
+				title={String(value)}
+			>
+				{value}
 			</div>
 		</div>
 	);
@@ -185,8 +180,8 @@ export function OverviewSection({
 				</div>
 			</SettingsSectionCard>
 
-			{/* 仪表盘 */}
-			<div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+			{/* 仪表盘 — 键值行列表卡 */}
+			<div className="rounded-2xl border border-border bg-surface px-4 divide-y divide-border/60">
 				<StatusTile
 					icon={Radio}
 					label="活跃渠道"

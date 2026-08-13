@@ -48,12 +48,14 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 		return weeks.slice(-MAX_WEEKS);
 	}, [data, startDate]);
 
+	// 热力阶梯走签名色 terracotta 的透明度斜坡（GitHub 绿与品牌色系冲突），
+	// 空格用 warm-200 随主题翻转
 	const getColor = (count: number) => {
-		if (count === 0) return "bg-cream-100";
-		if (count <= 2) return "bg-green-200";
-		if (count <= 5) return "bg-green-400";
-		if (count <= 10) return "bg-green-600";
-		return "bg-green-800";
+		if (count === 0) return "bg-warm-200";
+		if (count <= 2) return "bg-terracotta/25";
+		if (count <= 5) return "bg-terracotta/50";
+		if (count <= 10) return "bg-terracotta/75";
+		return "bg-terracotta";
 	};
 
 	const months = [
@@ -81,10 +83,7 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 						<div className="flex flex-col gap-1 pr-2">
 							<div className="h-3" /> {/* Spacer for months */}
 							{days.map((day, i) => (
-								<div
-									key={i}
-									className="text-[11px] text-text-muted h-3 leading-3"
-								>
+								<div key={i} className="text-2xs text-text-muted h-3 leading-3">
 									{day}
 								</div>
 							))}
@@ -93,7 +92,7 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 						{weeks.map((week, weekIndex) => (
 							<div key={weekIndex} className="flex flex-col gap-1">
 								{weekIndex % 4 === 0 && weekIndex > 0 ? (
-									<div className="text-[11px] text-text-muted h-3">
+									<div className="text-2xs text-text-muted h-3">
 										{week[0]?.date
 											? months[new Date(week[0].date).getMonth()]
 											: ""}
@@ -104,7 +103,7 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 								{week.map((day, dayIndex) => (
 									<div
 										key={dayIndex}
-										className={`w-3 h-3 rounded-sm ${day.count > 0 ? getColor(day.count) : "bg-cream-100"} ${day.date ? "cursor-pointer hover:ring-2 hover:ring-primary/50" : ""}`}
+										className={`w-3 h-3 rounded-sm ${day.count > 0 ? getColor(day.count) : "bg-warm-200"} ${day.date ? "cursor-pointer hover:ring-2 hover:ring-primary/50" : ""}`}
 										title={day.date ? `${day.date}: ${day.count} 次活动` : ""}
 									/>
 								))}
@@ -118,7 +117,7 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 			<div className="flex items-center gap-2 text-xs text-text-muted">
 				<span>少</span>
 				<div className="flex gap-1">
-					<div className="w-3 h-3 rounded-sm bg-cream-100" />
+					<div className="w-3 h-3 rounded-sm bg-warm-200" />
 					<div className="w-3 h-3 rounded-sm bg-green-200" />
 					<div className="w-3 h-3 rounded-sm bg-green-400" />
 					<div className="w-3 h-3 rounded-sm bg-green-600" />

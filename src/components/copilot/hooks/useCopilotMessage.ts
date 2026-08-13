@@ -12,6 +12,7 @@ import { createMessage } from "../../../lib/chat/types";
 import { EVENTS, events } from "../../../lib/events";
 import { workspaceStore } from "../../../lib/workspaceStore";
 import type { SlashCommand } from "../../chat/SlashCommand";
+import { confirmDialog } from "../../ui/ConfirmDialog";
 import { toast } from "../../ui/Toast";
 import type { ChatStoreLike } from "../types";
 import { useAgentHandler } from "./useAgentHandler";
@@ -274,11 +275,24 @@ export function useCopilotMessage({
 	);
 
 	const handleEditUserMessage = useCallback(
-		(messageId: string, newContent: string) => {
+		async (messageId: string, newContent: string) => {
 			const session = chatStore.activeSession;
 			if (!session) return;
 			const idx = session.messages.findIndex((m) => m.id === messageId);
 			if (idx < 0 || session.messages[idx].role !== "user") return;
+
+			// 错误预防：编辑重发会连带丢弃其后全部消息（不可逆），必须先告知数量
+			const affectedCount = session.messages.length - idx - 1;
+			if (affectedCount > 0) {
+				const ok = await confirmDialog.show({
+					title: "编辑并重新发送",
+					message: `重新发送将丢弃这条消息之后的 ${affectedCount} 条消息（包括 AI 回复与执行记录），且无法恢复。`,
+					type: "warning",
+					confirmText: "重新发送",
+					cancelText: "取消",
+				});
+				if (!ok) return;
+			}
 
 			// 删除该用户消息及其后的全部消息（含 assistant 回复 / trace）
 			const ids = session.messages.slice(idx).map((m) => m.id);
@@ -295,9 +309,18 @@ export function useCopilotMessage({
 	);
 
 	const handleDeleteMessage = useCallback(
-		(messageId: string) => {
+		async (messageId: string) => {
 			const session = chatStore.activeSession;
 			if (!session) return;
+			// 消息删除不可逆（会话级删除有 5s undo，消息级没有），加一道确认
+			const ok = await confirmDialog.show({
+				title: "删除消息",
+				message: "删除后无法恢复，确定删除这条消息吗？",
+				type: "danger",
+				confirmText: "删除",
+				cancelText: "取消",
+			});
+			if (!ok) return;
 			chatStore.deleteMessage(session.id, messageId);
 		},
 		[chatStore],

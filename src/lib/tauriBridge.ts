@@ -1,10 +1,10 @@
-import type { InvokeArgs } from "./tauriCompat";
+import type { InvokeArgs, IpcCommand } from "./tauriCompat";
 import { isDesktopEnvironment, invoke as rawInvoke } from "./tauriCompat";
 
 export const isTauriEnvironment = (): boolean => isDesktopEnvironment();
 
 export async function safeInvoke<T>(
-	command: string,
+	command: IpcCommand,
 	args?: InvokeArgs,
 ): Promise<T> {
 	if (!isDesktopEnvironment()) {

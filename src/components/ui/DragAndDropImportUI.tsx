@@ -56,11 +56,11 @@ export function DragAndDropImportUI<TResult = unknown>({
 
 	const statusClassName =
 		queueStatus === "importing"
-			? "text-focus bg-focus/8 dark:bg-blue-900/20 dark:text-focus"
+			? "text-focus bg-focus/8"
 			: summary.error > 0
-				? "text-error bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 dark:text-error"
+				? "text-error bg-error/8"
 				: summary.success > 0
-					? "text-success bg-success/8 dark:bg-emerald-900/20 dark:text-success"
+					? "text-success bg-success/8"
 					: "text-text-secondary bg-warm-50";
 
 	const canStart = queueStatus === "idle" && hasPending;
@@ -76,7 +76,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 						<div className="w-full max-w-sm rounded-3xl bg-surface/85 shadow-[0_8px_30px_rgb(0,0,0,0.10)] ring-1 ring-black/5 dark:ring-white/10 px-5 py-4">
 							<div className="flex items-center gap-4">
 								<div className="w-11 h-11 rounded-2xl bg-warm-200 flex items-center justify-center">
-									<ArrowDownToLine className="w-5 h-5 text-text-secondary dark:text-cream-200" />
+									<ArrowDownToLine className="w-5 h-5 text-text-secondary" />
 								</div>
 								<div className="flex-1">
 									<p className="text-sm font-semibold text-text-primary">
@@ -181,7 +181,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 													queueStatus === "importing" &&
 													item.status === "importing"
 												}
-												className="shrink-0 p-1 rounded-md text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+												className="shrink-0 p-1 rounded-md text-text-light hover:text-text-secondary hover:bg-warm-200 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
 												title="移除"
 											>
 												<X className="w-3.5 h-3.5" />

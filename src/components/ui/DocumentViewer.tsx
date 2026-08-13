@@ -50,7 +50,7 @@ export default function DocumentViewer({
 				{onOpenReader && (
 					<button
 						onClick={onOpenReader}
-						className="flex items-center gap-2 px-5 py-2.5 bg-dark-muted text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+						className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
 					>
 						<BookOpen className="w-4 h-4" />
 						打开阅读器

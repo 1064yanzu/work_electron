@@ -155,7 +155,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					href={src}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="mt-4 px-4 py-2 bg-warm-200 rounded-lg text-sm hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors"
+					className="mt-4 px-4 py-2 bg-warm-200 rounded-lg text-sm hover:bg-warm-300 transition-colors"
 				>
 					在外部应用中打开
 				</a>
@@ -224,7 +224,7 @@ export default function PdfViewer({ src, className }: PdfViewerProps) {
 					>
 						<ZoomIn className="w-3.5 h-3.5" />
 					</button>
-					<div className="w-px h-3.5 bg-warm-300 dark:bg-cream-700 mx-1" />
+					<div className="w-px h-3.5 bg-warm-300 mx-1" />
 					<button
 						onClick={fitWidth}
 						className="p-1 rounded-md hover:bg-warm-200 transition-colors"

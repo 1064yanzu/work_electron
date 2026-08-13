@@ -15,6 +15,7 @@ import {
 } from "../storage/petWindowSettings";
 import { createLogger } from "../logging/logger";
 import { BatchedSender } from "../utils/batchedSender";
+import { sendToLiveWebContents } from "../utils/safeWebContentsSend";
 
 let petWindow: BrowserWindow | null = null;
 let preloadPath = "";
@@ -241,7 +242,10 @@ function animatePetWindowTo(
 		} else {
 			// 末端通知渲染端做落地反弹效果
 			try {
-				win.webContents.send("pet-landed", { x: clamped.x, y: clamped.y });
+				sendToLiveWebContents(win, "pet-landed", {
+					x: clamped.x,
+					y: clamped.y,
+				});
 			} catch {
 				// noop
 			}
@@ -400,7 +404,7 @@ export function broadcastMascotChange(
 	const payload = { id, source };
 	for (const win of getMascotBroadcastTargets()) {
 		try {
-			win.webContents.send("mascot-id-changed", payload);
+			sendToLiveWebContents(win, "mascot-id-changed", payload);
 		} catch {
 			// 窗口可能正在关闭
 		}
@@ -418,7 +422,7 @@ export function broadcastPetSettingsChange(
 	if (petWindow && !petWindow.isDestroyed()) targets.push(petWindow);
 	for (const win of targets) {
 		try {
-			win.webContents.send("pet-settings-changed", { patch });
+			sendToLiveWebContents(win, "pet-settings-changed", { patch });
 		} catch {
 			// noop
 		}
@@ -443,7 +447,7 @@ export function sendChatToMainWindow(
 		if (mainWin.isMinimized()) mainWin.restore();
 		mainWin.show();
 		mainWin.focus();
-		mainWin.webContents.send("pet-quick-reply", { text });
+		sendToLiveWebContents(mainWin, "pet-quick-reply", { text });
 	}
 }
 
@@ -487,7 +491,7 @@ export function forwardToPetWindow(
 			return;
 		}
 		// 低频通道（pet-focus-input / reminder 等）保持逐条直发
-		petWindow.webContents.send(channel, payload);
+		sendToLiveWebContents(petWindow, channel, payload);
 	} catch {
 		// 窗口可能正在关闭，静默忽略
 	}

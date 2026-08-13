@@ -180,7 +180,7 @@ export function CommandSubmenuView({
 										)}
 									</div>
 									{isSelected && !disabled && (
-										<span className="text-[11px] font-mono text-text-light flex-shrink-0">
+										<span className="text-2xs font-mono text-text-light flex-shrink-0">
 											↵
 										</span>
 									)}
@@ -192,17 +192,17 @@ export function CommandSubmenuView({
 			</div>
 
 			<div className="px-4 py-1.5 border-t border-border">
-				<div className="flex items-center justify-center gap-4 text-[11px] text-text-light">
+				<div className="flex items-center justify-center gap-4 text-2xs text-text-light">
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[11px]">⌫</span>
+						<span className="font-mono text-2xs">⌫</span>
 						<span>返回</span>
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[11px]">↵</span>
+						<span className="font-mono text-2xs">↵</span>
 						<span>选择</span>
 					</span>
 					<span className="flex items-center gap-1">
-						<span className="font-mono text-[11px]">esc</span>
+						<span className="font-mono text-2xs">esc</span>
 						<span>关闭</span>
 					</span>
 				</div>

@@ -1,5 +1,5 @@
 import { Cpu } from "lucide-react";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastBus";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
 	CORE_PROVIDER_IDS,

@@ -439,8 +439,8 @@ export function AgentSettings() {
 				}
 			/>
 
-			{/* 概览统计 */}
-			<div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+			{/* 概览统计 — 键值行列表卡 */}
+			<div className="rounded-2xl border border-border bg-surface px-4 divide-y divide-border/60">
 				<SettingsStat
 					label="默认权限"
 					value={permissionModeLabel}

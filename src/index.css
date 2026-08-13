@@ -42,6 +42,11 @@
 		--shadow-card: 0 1px 2px 0 rgb(26 26 25 / 0.04);
 		--shadow-pop: 0 4px 12px 0 rgb(26 26 25 / 0.06);
 		--shadow-ring: 0 0 0 1px rgb(232 229 221);
+		--shadow-float: 0 10px 30px -18px rgb(26 26 25 / 0.25);
+		--shadow-node: 0 1px 3px 0 rgb(26 26 25 / 0.06);
+
+		/* 三栏头部统一高度 —— 左/中/右第一条水平分隔线必须落在同一基线 */
+		--header-h: 40px;
 	}
 
 	.dark {
@@ -88,6 +93,10 @@
 		--shadow-pop:
 			0 4px 16px 0 rgb(0 0 0 / 0.5), inset 0 1px 0 0 rgb(255 255 255 / 0.04);
 		--shadow-ring: 0 0 0 1px rgb(255 255 255 / 0.06);
+		--shadow-float:
+			0 10px 30px -18px rgb(0 0 0 / 0.65),
+			inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+		--shadow-node: 0 1px 3px 0 rgb(0 0 0 / 0.45);
 	}
 
 	body {
@@ -1333,6 +1342,38 @@ html[data-motion-preference="reduced"] *::after {
 	animation: none;
 	box-shadow: 0 0 0 2px var(--t-primary, #1a1a19);
 	transition: box-shadow 80ms ease-out;
+}
+
+/* ---------------------------------------------------------------- */
+/* 执行图 → 对话流 ToolCall 定位高亮：主题 token ring + 自动淡出       */
+/* 由 CopilotSidebar 的 AGENT_FOCUS_TOOL_CALL 监听器加/移除 class      */
+/* ---------------------------------------------------------------- */
+.tool-call-highlight {
+	animation: tool-call-highlight 1400ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+	border-radius: 16px;
+}
+
+@keyframes tool-call-highlight {
+	0% {
+		box-shadow:
+			0 0 0 2px var(--t-primary, #1a1a19),
+			0 0 0 6px var(--t-primary-muted, rgba(26, 26, 25, 0.1));
+	}
+	60% {
+		box-shadow:
+			0 0 0 2px var(--t-primary, #1a1a19),
+			0 0 0 8px transparent;
+	}
+	100% {
+		box-shadow:
+			0 0 0 0 transparent,
+			0 0 0 0 transparent;
+	}
+}
+
+.motion-reduced .tool-call-highlight {
+	animation: none;
+	box-shadow: 0 0 0 2px var(--t-primary, #1a1a19);
 }
 
 /* 滚动条统一样式已合并到文件上方「暖色调滚动条」一节（--t-scrollbar token） */

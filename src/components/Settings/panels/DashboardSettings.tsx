@@ -5,7 +5,7 @@ import {
 	getDailyActivity,
 	getDashboardStats,
 } from "../../../lib/api";
-import { useChatStore } from "../../../lib/chat/store";
+import { useChatStoreSelector } from "../../../lib/chat/store";
 import type { DashboardStats } from "../../../types";
 import { ActivityHeatmap } from "../../ActivityHeatmap";
 import { SettingsPanelHeader } from "../components/SettingsPanelHeader";
@@ -34,8 +34,8 @@ function formatTokenCount(count: number): string {
  * 计算所有会话的 token 使用统计（分时段）
  */
 function useTokenStats() {
-	// 使用响应式订阅，而不是一次性获取
-	const { sessions } = useChatStore();
+	// 精确订阅 sessions 字段，避免全量订阅导致的无关重渲染
+	const sessions = useChatStoreSelector((s) => s.sessions);
 
 	return useMemo(() => {
 		const now = Date.now();
@@ -166,50 +166,36 @@ function KnowledgeStatsPanel({ stats }: { stats: DashboardStats }) {
 			label: "知识来源",
 			value: stats.sources_count ?? 0,
 			unit: "个文件",
-			tone: "text-text-secondary",
 		},
 		{
 			icon: FileText,
 			label: "原子笔记",
 			value: stats.notes_count ?? 0,
 			unit: "篇",
-			tone: "bai-icon-mint",
 		},
 		{
 			icon: FileOutput,
 			label: "创作产出",
 			value: stats.outputs_count ?? 0,
 			unit: "文章",
-			tone: "bai-icon-peach",
 		},
 	] as const;
 
+	// 键值行列表:图标 + 标签左,数值右,替代大数字卡片阵列
 	return (
-		<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-			{items.map(({ icon: Icon, label, value, unit, tone }) => (
-				<div
-					key={label}
-					className="p-5 bg-surface border border-border rounded-2xl shadow-bai-card relative overflow-hidden group hover:border-cream-500 transition-colors"
-				>
-					<div className="absolute top-0 right-0 p-4 opacity-[0.06] group-hover:opacity-10 transition-opacity">
-						<Icon className="w-16 h-16 text-cream-700" strokeWidth={1.5} />
+		<div className="rounded-2xl border border-border bg-surface px-5 shadow-bai-card divide-y divide-border/60">
+			{items.map(({ icon: Icon, label, value, unit }) => (
+				<div key={label} className="flex items-center gap-3 py-3">
+					<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warm-200 border border-border shrink-0">
+						<Icon className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
 					</div>
-					<div className="relative z-10">
-						<div className="flex items-center gap-2 mb-3">
-							<div className="w-8 h-8 rounded-lg bg-warm-200 border border-border flex items-center justify-center">
-								<Icon className={`w-4 h-4 ${tone}`} strokeWidth={1.5} />
-							</div>
-							<span className="text-sm font-medium text-text-secondary">
-								{label}
-							</span>
-						</div>
-						<div className="flex items-baseline gap-2">
-							<span className="text-3xl font-mono font-semibold text-text-primary tabular-nums">
-								{value.toLocaleString()}
-							</span>
-							<span className="text-xs text-text-light">{unit}</span>
-						</div>
-					</div>
+					<span className="flex-1 text-sm font-medium text-text-secondary">
+						{label}
+					</span>
+					<span className="tabular-nums text-sm font-medium text-text-primary">
+						{value.toLocaleString()}
+					</span>
+					<span className="text-xs text-text-light w-12">{unit}</span>
 				</div>
 			))}
 		</div>
@@ -246,7 +232,7 @@ function TokenUsagePanel({
 						<button
 							key={p}
 							onClick={() => setPeriod(p)}
-							className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+							className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
 								period === p
 									? "bg-surface text-text-primary"
 									: "text-text-muted hover:text-text-secondary"
@@ -261,107 +247,92 @@ function TokenUsagePanel({
 				</div>
 			</div>
 
-			<div className="p-6 bg-surface border border-border rounded-2xl shadow-bai-card">
-				<div className="flex items-end justify-between mb-6">
-					<div>
-						<div className="text-sm text-text-muted mb-1">总消耗 Tokens</div>
-						<div className="text-4xl font-mono font-semibold text-text-primary tracking-tight tabular-nums">
+			<div className="p-5 bg-surface border border-border rounded-2xl shadow-bai-card">
+				{/* 汇总键值行:替代大数字 hero 展示 */}
+				<div className="divide-y divide-border/60 mb-4">
+					<div className="flex items-center justify-between py-2">
+						<span className="text-xs text-text-secondary">总消耗 Tokens</span>
+						<span className="tabular-nums text-sm font-medium text-text-primary">
 							{currentStats.total.toLocaleString()}
-						</div>
+						</span>
 					</div>
-					<div className="text-right">
-						<div className="text-xs text-text-light mb-1">
+					<div className="flex items-center justify-between py-2">
+						<span className="text-xs text-text-secondary">
 							{hasRealCost ? "实际花费" : "预估花费"}
-						</div>
-						<div className="text-lg font-mono font-medium text-text-secondary tabular-nums">
+						</span>
+						<span className="tabular-nums text-sm font-medium text-text-primary">
 							$
 							{hasRealCost
 								? currentStats.cost.toFixed(4)
 								: (currentStats.total * 0.000002).toFixed(4)}
 							{!hasRealCost && (
-								<span className="text-[11px] text-text-light ml-1">(估算)</span>
+								<span className="text-2xs text-text-light ml-1">(估算)</span>
 							)}
-						</div>
+						</span>
 					</div>
 				</div>
 
 				{/* 进度条可视化 — 深浅对比代替色相对比 */}
-				<div className="h-3 w-full bg-warm-200 rounded-full overflow-hidden flex mb-6">
+				<div className="h-3 w-full bg-warm-200 rounded-full overflow-hidden flex mb-4">
 					<div
-						className="h-full bg-cream-900 transition-[width] duration-500 ease-out"
+						className="h-full bg-primary transition-[width] duration-500 ease-out"
 						style={{ width: `${promptPercent}%` }}
 					/>
 					<div
-						className="h-full bg-cream-500 transition-[width] duration-500 ease-out"
+						className="h-full bg-warm-500 transition-[width] duration-500 ease-out"
 						style={{ width: `${completionPercent}%` }}
 					/>
 				</div>
 
-				{/* 详细数据 */}
-				<div
-					className={`grid ${hasCacheData ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"} gap-4`}
-				>
-					<div className="p-4 bg-cream-200/60 rounded-xl border border-border">
-						<div className="flex items-center gap-2 mb-2">
-							<div className="w-2 h-2 rounded-full bg-cream-900" />
-							<span className="text-xs font-medium text-text-muted">
-								输入 (Prompt)
-							</span>
-						</div>
-						<div className="flex items-baseline gap-2">
-							<span className="text-xl font-mono font-semibold text-text-primary tabular-nums">
-								{formatTokenCount(currentStats.prompt)}
-							</span>
-							<span className="text-xs text-text-light">
-								{promptPercent.toFixed(1)}%
-							</span>
-						</div>
+				{/* 明细键值行:圆点图例 + 标签左,数值右 */}
+				<div className="divide-y divide-border/60">
+					<div className="flex items-center gap-2 py-2">
+						<div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+						<span className="flex-1 text-xs font-medium text-text-muted">
+							输入 (Prompt)
+						</span>
+						<span className="tabular-nums text-sm font-medium text-text-primary">
+							{formatTokenCount(currentStats.prompt)}
+						</span>
+						<span className="text-xs text-text-light w-12 text-right">
+							{promptPercent.toFixed(1)}%
+						</span>
 					</div>
 
-					<div className="p-4 bg-cream-200/60 rounded-xl border border-border">
-						<div className="flex items-center gap-2 mb-2">
-							<div className="w-2 h-2 rounded-full bg-cream-500" />
-							<span className="text-xs font-medium text-text-muted">
-								输出 (Completion)
-							</span>
-						</div>
-						<div className="flex items-baseline gap-2">
-							<span className="text-xl font-mono font-semibold text-text-primary tabular-nums">
-								{formatTokenCount(currentStats.completion)}
-							</span>
-							<span className="text-xs text-text-light">
-								{completionPercent.toFixed(1)}%
-							</span>
-						</div>
+					<div className="flex items-center gap-2 py-2">
+						<div className="w-2 h-2 rounded-full bg-warm-500 shrink-0" />
+						<span className="flex-1 text-xs font-medium text-text-muted">
+							输出 (Completion)
+						</span>
+						<span className="tabular-nums text-sm font-medium text-text-primary">
+							{formatTokenCount(currentStats.completion)}
+						</span>
+						<span className="text-xs text-text-light w-12 text-right">
+							{completionPercent.toFixed(1)}%
+						</span>
 					</div>
 
 					{hasCacheData && (
 						<>
-							<div className="p-4 bg-cream-200/60 rounded-xl border border-border">
-								<div className="flex items-center gap-2 mb-2">
-									<div className="w-2 h-2 rounded-full bg-cream-700" />
-									<span className="text-xs font-medium text-text-muted">
-										Cache 命中
-									</span>
-								</div>
-								<div className="flex items-baseline gap-2">
-									<span className="text-xl font-mono font-semibold text-text-primary tabular-nums">
-										{formatTokenCount(currentStats.cacheRead)}
-									</span>
-								</div>
+							<div className="flex items-center gap-2 py-2">
+								<div className="w-2 h-2 rounded-full bg-warm-700 shrink-0" />
+								<span className="flex-1 text-xs font-medium text-text-muted">
+									Cache 命中
+								</span>
+								<span className="tabular-nums text-sm font-medium text-text-primary">
+									{formatTokenCount(currentStats.cacheRead)}
+								</span>
+								<span className="w-12" />
 							</div>
-							<div className="p-4 bg-cream-200/60 rounded-xl border border-border">
-								<div className="flex items-center gap-2 mb-2">
-									<div className="w-2 h-2 rounded-full bg-cream-700" />
-									<span className="text-xs font-medium text-text-muted">
-										Cache 创建
-									</span>
-								</div>
-								<div className="flex items-baseline gap-2">
-									<span className="text-xl font-mono font-semibold text-text-primary tabular-nums">
-										{formatTokenCount(currentStats.cacheCreation)}
-									</span>
-								</div>
+							<div className="flex items-center gap-2 py-2">
+								<div className="w-2 h-2 rounded-full bg-warm-700 shrink-0" />
+								<span className="flex-1 text-xs font-medium text-text-muted">
+									Cache 创建
+								</span>
+								<span className="tabular-nums text-sm font-medium text-text-primary">
+									{formatTokenCount(currentStats.cacheCreation)}
+								</span>
+								<span className="w-12" />
 							</div>
 						</>
 					)}

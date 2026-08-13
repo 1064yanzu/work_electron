@@ -154,7 +154,7 @@ export function HarnessUsageSection() {
 				</SettingsHint>
 			) : (
 				<>
-					<div className="mb-3 grid grid-cols-3 gap-2">
+					<div className="mb-3 divide-y divide-border/60">
 						<StatTile label="会话" value={formatCount(totals.sessions)} />
 						<StatTile label="消息" value={formatCount(totals.messages)} />
 						<StatTile
@@ -251,13 +251,14 @@ export function HarnessUsageSection() {
 	);
 }
 
+// 键值行:label 左、数值右,替代小统计卡
 function StatTile({ label, value }: { label: string; value: string }) {
 	return (
-		<div className="rounded-xl border border-border px-3 py-2">
-			<div className="text-xs text-text-muted">{label}</div>
-			<div className="mt-0.5 text-base font-medium tabular-nums text-text-primary">
+		<div className="flex items-center justify-between py-2">
+			<span className="text-xs text-text-secondary">{label}</span>
+			<span className="tabular-nums text-sm font-medium text-text-primary">
 				{value}
-			</div>
+			</span>
 		</div>
 	);
 }

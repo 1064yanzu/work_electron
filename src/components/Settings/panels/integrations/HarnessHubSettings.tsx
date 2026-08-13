@@ -499,7 +499,7 @@ export function HarnessHubSettings() {
 				>
 					<div className="space-y-3">
 						{showProgress && (
-							<div className="rounded-2xl border border-border bg-cream-50 px-3.5 py-3">
+							<div className="rounded-2xl border border-border bg-surface px-3.5 py-3">
 								<div className="flex items-baseline justify-between gap-3">
 									<span className="min-w-0 truncate text-xs font-medium text-text-primary">
 										{PHASE_LABEL[progress?.phase ?? "scanning"]}
@@ -509,7 +509,7 @@ export function HarnessHubSettings() {
 										{progress ? `${progress.processed}/${progress.total}` : "…"}
 									</span>
 								</div>
-								<div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-cream-300">
+								<div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-warm-200">
 									<div
 										className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
 										style={{ width: `${percent}%` }}
@@ -624,7 +624,7 @@ export function HarnessHubSettings() {
 												/>
 												{expanded && (
 													<div className="pb-4">
-														<div className="rounded-2xl border border-border bg-cream-50 px-3.5 py-3">
+														<div className="rounded-2xl border border-border bg-surface px-3.5 py-3">
 															<div className="text-xs font-medium text-text-primary">
 																输入框选择器
 															</div>
@@ -670,7 +670,7 @@ export function HarnessHubSettings() {
 
 							<div className="mt-4 border-t border-border pt-4">
 								{showAddForm ? (
-									<div className="rounded-2xl border border-border bg-cream-50 px-3.5 py-3">
+									<div className="rounded-2xl border border-border bg-surface px-3.5 py-3">
 										<div className="text-xs font-medium text-text-primary">
 											添加自定义站点
 										</div>

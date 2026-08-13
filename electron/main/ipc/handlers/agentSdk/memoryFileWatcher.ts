@@ -13,6 +13,7 @@ import path from "node:path";
 import type { BrowserWindow } from "electron";
 import chokidar, { type FSWatcher } from "chokidar";
 import { getMemoryDir } from "./memoryFileStore";
+import { sendToLiveWebContents } from "../../../utils/safeWebContentsSend";
 
 type GetMainWindow = () => BrowserWindow | null | undefined;
 
@@ -83,7 +84,7 @@ class MemoryFileWatcher {
 			this.debounceTimers.delete(filePath);
 			const win = this.getMainWindow();
 			try {
-				win?.webContents.send("agent_memory:file_changed", {
+				sendToLiveWebContents(win, "agent_memory:file_changed", {
 					path: filePath,
 					ts: Date.now(),
 				});

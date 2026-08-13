@@ -6,6 +6,8 @@ import {
 	normalizeAnthropicBaseUrl,
 	normalizeOpenAICompatibleBaseUrl,
 } from "../../llm/providerHttp";
+import { humanizeUpstreamError } from "../../llm/protocol/errors";
+import { readSseStream } from "../../llm/protocol/sse";
 import { loggedFetch } from "../utils/loggedFetch";
 import { estimateAnthropicInputTokens } from "./tokenEstimation";
 import {
@@ -386,87 +388,6 @@ function isInvalidArgumentError(bodyText: string): boolean {
 		/\binvalid argument\b/i.test(t) ||
 		/"code"\s*:\s*400/i.test(t)
 	);
-}
-
-type AnthropicErrorPayload = {
-	type:
-		| "invalid_request_error"
-		| "authentication_error"
-		| "permission_error"
-		| "not_found_error"
-		| "rate_limit_error"
-		| "api_error"
-		| "overloaded_error";
-	message: string;
-};
-
-function extractUpstreamErrorMessage(bodyText: string): string {
-	if (!bodyText) return "";
-	try {
-		const parsed = JSON.parse(bodyText);
-		const msg =
-			(parsed?.error?.message as string | undefined) ??
-			(typeof parsed?.message === "string" ? parsed.message : undefined) ??
-			(typeof parsed?.error === "string" ? parsed.error : undefined);
-		if (typeof msg === "string" && msg.trim().length > 0) {
-			return msg.trim();
-		}
-	} catch {
-		// fallthrough to raw text
-	}
-	return bodyText.slice(0, 300);
-}
-
-function humanizeUpstreamError(
-	status: number,
-	bodyText: string,
-): AnthropicErrorPayload {
-	const upstreamMsg = extractUpstreamErrorMessage(bodyText);
-	const lower = upstreamMsg.toLowerCase();
-	if (status === 401 || status === 403) {
-		return {
-			type: "authentication_error",
-			message: `上游鉴权失败（${status}）：请检查 API Key 是否正确或已过期。原始信息：${upstreamMsg}`,
-		};
-	}
-	if (status === 404) {
-		// Use api_error (→ HTTP 500) instead of not_found_error (→ HTTP 404).
-		// Claude Code CLI treats any 404 from the proxy as "selected model issue",
-		// which is misleading when the upstream provider itself returns 404.
-		// Returning 500 lets the CLI surface the actual error message to the user.
-		return {
-			type: "api_error",
-			message: `模型不存在或已下线（404）：请检查 Provider 配置中的模型 ID。原始信息：${upstreamMsg}`,
-		};
-	}
-	if (status === 429) {
-		const isQuota =
-			lower.includes("insufficient_quota") ||
-			lower.includes("quota") ||
-			lower.includes("balance");
-		return {
-			type: "rate_limit_error",
-			message: isQuota
-				? `上游 API 配额不足（429）：请检查账户余额或更换 Provider / API Key。原始信息：${upstreamMsg}`
-				: `上游限流（429）：请稍后重试或更换 Provider。原始信息：${upstreamMsg}`,
-		};
-	}
-	if (status >= 500 && status <= 599) {
-		return {
-			type: "api_error",
-			message: `上游服务异常（${status}）：${upstreamMsg || "请稍后重试"}`,
-		};
-	}
-	if (status === 400) {
-		return {
-			type: "invalid_request_error",
-			message: `请求参数错误（400）：${upstreamMsg || "请检查模型 ID 和请求体"}`,
-		};
-	}
-	return {
-		type: "api_error",
-		message: `上游返回错误（${status}）：${upstreamMsg || "未知错误"}`,
-	};
 }
 
 function getProviderTemplateId(provider: ProviderConfig): string {
@@ -1034,41 +955,6 @@ function emitAnthropicMessageContentBlocks(
 	}
 
 	return nextIndex;
-}
-
-async function readSseStream(
-	body: ReadableStream<Uint8Array>,
-	onData: (data: string) => void | Promise<void>,
-) {
-	const reader = body.getReader();
-	const decoder = new TextDecoder();
-	let buffer = "";
-	while (true) {
-		const { value, done } = await reader.read();
-		if (done) break;
-		buffer += decoder.decode(value, { stream: true });
-		while (true) {
-			const idx = buffer.indexOf("\n\n");
-			if (idx === -1) break;
-			const raw = buffer.slice(0, idx);
-			buffer = buffer.slice(idx + 2);
-			const lines = raw.split(/\r?\n/);
-			const dataLines = lines
-				.filter((l) => l.startsWith("data:"))
-				.map((l) => l.slice("data:".length).trimStart());
-			const data = dataLines.join("\n").trim();
-			if (data) await onData(data);
-		}
-	}
-	const tail = buffer.trim();
-	if (tail) {
-		const lines = tail.split(/\r?\n/);
-		const dataLines = lines
-			.filter((l) => l.startsWith("data:"))
-			.map((l) => l.slice("data:".length).trimStart());
-		const data = dataLines.join("\n").trim();
-		if (data) await onData(data);
-	}
 }
 
 function isResponsesEndpointUnsupported(status: number, errorText: string) {

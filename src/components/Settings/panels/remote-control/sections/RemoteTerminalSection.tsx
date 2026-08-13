@@ -48,7 +48,7 @@ import {
 import { StatusDot } from "../StatusDot";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-warm-500";
 
 const TEXTAREA_CLASS = cn(INPUT_CLASS, "font-mono leading-relaxed");
 
@@ -302,7 +302,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							</div>
 							<p className="mt-1 text-xs leading-relaxed text-text-secondary">
 								启用后，已配对的 IM 用户可发送
-								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
+								<code className="mx-1 rounded-lg bg-warm-200 px-1 py-0.5 text-xs">
 									/cli start &lt;preset&gt;
 								</code>
 								接管桌面端 pty，运行 codex / claude code / opencode 等 TUI。
@@ -434,7 +434,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							</SettingsSectionTitle>
 							<p className="text-xs leading-relaxed text-text-secondary">
 								开启后，IM 远端启动
-								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
+								<code className="mx-1 rounded-lg bg-warm-200 px-1 py-0.5 text-xs">
 									/cli start
 								</code>
 								时桌面端会自动弹出终端面板并切到该会话，方便你在电脑前同屏观察、必要时接管输入。
@@ -481,7 +481,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							</SettingsSectionTitle>
 							<p className="text-xs leading-relaxed text-text-secondary">
 								关闭时仅允许启动预设里的 CLI；开启后
-								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
+								<code className="mx-1 rounded-lg bg-warm-200 px-1 py-0.5 text-xs">
 									/cli start &lt;任意命令&gt;
 								</code>
 								会被直接执行，等同 SSH。请确保只对你完全信任的 IM 帐号开放。
@@ -622,7 +622,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							<div className="font-medium text-text-secondary">显示状态栏</div>
 							<p className="mt-0.5 text-xs text-text-muted">
 								卡片顶部追加
-								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5">
+								<code className="mx-1 rounded-lg bg-warm-200 px-1 py-0.5">
 									[cmd · age · pid · cols×rows · 行号]
 								</code>
 								状态条。
@@ -646,7 +646,9 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							</div>
 							<p className="mt-0.5 text-xs text-text-muted">
 								与上一帧相比新增/变更的行前面加
-								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5">▸</code>
+								<code className="mx-1 rounded-lg bg-warm-200 px-1 py-0.5">
+									▸
+								</code>
 								前缀，方便定位。
 							</p>
 						</div>
@@ -708,7 +710,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 							</div>
 							<p className="mt-0.5 text-xs text-text-muted">
 								匹配下方关键字时插入「确认/取消」按钮，避免误发
-								<code className="mx-1 rounded bg-warm-200 px-1 py-0.5">
+								<code className="mx-1 rounded-lg bg-warm-200 px-1 py-0.5">
 									rm -rf /
 								</code>
 								这类命令。
@@ -857,7 +859,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 								</div>
 								<p className="mt-0.5 text-xs text-text-muted">
 									IM 上传文件入站到
-									<code className="mx-1 rounded bg-warm-200 px-1 py-0.5">
+									<code className="mx-1 rounded-lg bg-warm-200 px-1 py-0.5">
 										cwd/.uploads/
 									</code>
 									；用 /cli get &lt;path&gt; 把 cwd 内的文件回传到手机。
@@ -947,7 +949,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 				</div>
 				<p className="text-xs leading-relaxed text-text-muted">
 					每行一项，制表符或两个以上空格分隔。格式：
-					<code className="ml-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
+					<code className="ml-1 rounded-lg bg-warm-200 px-1 py-0.5 text-xs">
 						id\tname\tcommand[\tcwd]
 					</code>
 					。 cwd 可选；缺省则使用第一条「默认 cwd」或用户主目录。
@@ -978,7 +980,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 				</div>
 				<p className="text-xs leading-relaxed text-text-muted">
 					每行一个绝对路径，
-					<code className="mx-1 rounded bg-warm-200 px-1 py-0.5 text-xs">
+					<code className="mx-1 rounded-lg bg-warm-200 px-1 py-0.5 text-xs">
 						~
 					</code>
 					会自动展开到家目录。 /cli start 未指定 --cwd 时使用第一条。
@@ -1010,7 +1012,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 					</Button>
 				</div>
 				{sortedSessions.length === 0 ? (
-					<div className="rounded-xl border border-dashed border-border bg-cream-50/40 px-4 py-8 text-center text-xs text-text-muted">
+					<div className="rounded-xl border border-dashed border-border bg-surface/40 px-4 py-8 text-center text-xs text-text-muted">
 						{terminal.enabled
 							? "当前没有活跃的远程终端会话。"
 							: "终端功能未启用。"}

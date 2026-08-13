@@ -61,9 +61,7 @@ type ChannelConfigCardProps = {
 	description: string;
 	/** 渠道图标 */
 	icon: ReactNode;
-	/** 顶部装饰线渐变色 */
-	accentGradient?: string;
-	/** 图标容器背景 */
+	/** 图标容器背景（平色 class，如 bg-warm-200） */
 	iconBg?: string;
 	/** 运行时状态 */
 	runtimeChannel?: RemoteChannelStatus;
@@ -80,15 +78,14 @@ type ChannelConfigCardProps = {
 };
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-400 dark:hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-warm-500";
 
 export function ChannelConfigCard({
 	channelId,
 	title,
 	description,
 	icon,
-	accentGradient = "from-cream-400 to-cream-500",
-	iconBg = "from-cream-500/15 to-cream-500/15",
+	iconBg = "bg-warm-200",
 	runtimeChannel,
 	channelConfig,
 	saving,
@@ -123,17 +120,12 @@ export function ChannelConfigCard({
 
 	return (
 		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
-			{/* 顶部装饰线 */}
-			<div
-				className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${accentGradient} opacity-50`}
-			/>
-
 			<div className="p-5 space-y-5">
 				{/* 标题 + 开关 */}
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-3">
 						<div
-							className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${iconBg} dark:opacity-90`}
+							className={`flex h-9 w-9 items-center justify-center rounded-lg border border-border ${iconBg} dark:opacity-90`}
 						>
 							{icon}
 						</div>
@@ -349,7 +341,7 @@ export function ChannelConfigCard({
 							className={`h-1.5 w-1.5 rounded-full ${
 								runtimeChannel?.running
 									? "bg-mint-500 animate-pulse"
-									: "bg-cream-500"
+									: "bg-warm-500"
 							}`}
 						/>
 						{runtimeChannel?.running ? "运行中" : "未运行"}

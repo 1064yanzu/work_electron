@@ -25,6 +25,7 @@ import {
 import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
 import { drag, type D3DragEvent } from "d3-drag";
+import { themeManager } from "../../lib/theme";
 import type { WikiPageItem } from "./useWiki";
 
 /* ------------------------------------------------------------------ */
@@ -88,9 +89,38 @@ const NODE_COLORS: Record<string, string> = {
 };
 const DEFAULT_COLOR = "#94a3b8";
 const ROOT_COLOR: string = NODE_COLORS.map ?? "#d97706";
-const EDGE_COLOR = "rgba(0,0,0,0.14)";
-const EDGE_COLOR_DIM = "rgba(0,0,0,0.05)";
-const LABEL_COLOR = "#52525b";
+
+/**
+ * 依赖主题的图元颜色。
+ *
+ * 节点填充（NODE_COLORS）是中等饱和度色板，亮暗都够看，所以两套共用；
+ * 但连线、标签、节点描边原先写死成「黑色半透明 / zinc-600 / 纯白」，在暗色
+ * 背景上连线几乎不可见、标签对比度不足、白描边刺眼。这里按 TerminalInstance
+ * 的双主题常量 + themeManager 订阅模式拆成两套。
+ */
+const GRAPH_THEME = {
+	light: {
+		edge: "rgba(0,0,0,0.14)",
+		edgeDim: "rgba(0,0,0,0.05)",
+		label: "#52525b",
+		nodeStroke: "#ffffff",
+		nodeStrokeHover: "#18181b",
+	},
+	dark: {
+		edge: "rgba(255,255,255,0.22)",
+		edgeDim: "rgba(255,255,255,0.08)",
+		label: "#c4c2bb",
+		nodeStroke: "#26251f",
+		nodeStrokeHover: "#f5f4ef",
+	},
+} as const;
+
+type GraphTheme = (typeof GRAPH_THEME)[keyof typeof GRAPH_THEME];
+
+function getGraphTheme(): GraphTheme {
+	return themeManager.isDark() ? GRAPH_THEME.dark : GRAPH_THEME.light;
+}
+
 const MIN_RADIUS = 7;
 const MAX_RADIUS = 18;
 const ROOT_RADIUS = 22;
@@ -227,6 +257,13 @@ export function WikiGraphCanvas({
 	const hostRef = useRef<HTMLDivElement>(null);
 	const simulationRef = useRef<Simulation<GraphNode, GraphLink> | null>(null);
 	const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
+	// d3 直接写 SVG 属性，不走 CSS 变量继承，所以主题切换必须触发一次重绘
+	const [graphTheme, setGraphTheme] = useState<GraphTheme>(getGraphTheme);
+
+	useEffect(
+		() => themeManager.subscribe(() => setGraphTheme(getGraphTheme())),
+		[],
+	);
 
 	const { nodes, links } = useMemo(
 		() => buildGraphData(pages, filterTypes, focusNodeId),
@@ -301,13 +338,13 @@ export function WikiGraphCanvas({
 			.data(simLinks)
 			.join("line")
 			.attr("stroke", (d) => {
-				if (!hitSet) return EDGE_COLOR;
+				if (!hitSet) return graphTheme.edge;
 				const s =
 					typeof d.source === "string" ? d.source : (d.source as GraphNode).id;
 				const t =
 					typeof d.target === "string" ? d.target : (d.target as GraphNode).id;
 				const bothHit = hitSet.has(s) && hitSet.has(t);
-				return bothHit ? EDGE_COLOR : EDGE_COLOR_DIM;
+				return bothHit ? graphTheme.edge : graphTheme.edgeDim;
 			})
 			.attr("stroke-width", 1);
 
@@ -323,7 +360,7 @@ export function WikiGraphCanvas({
 			.append("circle")
 			.attr("r", (d) => d.radius)
 			.attr("fill", (d) => getNodeColor(d.page, d.isRoot))
-			.attr("stroke", "white")
+			.attr("stroke", graphTheme.nodeStroke)
 			.attr("stroke-width", (d) => (d.isRoot ? 2 : 1.2))
 			.attr("opacity", (d) => {
 				if (!hitSet) return d.isRoot ? 1 : 0.9;
@@ -337,7 +374,7 @@ export function WikiGraphCanvas({
 				.attr("x", (d) => d.radius + 5)
 				.attr("y", 3.5)
 				.attr("font-size", 10.5)
-				.attr("fill", LABEL_COLOR)
+				.attr("fill", graphTheme.label)
 				.attr("pointer-events", "none")
 				.style("user-select", "none")
 				.attr("opacity", (d) => {
@@ -372,7 +409,7 @@ export function WikiGraphCanvas({
 				select(this)
 					.select("circle")
 					.attr("opacity", 1)
-					.attr("stroke", "#18181b")
+					.attr("stroke", graphTheme.nodeStrokeHover)
 					.attr("stroke-width", 2);
 
 				const hostEl = hostRef.current;
@@ -394,7 +431,7 @@ export function WikiGraphCanvas({
 						if (!hitSet) return d.isRoot ? 1 : 0.9;
 						return hitSet.has(d.id) ? 1 : 0.25;
 					})
-					.attr("stroke", "white")
+					.attr("stroke", graphTheme.nodeStroke)
 					.attr("stroke-width", d.isRoot ? 2 : 1.2);
 				setTooltip(null);
 				onHoverChangeRef.current?.(null);
@@ -418,7 +455,16 @@ export function WikiGraphCanvas({
 			simulationRef.current = null;
 			svgSel.selectAll("*").remove();
 		};
-	}, [nodes, links, width, height, hitSet, showLabels, initialScale]);
+	}, [
+		nodes,
+		links,
+		width,
+		height,
+		hitSet,
+		showLabels,
+		initialScale,
+		graphTheme,
+	]);
 
 	return (
 		<div

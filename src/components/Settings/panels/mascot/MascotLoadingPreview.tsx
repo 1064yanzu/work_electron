@@ -23,7 +23,7 @@ export function MascotLoadingPreview({
 	if (!src) return null;
 	return (
 		<div
-			className="flex items-center gap-4 rounded-2xl border border-border bg-cream-50 p-4"
+			className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4"
 			style={{ borderColor: `${accentColor}33` }}
 		>
 			<div
@@ -55,7 +55,7 @@ export function MascotLoadingPreview({
 						思考态视频动画
 					</span>
 					<span
-						className="rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wider"
+						className="rounded-full px-2 py-0.5 text-2xs font-semibold tracking-wider"
 						style={{
 							backgroundColor: `${accentColor}1F`,
 							color: accentColor,

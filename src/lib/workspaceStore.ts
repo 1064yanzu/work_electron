@@ -96,21 +96,37 @@ class WorkspaceStore {
 	// 仅获取核心状态（不聚合子 Store）
 	getCoreState = (): CoreWorkspaceState => this.state;
 
-	subscribe = (listener: () => void) => {
-		this.listeners.add(listener);
-		const notify = () => {
+	/**
+	 * 子 Store 的订阅在**模块初始化时建立一次**（单一 fan-out），
+	 * `subscribe` 只负责登记/注销自己的 listener。
+	 *
+	 * 此前每个订阅者都会各自订阅一遍三个子 Store，且回调里先把共享的
+	 * `cachedAggregatedState` 置空再调 listener。N 个订阅者 = 一次子 Store 变更
+	 * 触发 N 次缓存失效；由于 React 会在每个 listener 之后同步调用 getSnapshot，
+	 * 聚合对象会被重建 N 次、产生 N 个不同引用，
+	 * 导致 useWorkspaceStoreSelector 里「state 引用没变就复用」的快速路径永远
+	 * 命不中。现在一次变更只失效一次缓存，快速路径恢复生效。
+	 */
+	private childUnsubs: Array<() => void> | null = null;
+
+	private ensureChildSubscriptions() {
+		if (this.childUnsubs) return;
+		const onChildChange = () => {
 			this.cachedAggregatedState = null;
-			listener();
+			this.listeners.forEach((l) => l());
 		};
-		// 同时订阅所有子 Store，以便在任何 Store 变化时通知聚合监听器
-		const unsubs = [
-			layoutStore.subscribe(notify),
-			researchStore.subscribe(notify),
-			tabStore.subscribe(notify),
+		this.childUnsubs = [
+			layoutStore.subscribe(onChildChange),
+			researchStore.subscribe(onChildChange),
+			tabStore.subscribe(onChildChange),
 		];
+	}
+
+	subscribe = (listener: () => void) => {
+		this.ensureChildSubscriptions();
+		this.listeners.add(listener);
 		return () => {
 			this.listeners.delete(listener);
-			for (const unsub of unsubs) unsub();
 		};
 	};
 

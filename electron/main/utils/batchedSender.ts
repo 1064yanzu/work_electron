@@ -7,6 +7,7 @@
  * 因此 IPC 消费方代码无需修改。
  */
 import type { BrowserWindow } from "electron";
+import { sendToLiveWebContents } from "./safeWebContentsSend";
 
 export interface BatchedSenderOptions {
 	/** 强制 flush 的累计字节阈值（按 JSON.stringify 估算） */
@@ -70,7 +71,7 @@ export class BatchedSender<T> {
 
 		const win = this.getMainWindow();
 		if (!win || win.isDestroyed()) return;
-		win.webContents.send(this.channel, { items });
+		sendToLiveWebContents(win, this.channel, { items });
 	}
 
 	/** 主进程退出/窗口关闭时调用 */

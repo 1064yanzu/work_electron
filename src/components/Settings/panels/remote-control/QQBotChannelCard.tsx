@@ -27,7 +27,7 @@ import {
 } from "./ChannelFeatureToggles";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-400 dark:hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-warm-500";
 
 type QqbotChannelConfig = NonNullable<RemoteControlConfig["channels"]["qqbot"]>;
 
@@ -85,8 +85,6 @@ export function QQBotChannelCard({
 
 	return (
 		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
-			<div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand-qq to-brand-qq-deep opacity-60" />
-
 			<div className="p-5 space-y-5">
 				{/* 标题 + 开关 */}
 				<div className="flex items-center justify-between">
@@ -423,7 +421,7 @@ export function QQBotChannelCard({
 							className={`h-1.5 w-1.5 rounded-full ${
 								runtimeChannel?.running
 									? "bg-mint-500 animate-pulse"
-									: "bg-cream-500"
+									: "bg-warm-500"
 							}`}
 						/>
 						{runtimeChannel?.running ? "运行中" : "未运行"}

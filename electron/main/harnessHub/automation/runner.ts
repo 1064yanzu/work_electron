@@ -40,6 +40,7 @@ import {
 import type { AutomationJob } from "./jobs";
 import { advanceJobAfterRun } from "./jobs";
 import { harnessRuntimeMonitor } from "./runtimeMonitor";
+import { sendToLiveWebContents } from "../../utils/safeWebContentsSend";
 
 const logger = createLogger();
 
@@ -829,7 +830,7 @@ class AutomationRunner {
 			// 通知失败不影响任务本身
 		}
 		try {
-			this.getMainWindow()?.webContents.send("harness-job-alert", {
+			sendToLiveWebContents(this.getMainWindow(), "harness-job-alert", {
 				job_id: job.id,
 				job_name: job.name,
 				status,

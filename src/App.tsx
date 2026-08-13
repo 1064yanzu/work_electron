@@ -38,9 +38,18 @@ import {
 import { workspaceStore } from "./lib/workspaceStore";
 import { useLayoutStoreSelector } from "./lib/stores/layoutStore";
 import { layoutStore } from "./lib/stores/layoutStore";
-import { useCommandPaletteStoreSelector } from "./lib/stores/commandPaletteStore";
-import { useReaderStoreSelector } from "./lib/stores/readerStore";
-import { useCardLibraryStoreSelector } from "./lib/stores/cardLibraryStore";
+import {
+	commandPaletteStore,
+	useCommandPaletteStoreSelector,
+} from "./lib/stores/commandPaletteStore";
+import {
+	readerStoreApi,
+	useReaderStoreSelector,
+} from "./lib/stores/readerStore";
+import {
+	cardLibraryStoreApi,
+	useCardLibraryStoreSelector,
+} from "./lib/stores/cardLibraryStore";
 import {
 	installGlobalShortcutListener,
 	registerDefaultShortcuts,
@@ -61,6 +70,27 @@ import { cn } from "./lib/utils";
 
 // 右侧栏自动隐藏的阈值（百分比）- 当拖动结束时尺寸小于此值则隐藏
 const RIGHT_PANEL_COLLAPSE_THRESHOLD = 12;
+
+// 活动栏（rail）固定宽度，不参与 PanelGroup 百分比布局
+const RAIL_WIDTH = 52;
+
+/**
+ * 把像素期望换算成 PanelGroup 的百分比约束。
+ * 纯百分比在极端窗口宽度下不守恒：1100px 窗口左栏 15% 只剩 165px（标题全截断），
+ * 3440px 带鱼屏右栏 16% 起步就是 550px（想要窄聊天栏做不到）。
+ * 期望：左栏 ≥220px，右栏 ∈ [320px, 720px]。
+ */
+function computePanelConstraints(windowWidth: number) {
+	const avail = Math.max(windowWidth - RAIL_WIDTH, 480);
+	const pct = (px: number) => (px / avail) * 100;
+	const clamp = (v: number, lo: number, hi: number) =>
+		Math.min(Math.max(v, lo), hi);
+	return {
+		leftMin: clamp(Math.round(pct(220)), 10, 30),
+		rightMin: clamp(Math.round(pct(320)), 12, 40),
+		rightMax: clamp(Math.round(pct(720)), 28, 50),
+	};
+}
 
 const CopilotSidebar = lazy(() => import("./components/CopilotSidebar"));
 const ResourceSidebar = lazy(() => import("./components/ResourceSidebar"));
@@ -104,7 +134,23 @@ function PanelLoadingFallback() {
 	);
 }
 
+/**
+ * 最外层兜底边界。
+ *
+ * 三栏各自、以及每个全屏 Overlay 都已有自己的 PanelErrorBoundary，正常情况下
+ * 异常会被就近拦住。但 App 组件自身（顶层的一堆 bridge hook、Provider 树、
+ * PanelGroup 布局）抛错时没有任何东西接得住，结果仍然是整窗白屏。
+ * 这一层保证「最差也是一个能看懂、能重试的错误页」。
+ */
 export default function App() {
+	return (
+		<PanelErrorBoundary label="应用">
+			<AppRoot />
+		</PanelErrorBoundary>
+	);
+}
+
+function AppRoot() {
 	useRemoteChatBridge();
 	useRemoteTerminalBridge();
 	useHarnessTerminalBridge();
@@ -152,6 +198,25 @@ export default function App() {
 
 	// 左侧 Panel 的命令式句柄（用于响应 leftSidebarCollapsed 切换）
 	const leftPanelRef = useRef<ImperativePanelHandle>(null);
+
+	// 像素级面板约束：窗口缩放时把像素期望重算为百分比（只在值变化时 setState）
+	const [panelConstraints, setPanelConstraints] = useState(() =>
+		computePanelConstraints(window.innerWidth),
+	);
+	useEffect(() => {
+		const handleResize = () => {
+			const next = computePanelConstraints(window.innerWidth);
+			setPanelConstraints((prev) =>
+				prev.leftMin === next.leftMin &&
+				prev.rightMin === next.rightMin &&
+				prev.rightMax === next.rightMax
+					? prev
+					: next,
+			);
+		};
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
 
 	// 项目概念已从 UI 移除，工作区始终处于"无项目（global）"状态
 	useEffect(() => {
@@ -271,12 +336,16 @@ export default function App() {
 	}, []);
 
 	// 左侧 Panel 尺寸变化：维护吸附预告（与右侧对称，反馈一致）
-	const handleLeftPanelResize = useCallback((size: number) => {
-		setLeftSnapPreview((prev) => {
-			const next = size > 0 && size < 17;
-			return prev === next ? prev : next;
-		});
-	}, []);
+	// 阈值跟随动态 minSize：拖到贴边（min+2 以内）说明再拖就会 snap 收起
+	const handleLeftPanelResize = useCallback(
+		(size: number) => {
+			setLeftSnapPreview((prev) => {
+				const next = size > 0 && size < panelConstraints.leftMin + 2;
+				return prev === next ? prev : next;
+			});
+		},
+		[panelConstraints.leftMin],
+	);
 
 	// 处理右侧 ResizeHandle 拖动状态变化（拖动结束时检查是否吸附收起）
 	const handleRightResizeHandleDragging = useCallback(
@@ -367,7 +436,7 @@ export default function App() {
 						<Panel
 							ref={leftPanelRef}
 							defaultSize={20}
-							minSize={15}
+							minSize={panelConstraints.leftMin}
 							maxSize={50}
 							collapsible
 							collapsedSize={0}
@@ -433,9 +502,11 @@ export default function App() {
 												maxSize={80}
 												className="overflow-hidden"
 											>
-												<Suspense fallback={<PanelLoadingFallback />}>
-													<TerminalPanel />
-												</Suspense>
+												<PanelErrorBoundary label="终端">
+													<Suspense fallback={<PanelLoadingFallback />}>
+														<TerminalPanel />
+													</Suspense>
+												</PanelErrorBoundary>
 											</Panel>
 										</>
 									)}
@@ -452,8 +523,8 @@ export default function App() {
 						<Panel
 							ref={rightPanelRef}
 							defaultSize={28}
-							minSize={16}
-							maxSize={50}
+							minSize={panelConstraints.rightMin}
+							maxSize={panelConstraints.rightMax}
 							collapsible
 							collapsedSize={0}
 							onResize={handleRightPanelResize}
@@ -490,28 +561,48 @@ export default function App() {
 
 				{/* Global Settings Modal - Always rendered */}
 				{isSettingsOpen ? (
-					<Suspense fallback={null}>
-						<SettingsModal
-							isOpen={isSettingsOpen}
-							onClose={() => setIsSettingsOpen(false)}
-							initialTab={settingsInitialTab}
-						/>
-					</Suspense>
+					<PanelErrorBoundary
+						label="设置"
+						variant="overlay"
+						onClose={() => setIsSettingsOpen(false)}
+					>
+						<Suspense fallback={null}>
+							<SettingsModal
+								isOpen={isSettingsOpen}
+								onClose={() => setIsSettingsOpen(false)}
+								initialTab={settingsInitialTab}
+							/>
+						</Suspense>
+					</PanelErrorBoundary>
 				) : null}
 
 				{showMascotOnboarding ? (
-					<Suspense fallback={null}>
-						<MascotOnboarding onFinish={handleMascotOnboardingFinish} />
-					</Suspense>
+					<PanelErrorBoundary
+						label="新手引导"
+						variant="overlay"
+						onClose={handleMascotOnboardingFinish}
+					>
+						<Suspense fallback={null}>
+							<MascotOnboarding onFinish={handleMascotOnboardingFinish} />
+						</Suspense>
+					</PanelErrorBoundary>
 				) : null}
 
 				{/* Command Palette — Cmd+K 全局唤起，挂在最高层级避免被其它 modal 遮挡。
         					全局快捷键监听在 registerDefaultShortcuts 中注册，与本组件是否挂载无关，
         					因此这里可以安全地在关闭状态下完全不挂载该 lazy 组件，避免启动时预拉取 chunk */}
 				{isCommandPaletteOpen ? (
-					<Suspense fallback={null}>
-						<CommandPalette onOpenSettings={(tab) => handleOpenSettings(tab)} />
-					</Suspense>
+					<PanelErrorBoundary
+						label="命令面板"
+						variant="overlay"
+						onClose={() => commandPaletteStore.close()}
+					>
+						<Suspense fallback={null}>
+							<CommandPalette
+								onOpenSettings={(tab) => handleOpenSettings(tab)}
+							/>
+						</Suspense>
+					</PanelErrorBoundary>
 				) : null}
 
 				{/* 快捷键速查表 — Cmd+/ 唤起，数据来自 shortcutRegistry */}
@@ -519,16 +610,28 @@ export default function App() {
 
 				{/* 阅读器全屏 Overlay — 由 readerStore.openedBookId 控制，关闭时完全不挂载 */}
 				{isReaderOpen ? (
-					<Suspense fallback={null}>
-						<ReaderApp onOpenSettings={() => handleOpenSettings("reader")} />
-					</Suspense>
+					<PanelErrorBoundary
+						label="阅读器"
+						variant="overlay"
+						onClose={() => readerStoreApi.setOpenedBook(null)}
+					>
+						<Suspense fallback={null}>
+							<ReaderApp onOpenSettings={() => handleOpenSettings("reader")} />
+						</Suspense>
+					</PanelErrorBoundary>
 				) : null}
 
 				{/* 知识卡片库全屏 Overlay — 由 cardLibraryStore.open 控制（CardsHubView 的"放大"按钮触发），关闭时完全不挂载 */}
 				{isCardLibraryOpen ? (
-					<Suspense fallback={null}>
-						<KnowledgeCardsApp />
-					</Suspense>
+					<PanelErrorBoundary
+						label="知识卡片库"
+						variant="overlay"
+						onClose={() => cardLibraryStoreApi.close()}
+					>
+						<Suspense fallback={null}>
+							<KnowledgeCardsApp />
+						</Suspense>
+					</PanelErrorBoundary>
 				) : null}
 			</MouseDragProvider>
 		</GlobalContextMenuProvider>

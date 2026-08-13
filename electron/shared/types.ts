@@ -402,6 +402,68 @@ export interface AgentMessage {
 	updated_at: number;
 }
 
+export interface AgentTask {
+	id: string;
+	session_id: string;
+	goal: string;
+	status: "queued" | "running" | "succeeded" | "failed" | "canceled" | "paused";
+	error?: string;
+	budget_json?: unknown;
+	result_summary?: string;
+	created_at: number;
+	updated_at: number;
+	started_at?: number;
+	finished_at?: number;
+}
+
+export interface AgentNode {
+	id: string;
+	task_id: string;
+	kind: string;
+	name: string;
+	status: string;
+	depends_on_json?: string[];
+	input_json?: unknown;
+	output_json?: unknown;
+	error?: string;
+	created_at: number;
+	updated_at: number;
+}
+
+export interface AgentToolCall {
+	id: string;
+	task_id: string;
+	node_id: string;
+	tool_name: string;
+	tool_source: string;
+	mcp_server_id?: string;
+	args_json?: unknown;
+	status: string;
+	result_json?: unknown;
+	error?: string;
+	created_at: number;
+	updated_at: number;
+}
+
+export interface AgentArtifact {
+	id: string;
+	task_id: string;
+	kind: string;
+	title?: string;
+	payload_json: unknown;
+	created_at: number;
+}
+
+export interface AgentAuditLog {
+	id: string;
+	session_id: string;
+	task_id?: string;
+	level: string;
+	event: string;
+	payload_json?: unknown;
+	created_at: number;
+}
+
 // ==================
 // 统计类型
 // ==================

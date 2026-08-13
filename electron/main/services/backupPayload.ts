@@ -1,5 +1,10 @@
 import type { DbContext } from "../db/client";
 import type { Logger } from "../logging/types";
+import {
+	decryptSecretColumns,
+	encryptSecretColumns,
+	tableHasSecrets,
+} from "../storage/secretVault";
 
 type BackupRow = Record<string, unknown>;
 
@@ -187,7 +192,10 @@ export async function collectFullBackupPayload(
 			const rows = await db.client.execute(
 				`SELECT * FROM ${quoteIdentifier(table)}`,
 			);
-			tables[table] = rows.rows.map((row) => ({ ...(row as BackupRow) }));
+			tables[table] = decryptSecretColumns(
+				table,
+				rows.rows.map((row) => ({ ...(row as BackupRow) })),
+			) as BackupRow[];
 		} else {
 			// 大表分批导出，降低内存峰值。
 			// D9：用 rowid keyset 分页替代 LIMIT/OFFSET 递增（OFFSET 每批都要重扫前缀，整体 O(n²)；
@@ -209,7 +217,7 @@ export async function collectFullBackupPayload(
 				}
 				if (batch.rows.length < LARGE_TABLE_BATCH_SIZE) break;
 			}
-			tables[table] = allRows;
+			tables[table] = decryptSecretColumns(table, allRows) as BackupRow[];
 		}
 	}
 
@@ -340,7 +348,17 @@ export async function importNormalizedBackupPayload(
 		}
 
 		for (const table of targetTables) {
-			const rows = ensureRowArray(normalized.tables[table]);
+			// 备份文件里的凭证是明文（导出时解密过，保证跨设备可用）；
+			// 落库前重新纳入 safeStorage 保险库。
+			const rows = tableHasSecrets(table)
+				? (encryptSecretColumns(
+						table,
+						ensureRowArray(normalized.tables[table]) as Record<
+							string,
+							unknown
+						>[],
+					) as BackupRow[])
+				: ensureRowArray(normalized.tables[table]);
 			insertedByTable[table] = 0;
 
 			if (rows.length === 0) continue;

@@ -5,7 +5,7 @@
  * Undo → 还原 oldContent 到磁盘，或删除本轮新建文件。
  */
 
-import { toast } from "../../components/ui/Toast";
+import { toast } from "../../components/ui/toastBus";
 import { invoke } from "../tauriCompat";
 import { diffStore } from "../stores/diffStore";
 
@@ -29,11 +29,12 @@ export async function acceptDiff(diffId: string): Promise<boolean> {
 			toast.success(`文件已写入：${getFileName(diff.filePath)}`);
 			return true;
 		}
-		toast.error("写入失败");
+		toast.error(`无法写入「${getFileName(diff.filePath)}」，请重试`);
 		return false;
 	} catch (err) {
+		console.error("[diffActions] 写入失败", err);
 		toast.error(
-			`写入失败：${err instanceof Error ? err.message : String(err)}`,
+			`无法写入「${getFileName(diff.filePath)}」：文件可能被占用或路径不可写，请检查后重试`,
 		);
 		return false;
 	}
@@ -65,8 +66,10 @@ export async function rejectDiff(diffId: string): Promise<boolean> {
 		toast.success(`已撤销：${getFileName(diff.filePath)}`);
 		return true;
 	} catch (err) {
+		// 原始错误进控制台留证，给用户的文案说人话并给出下一步
+		console.error("[diffActions] 撤销失败", err);
 		toast.error(
-			`撤销失败：${err instanceof Error ? err.message : String(err)}`,
+			`无法撤销「${getFileName(diff.filePath)}」：文件可能被占用或已移动，请关闭占用程序后重试`,
 		);
 		return false;
 	}

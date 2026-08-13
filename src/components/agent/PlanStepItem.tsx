@@ -32,26 +32,26 @@ function StepStatusIcon({ status }: { status: PlanStep["status"] }) {
 	switch (status) {
 		case "completed":
 			return (
-				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-success/16 dark:bg-emerald-900/30">
-					<Check className="w-3.5 h-3.5 text-success dark:text-success" />
+				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-success/16">
+					<Check className="w-3.5 h-3.5 text-success" />
 				</div>
 			);
 		case "executing":
 			return (
-				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-focus/16 dark:bg-blue-900/30">
-					<Loader2 className="w-3.5 h-3.5 text-focus dark:text-focus animate-spin" />
+				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-focus/16">
+					<Loader2 className="w-3.5 h-3.5 text-focus animate-spin" />
 				</div>
 			);
 		case "confirmed":
 			return (
-				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-peach-200 dark:bg-amber-900/30">
-					<Check className="w-3.5 h-3.5 text-peach-500 dark:text-amber-400" />
+				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-warning/16">
+					<Check className="w-3.5 h-3.5 text-warning" />
 				</div>
 			);
 		case "rejected":
 			return (
-				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30">
-					<X className="w-3.5 h-3.5 text-error dark:text-error" />
+				<div className="flex items-center justify-center w-6 h-6 rounded-full bg-error/16">
+					<X className="w-3.5 h-3.5 text-error" />
 				</div>
 			);
 		default:
@@ -71,8 +71,7 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 		<div
 			className={cn(
 				"relative flex gap-3 px-3 py-2.5 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
-				isExecuting &&
-					"bg-focus/8 dark:bg-blue-900/10 ring-1 ring-blue-200/60 dark:ring-blue-800/40",
+				isExecuting && "bg-focus/8 ring-1 ring-focus/30",
 				step.status === "completed" && "opacity-75",
 				step.status === "rejected" && "opacity-50",
 			)}
@@ -83,13 +82,13 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 					className={cn(
 						"flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold transition-colors",
 						step.status === "completed"
-							? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
+							? "bg-success/16 text-success"
 							: step.status === "executing"
-								? "bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus"
+								? "bg-focus/16 text-focus"
 								: step.status === "confirmed"
-									? "bg-peach-200 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+									? "bg-warning/16 text-warning"
 									: step.status === "rejected"
-										? "bg-[rgba(181,51,51,0.16)] dark:bg-red-900/30 text-error dark:text-error"
+										? "bg-error/16 text-error"
 										: "bg-warm-200 text-text-muted",
 					)}
 				>

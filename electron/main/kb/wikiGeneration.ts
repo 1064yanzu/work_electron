@@ -30,6 +30,7 @@ import {
 	markSourceSkipped,
 } from "./wiki/sourceScanner";
 import { createWikiPage, updateWikiPage, listWikiPages } from "./wikiService";
+import { sendToLiveWebContents } from "../utils/safeWebContentsSend";
 
 // ---------------------------------------------------------------------------
 // 类型定义
@@ -338,7 +339,7 @@ function sendProgress(
 	mainWindow: BrowserWindow | null,
 	status: GenerationStatus,
 ): void {
-	mainWindow?.webContents.send("wiki_generation_progress", status);
+	sendToLiveWebContents(mainWindow, "wiki_generation_progress", status);
 }
 
 // ---------------------------------------------------------------------------

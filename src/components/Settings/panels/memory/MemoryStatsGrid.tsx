@@ -64,7 +64,7 @@ export function MemoryStatsGrid({ stats }: MemoryStatsGridProps) {
 									<div className="text-sm font-semibold text-text-primary truncate">
 										{style.label}
 									</div>
-									<div className="text-[11px] uppercase tracking-[0.14em] text-text-muted">
+									<div className="text-2xs uppercase tracking-[0.14em] text-text-muted">
 										{entries != null ? `${entries} 条` : "整段"}
 									</div>
 								</div>
@@ -78,12 +78,12 @@ export function MemoryStatsGrid({ stats }: MemoryStatsGridProps) {
 								>
 									{meta.chars}
 								</div>
-								<div className="text-[11px] text-text-muted tabular-nums">
+								<div className="text-2xs text-text-muted tabular-nums">
 									/ {meta.limit}
 								</div>
 							</div>
 						</div>
-						<div className="mt-3 h-1.5 w-full rounded-full bg-cream-100 overflow-hidden">
+						<div className="mt-3 h-1.5 w-full rounded-full bg-background overflow-hidden">
 							<div
 								className={cn(
 									"h-full rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",

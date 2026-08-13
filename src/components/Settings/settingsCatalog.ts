@@ -13,6 +13,7 @@ import {
 	BarChart3,
 	BookOpen,
 	Blocks,
+	Bookmark,
 	Boxes,
 	Brain,
 	Database,
@@ -69,6 +70,7 @@ export type SettingsTabId =
 	| "integrations.mcp"
 	| "integrations.remote"
 	| "integrations.harnessHub"
+	| "integrations.clip"
 	| "data.stats"
 	| "data.storage"
 	| "data.backup"
@@ -309,6 +311,16 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		load: asDefault(
 			() => import("./panels/integrations/HarnessHubSettings"),
 			"HarnessHubSettings",
+		),
+	},
+	{
+		id: "integrations.clip",
+		category: "integrations",
+		label: "剪藏服务",
+		icon: Bookmark,
+		load: asDefault(
+			() => import("./panels/integrations/ClipServiceSettings"),
+			"ClipServiceSettings",
 		),
 	},
 

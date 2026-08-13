@@ -37,13 +37,13 @@ export function ReaderPreviewSample({ settings }: ReaderPreviewSampleProps) {
 	};
 
 	return (
-		<div className="rounded-3xl border border-border bg-cream-50 p-1.5 shadow-bai-card">
+		<div className="rounded-3xl border border-border bg-surface p-1.5 shadow-bai-card">
 			<div
 				className="relative overflow-hidden rounded-2xl border"
 				style={previewStyle}
 			>
 				<div
-					className="flex items-center justify-between gap-3 border-b px-6 py-3 text-[11px] uppercase tracking-[0.2em]"
+					className="flex items-center justify-between gap-3 border-b px-6 py-3 text-2xs uppercase tracking-[0.2em]"
 					style={{
 						borderColor: tokens["--reader-border"],
 						color: tokens["--reader-fg-light"],
@@ -101,7 +101,7 @@ export function ReaderPreviewSample({ settings }: ReaderPreviewSampleProps) {
 				</div>
 
 				<div
-					className="absolute inset-x-6 bottom-3 flex items-center justify-between text-[11px]"
+					className="absolute inset-x-6 bottom-3 flex items-center justify-between text-2xs"
 					style={{ color: tokens["--reader-fg-light"] }}
 				>
 					<span>{theme.label}</span>

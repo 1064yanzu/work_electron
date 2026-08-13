@@ -8,7 +8,12 @@ import type {
 import { safeInvoke } from "../tauriBridge";
 
 export async function listFolders(projectId?: Uuid | null): Promise<Folder[]> {
-	return await safeInvoke("list_folders", { projectId: projectId ?? null });
+	// schema 的 project_id 是可选字段，缺省即「全部」；显式传 null 会被后端当成值，
+	// 所以这里省略键而不是传 null（原先靠 tauriCompat 的魔法映射做这层转换）。
+	return await safeInvoke(
+		"list_folders",
+		projectId ? { project_id: projectId } : {},
+	);
 }
 
 export async function createFolder(

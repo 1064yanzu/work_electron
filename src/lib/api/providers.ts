@@ -16,7 +16,7 @@ export async function upsertProvider(
 }
 
 export async function deleteProvider(providerId: string): Promise<void> {
-	return await safeInvoke("delete_provider", { providerId });
+	return await safeInvoke("delete_provider", { id: providerId });
 }
 
 export async function setActiveModel(model: string): Promise<void> {
@@ -30,5 +30,7 @@ export async function getActiveModel(): Promise<string | null> {
 export async function checkProviderApiKey(
 	providerId: string,
 ): Promise<ApiKeyCheckResult> {
-	return await safeInvoke("check_provider_api_key", { providerId });
+	return await safeInvoke("check_provider_api_key", {
+		provider_id: providerId,
+	});
 }

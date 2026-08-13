@@ -16,7 +16,7 @@
 // 另外：思考程度不是独立控件，而是模型项的次要值（`sonnet-4-5 高`），
 // 与 Codex 的 `5.6 Luna 高 ˅` 同构 —— 强相关的两个设置合成一格。
 
-import { ArrowUp, Sparkles } from "lucide-react";
+import { ArrowUp, Sparkles, Square } from "lucide-react";
 import { THINKING_LEVEL_LABELS } from "../../../lib/models/agentModelConfig";
 import { cn } from "../../../lib/utils";
 import { PlanModeToggle } from "../../agent/PlanModeToggle";
@@ -46,6 +46,13 @@ interface ChatInputToolbarProps {
 	/** 未传 onTogglePlanMode 时不渲染运行模式项（非 Agent 场景） */
 	planMode?: boolean;
 	onTogglePlanMode?: (enabled: boolean) => void;
+	/**
+	 * AI 正在响应（流式 / Agent 执行中）。为 true 且传了 onStop 时，
+	 * 发送键原位变成停止键 —— 与 Claude / Codex 同构，不再在输入框上方
+	 * 悬浮一颗会造成布局跳动的「停止响应」胶囊。
+	 */
+	isResponding?: boolean;
+	onStop?: () => void;
 }
 
 export function ChatInputToolbar({
@@ -61,8 +68,11 @@ export function ChatInputToolbar({
 	onSubmit,
 	planMode,
 	onTogglePlanMode,
+	isResponding = false,
+	onStop,
 }: ChatInputToolbarProps) {
 	const showValue = showsPillValue(density);
+	const showStop = isResponding && Boolean(onStop);
 	const submitDisabled = disabled || !hasContent;
 	const thinkingLevel = useThinkingLevel();
 	const modelIcon = model ? getModelIcon(model) : undefined;
@@ -109,24 +119,46 @@ export function ChatInputToolbar({
 			)}
 
 			<div className="shrink-0">
-				<Tooltip content="发送 ↵ · 换行 ⇧↵" placement="top">
-					<button
-						type="button"
-						onClick={onSubmit}
-						disabled={submitDisabled}
-						aria-label="发送消息"
-						className={cn(
-							"w-8 h-8 flex items-center justify-center rounded-full",
-							"transition-[background-color,color,opacity,transform] duration-150",
-							"cursor-pointer active:scale-95 disabled:cursor-not-allowed",
-							hasContent
-								? "bg-cream-900 dark:bg-cream-100 text-cream-100 dark:text-cream-900 hover:opacity-90"
-								: "bg-warm-400 dark:bg-cream-800 text-white dark:text-cream-600",
-						)}
-					>
-						<ArrowUp className="w-[17px] h-[17px]" strokeWidth={2.2} />
-					</button>
-				</Tooltip>
+				{showStop ? (
+					<Tooltip content="停止响应 ⌘." placement="top">
+						<button
+							type="button"
+							onClick={onStop}
+							aria-label="停止响应"
+							className={cn(
+								"w-8 h-8 flex items-center justify-center rounded-full",
+								"bg-primary text-primary-foreground hover:opacity-90",
+								"transition-[background-color,color,opacity,transform] duration-150",
+								"cursor-pointer active:scale-95",
+							)}
+						>
+							<Square
+								className="w-[11px] h-[11px]"
+								fill="currentColor"
+								strokeWidth={0}
+							/>
+						</button>
+					</Tooltip>
+				) : (
+					<Tooltip content="发送 ↵ · 换行 ⇧↵" placement="top">
+						<button
+							type="button"
+							onClick={onSubmit}
+							disabled={submitDisabled}
+							aria-label="发送消息"
+							className={cn(
+								"w-8 h-8 flex items-center justify-center rounded-full",
+								"transition-[background-color,color,opacity,transform] duration-150",
+								"cursor-pointer active:scale-95 disabled:cursor-not-allowed",
+								hasContent
+									? "bg-primary text-primary-foreground hover:opacity-90"
+									: "bg-warm-300 text-text-muted",
+							)}
+						>
+							<ArrowUp className="w-[17px] h-[17px]" strokeWidth={2.2} />
+						</button>
+					</Tooltip>
+				)}
 			</div>
 		</div>
 	);

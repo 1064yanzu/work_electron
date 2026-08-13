@@ -30,6 +30,7 @@
  */
 import type { DbContext } from "../db/client";
 import { BACKUP_VERSION, DEFAULT_BACKUP_TABLES } from "./backupPayload";
+import { decryptSecretColumns } from "../storage/secretVault";
 import { WebDavService, type WebDavConfig } from "./WebDavService";
 
 // ============ 常量 ============
@@ -291,7 +292,7 @@ export async function collectIncrementalPayload(
 			}
 
 			if (rows.length > 0) {
-				tables[table] = rows;
+				tables[table] = decryptSecretColumns(table, rows) as BackupRow[];
 				incrementalTables.push(table);
 				changedRowCount += rows.length;
 			}
@@ -319,7 +320,7 @@ export async function collectIncrementalPayload(
 				await yieldToEventLoop();
 				if (batch.rows.length < INCREMENTAL_BATCH_SIZE) break;
 			}
-			tables[table] = rows;
+			tables[table] = decryptSecretColumns(table, rows) as BackupRow[];
 			fullTables.push(table);
 		}
 	}

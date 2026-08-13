@@ -7,6 +7,7 @@
 import { app, BrowserWindow, shell } from "electron";
 import electronUpdater, { type UpdateInfo } from "electron-updater";
 import { createLogger } from "../logging/logger";
+import { sendToLiveWebContents } from "../utils/safeWebContentsSend";
 
 const { autoUpdater } = electronUpdater;
 
@@ -50,7 +51,7 @@ function getState(): UpdateState {
 function emit(event: string, payload?: unknown) {
 	for (const win of BrowserWindow.getAllWindows()) {
 		if (!win.isDestroyed()) {
-			win.webContents.send(event, payload);
+			sendToLiveWebContents(win, event, payload);
 		}
 	}
 }

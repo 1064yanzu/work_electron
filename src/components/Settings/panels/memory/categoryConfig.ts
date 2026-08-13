@@ -65,9 +65,9 @@ export const MEMORY_FILE_STYLES: Record<MemoryFileToken, MemoryFileStyle> = {
 		subtitle: "项目级 · 当前对话的工作目录",
 		icon: FolderOpen,
 		accent: "#6B6B68",
-		accentBg: "bg-cream-200",
-		accentBorder: "border-cream-400",
-		accentText: "text-cream-700",
+		accentBg: "bg-warm-200",
+		accentBorder: "border-border",
+		accentText: "text-text-secondary",
 	},
 	project_agents_md: {
 		label: "AGENTS.md",

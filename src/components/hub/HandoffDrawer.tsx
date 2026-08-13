@@ -198,7 +198,7 @@ export function HandoffDrawer({
 			<div className="px-5 pt-5 pb-3 border-b border-border/60 shrink-0">
 				<div className="flex items-start justify-between gap-2">
 					<div className="min-w-0">
-						<div className="text-[11px] font-semibold tracking-[0.22em] text-text-light uppercase">
+						<div className="text-2xs font-semibold tracking-[0.22em] text-text-light uppercase">
 							Handoff
 						</div>
 						<h3 className="font-serif text-[17px] text-text-primary mt-1 leading-tight">
@@ -210,6 +210,7 @@ export function HandoffDrawer({
 						onClick={onClose}
 						className="p-1.5 -mr-1 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-150"
 						title="关闭"
+						aria-label="关闭接力抽屉"
 					>
 						<X className="w-3.5 h-3.5" />
 					</button>
@@ -257,7 +258,7 @@ export function HandoffDrawer({
 							</span>
 							<span
 								className={cn(
-									"text-[11px] px-1.5 py-px rounded",
+									"text-2xs px-1.5 py-px rounded",
 									modeMeta.lossless
 										? "bg-success/15 text-success"
 										: "bg-warning/15 text-warning",
@@ -270,12 +271,12 @@ export function HandoffDrawer({
 							{plan.reason}
 						</p>
 						{plan.resume_command && (
-							<pre className="mt-2 px-2.5 py-1.5 rounded-lg bg-cream-100 dark:bg-cream-900/60 text-[11px] font-mono text-text-secondary overflow-x-auto">
+							<pre className="mt-2 px-2.5 py-1.5 rounded-lg bg-cream-100 dark:bg-cream-900/60 text-2xs font-mono text-text-secondary overflow-x-auto">
 								{plan.resume_command}
 							</pre>
 						)}
 						{plan.transcript_chars > 0 && (
-							<p className="text-[11px] text-text-light mt-1.5 tabular-nums">
+							<p className="text-2xs text-text-light mt-1.5 tabular-nums">
 								转录 {plan.transcript_chars.toLocaleString("en-US")} 字符
 							</p>
 						)}
@@ -294,10 +295,10 @@ export function HandoffDrawer({
 				{stage === "preview" || stage === "launching" ? (
 					<div>
 						<div className="flex items-center justify-between mb-1.5">
-							<span className="text-[11px] font-medium tracking-wide text-text-light uppercase">
+							<span className="text-2xs font-medium tracking-wide text-text-light uppercase">
 								交接内容（可编辑）
 							</span>
-							<span className="text-[11px] text-text-light tabular-nums">
+							<span className="text-2xs text-text-light tabular-nums">
 								{markdown.length.toLocaleString("en-US")} 字符
 							</span>
 						</div>

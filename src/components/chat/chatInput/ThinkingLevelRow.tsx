@@ -58,7 +58,7 @@ export function ThinkingBars({
 							? active
 								? "bg-mint-500 dark:bg-mint-300"
 								: "bg-text-secondary/70"
-							: "bg-cream-400/60 dark:bg-cream-500/40",
+							: "bg-border/80",
 					)}
 					style={{ height: `${h}px` }}
 				/>
@@ -84,20 +84,20 @@ export function ThinkingLevelRow() {
 	};
 
 	return (
-		<div className="shrink-0 px-3 pt-2.5 pb-3 border-t border-cream-300 dark:border-cream-500/50">
+		<div className="shrink-0 px-3 pt-2.5 pb-3 border-t border-border">
 			<div className="flex items-center justify-between mb-1.5">
 				<div className="flex items-center gap-1.5">
 					<ThinkingBars level={current} active />
-					<span className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted">
+					<span className="text-2xs font-bold uppercase tracking-[0.08em] text-text-muted">
 						思考程度
 					</span>
 				</div>
-				<span className="text-[11px] text-text-muted/60 font-mono">effort</span>
+				<span className="text-2xs text-text-muted/60 font-mono">effort</span>
 			</div>
 
 			{/* 5 段等宽分段控件 */}
 			<div
-				className="flex items-center gap-0.5 p-0.5 rounded-full bg-cream-200/80 dark:bg-cream-800/70"
+				className="flex items-center gap-0.5 p-0.5 rounded-full bg-warm-200/80"
 				onMouseLeave={() => setHovered(null)}
 			>
 				{LEVEL_ORDER.map((level) => {
@@ -113,7 +113,7 @@ export function ThinkingLevelRow() {
 								"flex-1 h-6 rounded-full text-xs leading-none",
 								"transition-[background-color,color,box-shadow] duration-150 cursor-pointer",
 								isActive
-									? "bg-surface dark:bg-cream-700 text-text-primary font-semibold shadow-sm"
+									? "bg-surface text-text-primary font-semibold shadow-sm"
 									: "text-text-muted hover:text-text-secondary font-medium",
 							)}
 						>
@@ -123,7 +123,7 @@ export function ThinkingLevelRow() {
 				})}
 			</div>
 
-			<div className="mt-1.5 text-[11px] text-text-muted/80 leading-snug min-h-[14px]">
+			<div className="mt-1.5 text-2xs text-text-muted/80 leading-snug min-h-[14px]">
 				{LEVEL_DESCRIPTIONS[display]}
 			</div>
 		</div>

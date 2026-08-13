@@ -42,13 +42,13 @@ export function InstallProgress() {
 							<span className="flex-1 truncate text-xs font-medium text-text-secondary">
 								{entryName}
 							</span>
-							<span className="text-[11px] text-text-light shrink-0">
+							<span className="text-2xs text-text-light shrink-0">
 								{phaseLabel} · {p.percent}%
 							</span>
 							<button
 								type="button"
 								onClick={() => skillsMarketplaceStore.clearProgress(p.entryId)}
-								className="p-0.5 rounded text-text-light hover:text-text-secondary hover:bg-cream-200/70"
+								className="p-0.5 rounded text-text-light hover:text-text-secondary hover:bg-warm-200/70"
 								title="收起"
 							>
 								<X className="w-3 h-3" />

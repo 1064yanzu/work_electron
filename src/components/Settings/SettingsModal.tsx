@@ -161,7 +161,7 @@ export function SettingsModal({
 
 	return (
 		<div
-			className={`modal-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-cream-900/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-150"}`}
+			className={`modal-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-primary/20 backdrop-blur-sm font-sans ${isClosing ? "animate-fade-out" : "animate-in fade-in duration-150"}`}
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget) {
 					handleClose();

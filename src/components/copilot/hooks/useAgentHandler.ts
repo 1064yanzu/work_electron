@@ -51,6 +51,7 @@ import {
 import {
 	AGENT_WATCHDOG_IDLE_FINALIZE_MS,
 	AGENT_WATCHDOG_STALLED_EXECUTION_MS,
+	createAgentWatchdog,
 	appendStallFinalizeNote,
 } from "./agentWatchdog";
 
@@ -179,7 +180,6 @@ export function useAgentHandler({
 		let docProtocolMode: "none" | "create" | "update" = "none";
 		let forcedFinalized = false;
 		let lastActivityAt = Date.now();
-		let watchdogTimer: number | null = null;
 
 		const touchActivity = () => {
 			lastActivityAt = Date.now();
@@ -191,6 +191,52 @@ export function useAgentHandler({
 		});
 
 		const getStreamText = () => streamBuilder.getText();
+
+		// Watchdog：判定逻辑与计时都在 ./agentWatchdog 里，这里只负责采集快照 +
+		// 把收口动作接回 finalizeFromRawText（后者定义在下方的 try 块里，
+		// 用函数声明提升不了，所以经由 watchdogFinalize 这个可变引用转发）
+		let watchdogFinalize: ((rawText: string, source: string) => void) | null =
+			null;
+		const watchdog = createAgentWatchdog({
+			thresholds: {
+				idleFinalizeMs: AGENT_WATCHDOG_IDLE_FINALIZE_MS,
+				stalledExecutionMs: AGENT_WATCHDOG_STALLED_EXECUTION_MS,
+			},
+			probe: () => {
+				if (forcedFinalized) return null;
+				if (!streamingMsgId) return null;
+				const live = agentStore.getState();
+				const liveTaskStatus = live.currentTask?.status;
+				return {
+					silenceMs: Date.now() - lastActivityAt,
+					stillRunning: Boolean(
+						live.isExecuting ||
+							live.isWaitingForLLM ||
+							liveTaskStatus === "planning" ||
+							liveTaskStatus === "executing" ||
+							(live.currentSkill &&
+								live.currentSkill.status !== "completed" &&
+								live.currentSkill.status !== "error"),
+					),
+					hasRunningTools: streamBuilder
+						.getBlocks()
+						.some(
+							(b) =>
+								b.type === "tool_call" &&
+								(b.status === "running" || b.status === "pending"),
+						),
+					hasText: getStreamText().trim().length > 0,
+				};
+			},
+			onFinalize: (action) => {
+				watchdogFinalize?.(
+					getStreamText(),
+					action === "finalize_stall"
+						? "watchdog_stall"
+						: "watchdog_inactivity",
+				);
+			},
+		});
 
 		const buildSkillBlocks = () => {
 			const blocks: ChatMessageBlock[] = streamBuilder.getBlocks();
@@ -542,12 +588,7 @@ export function useAgentHandler({
 		ensureStreamingMessage();
 
 		try {
-			const clearWatchdog = () => {
-				if (watchdogTimer !== null) {
-					clearInterval(watchdogTimer);
-					watchdogTimer = null;
-				}
-			};
+			const clearWatchdog = () => watchdog.clear();
 
 			const finalizeFromRawText = (rawText: string, source: string) => {
 				if (forcedFinalized) return;
@@ -622,41 +663,8 @@ export function useAgentHandler({
 				});
 			};
 
-			watchdogTimer = window.setInterval(() => {
-				if (forcedFinalized) return;
-				if (!streamingMsgId) return;
-				const now = Date.now();
-				const silenceMs = now - lastActivityAt;
-				if (silenceMs < AGENT_WATCHDOG_IDLE_FINALIZE_MS) return;
-
-				const live = agentStore.getState();
-				const liveTaskStatus = live.currentTask?.status;
-				const stillRunning =
-					live.isExecuting ||
-					live.isWaitingForLLM ||
-					liveTaskStatus === "planning" ||
-					liveTaskStatus === "executing" ||
-					(live.currentSkill &&
-						live.currentSkill.status !== "completed" &&
-						live.currentSkill.status !== "error");
-				const hasRunningTools = streamBuilder
-					.getBlocks()
-					.some(
-						(b) =>
-							b.type === "tool_call" &&
-							(b.status === "running" || b.status === "pending"),
-					);
-				if (hasRunningTools) return;
-				const raw = getStreamText();
-				if (!raw.trim()) return;
-
-				if (stillRunning) {
-					if (silenceMs < AGENT_WATCHDOG_STALLED_EXECUTION_MS) return;
-					finalizeFromRawText(raw, "watchdog_stall");
-					return;
-				}
-				finalizeFromRawText(raw, "watchdog_inactivity");
-			}, 3000);
+			watchdogFinalize = finalizeFromRawText;
+			watchdog.start();
 
 			const systemPrompt = undefined;
 			const conversationMessagesForAgent = buildConversationMessagesForAgentRun(
@@ -1168,10 +1176,7 @@ export function useAgentHandler({
 			chatStore.setStatus("idle");
 			// 附件已在消息发送后立即清除（第835行）
 		} catch (error) {
-			if (watchdogTimer !== null) {
-				clearInterval(watchdogTimer);
-				watchdogTimer = null;
-			}
+			watchdog.clear();
 			if (forcedFinalized) return;
 			const errorMessage = error instanceof Error ? error.message : "未知错误";
 			const taskId = currentTaskId || null;
@@ -1265,10 +1270,7 @@ export function useAgentHandler({
 			}
 			chatStore.setStatus("error", errorMessage);
 		} finally {
-			if (watchdogTimer !== null) {
-				clearInterval(watchdogTimer);
-				watchdogTimer = null;
-			}
+			watchdog.clear();
 			if (detachAgentEvent) {
 				detachAgentEvent();
 				detachAgentEvent = null;

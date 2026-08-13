@@ -62,85 +62,77 @@ const fileTypeConfig: Record<
 		label: string;
 	}
 > = {
+	// 文件类型一律中性底 + 中性图标：类型区分交给图标形状与标签文字。
+	// 之前的「每种类型一套彩色渐变」是典型的 AI 生成配色分布，与近单色体系冲突。
 	image: {
 		icon: FileImage,
-		gradient:
-			"from-purple-500/20 to-pink-500/20 border-purple-200/50 dark:border-purple-800/30",
-		iconColor: "bai-icon-violet dark:bai-icon-violet",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "图片",
 	},
 	pdf: {
 		icon: FileText,
-		gradient:
-			"from-red-500/20 to-orange-500/20 border-[rgba(181,51,51,0.32)]/50 dark:border-red-800/30",
-		iconColor: "text-error dark:text-error",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "PDF",
 	},
 	text: {
 		icon: FileText,
-		gradient: "from-cream-500/20 to-cream-500/20 border-border/50",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
 		iconColor: "text-text-secondary",
 		label: "文本",
 	},
 	code: {
 		icon: FileCode,
-		gradient:
-			"from-emerald-500/20 to-teal-500/20 border-success/30 dark:border-success/30",
-		iconColor: "text-success dark:text-success",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "代码",
 	},
 	html: {
 		icon: FileCode,
-		gradient:
-			"from-orange-500/20 to-amber-500/20 border-orange-200/50 dark:border-orange-800/30",
-		iconColor: "text-orange-600 dark:text-orange-400",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "HTML",
 	},
 	video: {
 		icon: FileVideo,
-		gradient:
-			"from-blue-500/20 to-indigo-500/20 border-focus/30 dark:border-focus/30",
-		iconColor: "text-focus dark:text-focus",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "视频",
 	},
 	audio: {
 		icon: FileAudio,
-		gradient:
-			"from-violet-500/20 to-purple-500/20 border-violet-200/50 dark:border-violet-800/30",
-		iconColor: "text-violet-600 dark:text-violet-400",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "音频",
 	},
 	archive: {
 		icon: Archive,
-		gradient:
-			"from-amber-500/20 to-yellow-500/20 border-amber-200/50 dark:border-amber-800/30",
-		iconColor: "text-peach-500 dark:text-amber-400",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "压缩包",
 	},
 	document: {
 		icon: FileText,
-		gradient:
-			"from-blue-500/20 to-cyan-500/20 border-focus/30 dark:border-focus/30",
-		iconColor: "text-focus dark:text-focus",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "文档",
 	},
 	spreadsheet: {
 		icon: FileSpreadsheet,
-		gradient:
-			"from-green-500/20 to-emerald-500/20 border-green-200/50 dark:border-green-800/30",
-		iconColor: "text-green-600 dark:text-green-400",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "表格",
 	},
 	presentation: {
 		icon: Presentation,
-		gradient:
-			"from-orange-500/20 to-red-500/20 border-orange-200/50 dark:border-orange-800/30",
-		iconColor: "text-orange-600 dark:text-orange-400",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
+		iconColor: "text-text-secondary",
 		label: "演示文稿",
 	},
 	other: {
 		icon: File,
-		gradient: "from-cream-500/20 to-cream-500/20 border-border/50",
+		gradient: "from-warm-200/70 to-warm-200/70 border-border/50",
 		iconColor: "text-text-secondary",
 		label: "文件",
 	},
@@ -224,7 +216,7 @@ export default function ArtifactCard({
 				"group relative flex items-center gap-3",
 				"bg-surface/40",
 				"border border-border/60",
-				"hover:border-cream-400",
+				"hover:border-border",
 				"hover:shadow-md hover:-translate-y-0.5",
 				"rounded-xl p-3",
 				"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 ease-out",
@@ -254,24 +246,24 @@ export default function ArtifactCard({
 			{/* 文件信息 */}
 			<div className="flex-1 min-w-0">
 				<h4
-					className="text-sm font-medium text-text-primary dark:text-cream-200 truncate"
+					className="text-sm font-medium text-text-primary truncate"
 					title={fileName}
 				>
 					{fileName}
 				</h4>
 				<p className="text-xs text-text-light mt-0.5 flex items-center gap-1.5">
 					<span>{config.label}</span>
-					<span className="w-0.5 h-0.5 rounded-full bg-cream-400 dark:bg-cream-600" />
+					<span className="w-0.5 h-0.5 rounded-full bg-text-light" />
 					<span>{formatFileSize(fileSize)}</span>
 					{createdAt && (
 						<>
-							<span className="w-0.5 h-0.5 rounded-full bg-cream-400 dark:bg-cream-600" />
+							<span className="w-0.5 h-0.5 rounded-full bg-text-light" />
 							<span>{formatTime(createdAt)}</span>
 						</>
 					)}
 				</p>
 				{description && (
-					<p className="text-[11px] text-text-light mt-1 line-clamp-1">
+					<p className="text-2xs text-text-light mt-1 line-clamp-1">
 						{description}
 					</p>
 				)}
@@ -317,8 +309,8 @@ export default function ArtifactCard({
 					className={cn(
 						"absolute left-0 right-0 -bottom-8 z-10",
 						"px-3 py-1.5",
-						"bg-dark-muted/90",
-						"text-[11px] text-text-light font-mono truncate",
+						"bg-surface/90",
+						"text-2xs text-text-light font-mono truncate",
 						"rounded-lg shadow-lg",
 						"animate-in fade-in slide-in-from-top-1 duration-150",
 					)}
@@ -356,7 +348,7 @@ export function ArtifactCardList({
 
 	return (
 		<div className="space-y-2 mt-3">
-			<div className="text-[11px] font-semibold text-text-light uppercase tracking-wider px-1">
+			<div className="text-2xs font-semibold text-text-light uppercase tracking-wider px-1">
 				产物文件 ({artifacts.length})
 			</div>
 			<div className="space-y-2">

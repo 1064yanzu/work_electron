@@ -68,7 +68,7 @@ export function AddProviderModal({
 	return (
 		<Modal isOpen={isOpen} onClose={handleClose} title="添加提供商">
 			<div className="mb-8 flex justify-center">
-				<div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-cream-100 to-cream-200 text-3xl font-bold text-text-light shadow-inner">
+				<div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-warm-200 text-3xl font-bold text-text-light shadow-inner">
 					{providerName?.[0]?.toUpperCase() || "P"}
 				</div>
 			</div>

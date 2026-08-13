@@ -42,7 +42,7 @@ const ITEM_BASE =
 	"transition-[background-color,color,opacity] duration-150 " +
 	"cursor-pointer active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40";
 
-const ITEM_HOVER = "hover:bg-warm-200/70 dark:hover:bg-cream-700/40";
+const ITEM_HOVER = "hover:bg-warm-200/70";
 
 /** 图标插槽 —— 固定 16×16，可挂一个右上角状态点。 */
 function IconSlot({
@@ -111,7 +111,7 @@ export const ToolbarAction = forwardRef<HTMLButtonElement, ToolbarActionProps>(
 					ITEM_BASE,
 					"w-8 justify-center",
 					open
-						? "bg-warm-200 dark:bg-cream-700/60 text-text-primary"
+						? "bg-warm-200 text-text-primary"
 						: cn("text-text-secondary", ITEM_HOVER, "hover:text-text-primary"),
 				)}
 			>
@@ -192,7 +192,7 @@ export const ToolbarItem = forwardRef<HTMLButtonElement, ToolbarItemProps>(
 						showValue ? "px-2" : "w-8 justify-center",
 						active ? TONE_TEXT[tone] : "text-text-secondary",
 						open
-							? "bg-warm-200 dark:bg-cream-700/60 text-text-primary"
+							? "bg-warm-200 text-text-primary"
 							: cn(ITEM_HOVER, "hover:text-text-primary"),
 					)}
 				>

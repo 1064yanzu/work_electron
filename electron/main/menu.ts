@@ -14,11 +14,12 @@ import {
 	Menu,
 	type MenuItemConstructorOptions,
 } from "electron";
+import { sendToLiveWebContents } from "./utils/safeWebContentsSend";
 
 function emitLogAction(action: "export" | "reveal") {
 	const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
 	if (!win) return;
-	win.webContents.send("app-menu-action", { type: "logs", action });
+	sendToLiveWebContents(win, "app-menu-action", { type: "logs", action });
 }
 
 function buildMenuTemplate(): MenuItemConstructorOptions[] {

@@ -1,4 +1,15 @@
+import type { IPCSchema } from "../../electron/shared/ipc-schema";
+
 export type InvokeArgs = Record<string, unknown>;
+
+/**
+ * 合法 IPC 命令名 = ipc-schema 的 key。
+ *
+ * 这是渲染端对「单一事实源」的编译期约束：调用不存在的命令会直接编译报错，
+ * 而不是运行时被 catch 吞掉后静默失效（历史上 backup_to_local /
+ * agent_update_message 等 12 个幽灵命令都是这么潜伏下来的）。
+ */
+export type IpcCommand = keyof IPCSchema & string;
 
 export function isDesktopEnvironment() {
 	return (
@@ -8,7 +19,7 @@ export function isDesktopEnvironment() {
 }
 
 export async function invoke<T>(
-	command: string,
+	command: IpcCommand,
 	args?: InvokeArgs,
 ): Promise<T> {
 	if (!isDesktopEnvironment()) {
@@ -17,35 +28,13 @@ export async function invoke<T>(
 
 	const input = (() => {
 		const a = (args ?? {}) as Record<string, unknown>;
+		// 历史约定：部分调用点用 { payload: {...} } 包裹入参，这里解包
 		if ("payload" in a) {
 			const p = a.payload;
 			if (p === undefined) return {};
 			if (p !== null && typeof p === "object")
 				return p as Record<string, unknown>;
 		}
-
-		if (command === "delete_provider") {
-			if (typeof a.providerId === "string") return { id: a.providerId };
-		}
-
-		if (command === "check_provider_api_key") {
-			if (typeof a.providerId === "string")
-				return { provider_id: a.providerId };
-		}
-
-		if (command === "record_project_visit") {
-			if (typeof a.projectId === "string") return { project_id: a.projectId };
-		}
-
-		if (command === "list_folders") {
-			if (typeof a.projectId === "string") return { project_id: a.projectId };
-			if (a.projectId === null) return { project_id: undefined };
-		}
-
-		if (command === "get_card_image_path") {
-			if (typeof a.imagePath === "string") return { image_path: a.imagePath };
-		}
-
 		return a;
 	})();
 

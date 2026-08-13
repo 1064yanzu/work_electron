@@ -5,8 +5,16 @@ import { startClipServer } from "./startClipServer";
 import { startHarnessMcpServer } from "./startHarnessMcpServer";
 
 export type HttpStatus = {
-	clip: { port: number; baseUrl: string };
-	anthropicProxy: { port: number; baseUrl: string };
+	/**
+	 * 剪藏服务。`token` 是浏览器扩展/书签脚本调用 `POST /api/clip` 时必须带的凭证
+	 * （`x-api-key` 或 `Authorization: Bearer`），设置面板需要把它展示给用户复制。
+	 */
+	clip: { port: number; baseUrl: string; token: string };
+	/**
+	 * Anthropic 兼容代理。`token` 由主进程在拉起 Agent SDK 时通过
+	 * `ANTHROPIC_API_KEY` 环境变量下发，渲染端通常不需要用它。
+	 */
+	anthropicProxy: { port: number; baseUrl: string; token: string };
 	/** AI Hub 反向 MCP Server（外部 CLI 通过它调用本应用） */
 	aihubMcp: { port: number; baseUrl: string; endpoint: string } | null;
 };

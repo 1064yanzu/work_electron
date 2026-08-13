@@ -66,6 +66,7 @@ import {
 	setMcpEnabled,
 } from "../../http/routers/harnessMcpRouter";
 import path from "node:path";
+import { sendToLiveWebContents } from "../../utils/safeWebContentsSend";
 
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
@@ -290,7 +291,7 @@ export function createHarnessBridgeHandlers(
 			skipVerdict: input.skip_verdict === true,
 			onProgress: (payload) => {
 				try {
-					deps.getMainWindow()?.webContents.send("harness-council-event", {
+					sendToLiveWebContents(deps.getMainWindow(), "harness-council-event", {
 						phase: payload.phase,
 						harness: payload.harness ?? null,
 						finished: payload.finished,

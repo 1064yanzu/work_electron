@@ -40,12 +40,11 @@ interface PlanCardProps {
 const STATUS_LABEL: Record<PlanStatus, { text: string; className: string }> = {
 	draft: {
 		text: "待确认",
-		className:
-			"bg-peach-200 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
+		className: "bg-warning/16 text-warning",
 	},
 	confirmed: {
 		text: "已确认",
-		className: "bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus",
+		className: "bg-focus/16 text-focus",
 	},
 	executing: {
 		text: "执行中",
@@ -53,12 +52,11 @@ const STATUS_LABEL: Record<PlanStatus, { text: string; className: string }> = {
 	},
 	completed: {
 		text: "已完成",
-		className:
-			"bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success",
+		className: "bg-success/16 text-success",
 	},
 	rejected: {
 		text: "已拒绝",
-		className: "bg-error/16 dark:bg-red-900/30 text-error dark:text-error",
+		className: "bg-error/16 text-error",
 	},
 };
 
@@ -160,14 +158,14 @@ export function PlanCard({
 				isExecuting
 					? "bg-surface/80 border-terracotta/30 shadow-lg shadow-terracotta/5 ring-1 ring-terracotta/20 border-l-[3px] border-l-terracotta/60"
 					: isCompleted
-						? "bg-success/8 dark:bg-emerald-900/5 border-success/30 dark:border-success/30 border-l-[3px] border-l-success/50"
-						: "bg-surface border-border border-l-[3px] border-l-violetx-500/40 dark:border-l-violetx-500/30",
+						? "bg-success/8 border-success/30 border-l-[3px] border-l-success/50"
+						: "bg-surface border-border",
 			)}
 		>
 			{/* 执行中呼吸动画 */}
 			{isExecuting && (
 				<div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
-					<div className="absolute inset-0 bg-gradient-to-r from-terracotta/5 via-amber-500/5 to-terracotta/5 animate-pulse" />
+					<div className="absolute inset-0 bg-primary-muted animate-pulse" />
 				</div>
 			)}
 
@@ -179,7 +177,7 @@ export function PlanCard({
 						isExecuting
 							? "bg-terracotta/10 text-terracotta"
 							: isCompleted
-								? "bg-success/16 dark:bg-emerald-900/30 text-success dark:text-success"
+								? "bg-success/16 text-success"
 								: "bg-warm-200 text-text-muted",
 					)}
 				>
@@ -199,7 +197,7 @@ export function PlanCard({
 						</span>
 						<span
 							className={cn(
-								"px-1.5 py-0.5 rounded text-[11px] font-medium",
+								"px-1.5 py-0.5 rounded text-2xs font-medium",
 								statusConfig.className,
 							)}
 						>
@@ -231,7 +229,7 @@ export function PlanCard({
 								value={feedback}
 								onChange={(e) => setFeedback(e.target.value)}
 								placeholder="描述你想修改的内容..."
-								className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-warm-50 text-text-primary dark:text-cream-200 placeholder-cream-400 resize-none focus:outline-none focus:ring-2 focus:ring-terracotta/30"
+								className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-warm-50 text-text-primary placeholder-text-light resize-none focus:outline-none focus:ring-2 focus:ring-terracotta/30"
 								rows={2}
 							/>
 							<div className="flex gap-2">
@@ -280,7 +278,7 @@ export function PlanCard({
 							<button
 								type="button"
 								onClick={onReject}
-								className="px-3 py-2 text-sm font-medium rounded-lg text-text-light hover:text-error hover:bg-error/8 dark:hover:bg-red-900/10 transition-colors"
+								className="px-3 py-2 text-sm font-medium rounded-lg text-text-light hover:text-error hover:bg-error/8 transition-colors"
 							>
 								<X className="w-4 h-4" />
 							</button>

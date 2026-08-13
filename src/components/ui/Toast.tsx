@@ -10,31 +10,17 @@ import {
 	useGsapMotion,
 } from "../../lib/motion";
 import { cn } from "../../lib/utils";
+import {
+	TOAST_EVENT_NAME,
+	type ToastActionVariant,
+	type ToastItem,
+	type ToastType,
+	registerToastRenderer,
+} from "./toastBus";
 
-export type ToastType = "success" | "error" | "info" | "warning";
-export type ToastActionVariant = "default" | "primary" | "danger";
-
-export interface ToastOptions {
-	type?: ToastType;
-	duration?: number;
-	closable?: boolean;
-	actionLabel?: string;
-	onAction?: () => void | Promise<void>;
-	actionVariant?: ToastActionVariant;
-}
-
-interface ToastItem {
-	id: string;
-	message: string;
-	type: ToastType;
-	duration: number;
-	closable: boolean;
-	actionLabel?: string;
-	onAction?: () => void | Promise<void>;
-	actionVariant: ToastActionVariant;
-}
-
-const TOAST_EVENT_NAME = "show-toast";
+// 事件单例住在 toastBus.ts（无 React/gsap 依赖，逻辑层可直接引）；
+// 这里 re-export 保持既有 240+ 处 `import { toast } from ".../ui/Toast"` 不变
+export { toast, type ToastOptions, type ToastType } from "./toastBus";
 
 function getToastStyles(type: ToastType) {
 	switch (type) {
@@ -225,13 +211,17 @@ function ToastItemView({
 	);
 
 	const styles = getToastStyles(item.type);
+	// 错误提示要打断读屏、立即播报（assertive）；成功/普通提示不该打断用户当前
+	// 正在听的内容，保持 status（等价 aria-live="polite"）。
+	const isError = item.type === "error";
 
 	return (
 		<div
 			ref={rootRef}
-			role="status"
+			role={isError ? "alert" : "status"}
+			aria-live={isError ? "assertive" : "polite"}
 			className={cn(
-				"pointer-events-auto relative overflow-hidden rounded-2xl border bg-cream-50 dark:bg-cream-900 p-4 shadow-bai-pop",
+				"pointer-events-auto relative overflow-hidden rounded-2xl border bg-surface p-4 shadow-bai-pop",
 				styles.border,
 			)}
 		>
@@ -293,82 +283,16 @@ function ToastItemView({
 	);
 }
 
-class ToastAPI {
-	private container: HTMLDivElement | null = null;
-	private root: ReturnType<typeof createRoot> | null = null;
+// ── 渲染器注册（模块副作用）──
+// toastBus 派发事件前会调用这里注册的挂载函数，保证容器已存在
+let container: HTMLDivElement | null = null;
 
-	private ensureContainer() {
-		if (this.container) return;
-		this.container = document.createElement("div");
-		this.container.id = "toast-container";
-		document.body.appendChild(this.container);
-		this.root = createRoot(this.container);
-		this.root.render(<ToastContainer />);
-	}
-
-	show(message: string, options: ToastOptions = {}) {
-		this.ensureContainer();
-		const id =
-			typeof crypto !== "undefined" && "randomUUID" in crypto
-				? crypto.randomUUID()
-				: `toast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-		const payload: ToastItem = {
-			id,
-			message,
-			type: options.type || "info",
-			duration: options.duration ?? 3000,
-			closable: options.closable ?? true,
-			actionLabel: options.actionLabel,
-			onAction: options.onAction,
-			actionVariant: options.actionVariant ?? "default",
-		};
-		window.dispatchEvent(
-			new CustomEvent(TOAST_EVENT_NAME, { detail: payload }),
-		);
-	}
-
-	success(message: string, duration = 3000) {
-		this.show(message, { type: "success", duration });
-	}
-
-	error(message: string, duration = 5000) {
-		this.show(message, { type: "error", duration });
-	}
-
-	/**
-	 * 错误 + 一键重试。retry 异步函数会在按下"再试一次"时调用，
-	 * 抛错则再弹一个普通 error toast（避免无限重试循环）。
-	 */
-	errorWithRetry(
-		message: string,
-		retry: () => void | Promise<void>,
-		options: { duration?: number; actionLabel?: string } = {},
-	) {
-		this.show(message, {
-			type: "error",
-			duration: options.duration ?? 6000,
-			actionLabel: options.actionLabel ?? "再试一次",
-			actionVariant: "danger",
-			onAction: async () => {
-				try {
-					await retry();
-				} catch (e) {
-					this.show(`重试失败：${e instanceof Error ? e.message : String(e)}`, {
-						type: "error",
-						duration: 5000,
-					});
-				}
-			},
-		});
-	}
-
-	info(message: string, duration = 3000) {
-		this.show(message, { type: "info", duration });
-	}
-
-	warning(message: string, duration = 4000) {
-		this.show(message, { type: "warning", duration });
-	}
+function ensureContainer() {
+	if (container) return;
+	container = document.createElement("div");
+	container.id = "toast-container";
+	document.body.appendChild(container);
+	createRoot(container).render(<ToastContainer />);
 }
 
-export const toast = new ToastAPI();
+registerToastRenderer(ensureContainer);

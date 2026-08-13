@@ -136,24 +136,25 @@ export function ArtifactSettings() {
 
 			{/* 产物统计 */}
 			<SettingsCardSection title="产物概览" bodyClassName="p-5">
-				<div className="grid grid-cols-3 gap-4">
-					<div className="text-center p-4 bg-warm-50 rounded-xl">
-						<div className="text-2xl font-semibold text-text-primary">
+				{/* 紧凑键值行:label 左、数值右,替代大数字统计卡 */}
+				<div className="divide-y divide-border/60">
+					<div className="flex items-center justify-between py-2">
+						<span className="text-xs text-text-secondary">产物数量</span>
+						<span className="tabular-nums text-sm font-medium text-text-primary">
 							{artifacts.length}
-						</div>
-						<div className="text-xs text-text-light mt-1">产物数量</div>
+						</span>
 					</div>
-					<div className="text-center p-4 bg-warm-50 rounded-xl">
-						<div className="text-2xl font-semibold text-text-primary">
+					<div className="flex items-center justify-between py-2">
+						<span className="text-xs text-text-secondary">会话数</span>
+						<span className="tabular-nums text-sm font-medium text-text-primary">
 							{sessionCount}
-						</div>
-						<div className="text-xs text-text-light mt-1">会话数</div>
+						</span>
 					</div>
-					<div className="text-center p-4 bg-warm-50 rounded-xl">
-						<div className="text-2xl font-semibold text-text-primary">
+					<div className="flex items-center justify-between py-2">
+						<span className="text-xs text-text-secondary">总占用</span>
+						<span className="tabular-nums text-sm font-medium text-text-primary">
 							{formatSize(totalSize)}
-						</div>
-						<div className="text-xs text-text-light mt-1">总占用</div>
+						</span>
 					</div>
 				</div>
 			</SettingsCardSection>

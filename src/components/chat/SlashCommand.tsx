@@ -258,7 +258,7 @@ export function SlashCommandMenu({
 							{/* 分组标题 - 改为 Button 以明确可交互性 */}
 							<button
 								type="button"
-								className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-text-light uppercase tracking-wider hover:bg-warm-200 dark:hover:bg-cream-700 rounded transition-colors select-none outline-none focus:bg-warm-200 dark:focus:bg-cream-700"
+								className="w-full flex items-center justify-between px-3 py-1.5 text-2xs font-semibold text-text-light uppercase tracking-wider hover:bg-warm-200 rounded transition-colors select-none outline-none focus:bg-warm-200"
 								onClick={() => toggleGroup(groupName)}
 							>
 								<span>{groupName}</span>
@@ -286,13 +286,13 @@ export function SlashCommandMenu({
 												className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors text-sm
                           ${
 														isSelected
-															? "bg-warm-200 dark:bg-cream-700 text-text-primary"
-															: "text-text-secondary hover:bg-warm-50 dark:hover:bg-cream-700/50"
+															? "bg-warm-200 text-text-primary"
+															: "text-text-secondary hover:bg-warm-50"
 													}
                         `}
 											>
 												<div
-													className={`p-1.5 rounded-md ${isSelected ? "bg-surface dark:bg-cream-600 shadow-sm" : "bg-warm-200"}`}
+													className={`p-1.5 rounded-md ${isSelected ? "bg-surface shadow-sm" : "bg-warm-200"}`}
 												>
 													<command.icon className="w-4 h-4" />
 												</div>
@@ -305,7 +305,7 @@ export function SlashCommandMenu({
 													</div>
 												</div>
 												{isSelected && (
-													<span className="text-[11px] text-text-light font-medium bg-surface dark:bg-cream-600 px-1.5 py-0.5 rounded shadow-sm">
+													<span className="text-2xs text-text-light font-medium bg-surface px-1.5 py-0.5 rounded shadow-sm">
 														↵
 													</span>
 												)}

@@ -5,7 +5,7 @@
 
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAgentStore } from "../../../lib/agent/store";
+import { agentActions, useAgentStoreSelector } from "../../../lib/agent/store";
 import { events } from "../../../lib/events";
 import { InlineImage } from "../../ui/InlineImage";
 
@@ -19,7 +19,8 @@ export function ToolOutputDisplay({
 	const [imagePath, setImagePath] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const agentStore = useAgentStore();
+	// 只订阅 currentTask；addArtifact 是模块级稳定引用，不需要订阅
+	const currentTask = useAgentStoreSelector((s) => s.currentTask);
 
 	const outputStr =
 		typeof output === "string" ? output : JSON.stringify(output, null, 2);
@@ -126,8 +127,9 @@ export function ToolOutputDisplay({
 				let finalPath = imageData;
 				if (imageData.startsWith("data:image/")) {
 					// base64 格式：优先保存到当前任务 sandbox（中间栏可直接复用），否则回退全局目录
-					const sandboxDir = (agentStore.currentTask?.metadata as any)
-						?.sandboxDir as string | undefined;
+					const sandboxDir = (currentTask?.metadata as any)?.sandboxDir as
+						| string
+						| undefined;
 					const fileName = `subagent-image-${Date.now()}.jpg`;
 					let savedPath: string | null = null;
 					if (sandboxDir) {
@@ -181,11 +183,11 @@ export function ToolOutputDisplay({
 					fileName,
 					toolCallId,
 				});
-				const exists = (agentStore.currentTask?.artifacts || []).some(
+				const exists = (currentTask?.artifacts || []).some(
 					(a) => a.type === "image" && String(a.url || "").trim() === finalPath,
 				);
 				if (!exists) {
-					agentStore.addArtifact({
+					agentActions.addArtifact({
 						id: `artifact-image-${Date.now()}`,
 						type: "image",
 						title: fileName,
@@ -242,7 +244,7 @@ export function ToolOutputDisplay({
 	// 错误
 	if (error && hasPartialBase64) {
 		return (
-			<div className="bg-[rgba(181,51,51,0.08)] p-3 rounded border border-[rgba(181,51,51,0.2)]">
+			<div className="bg-error/8 p-3 rounded border border-error/20">
 				<span className="text-sm text-error">{error}</span>
 			</div>
 		);

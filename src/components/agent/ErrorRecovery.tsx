@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
-import { useAgentStore } from "../../lib/agent/store";
+import { agentActions, useAgentStoreSelector } from "../../lib/agent/store";
 import {
 	ERROR_CATEGORY_CONFIG,
 	type ErrorRecoveryStrategy,
@@ -69,11 +69,10 @@ function SuggestionButton({
 
 	const colorClasses: Record<RecoverySuggestion["action"], string> = {
 		retry: "bg-focus hover:bg-focus text-white",
-		skip: "bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 text-text-secondary",
-		alternative: "bg-violetx-500 hover:bg-violetx-600 text-white",
+		skip: "bg-warm-200 hover:bg-warm-300 text-text-secondary",
+		alternative: "bg-primary text-primary-foreground hover:bg-primary-hover",
 		manual: "bg-peach-500 hover:bg-peach-500 text-white",
-		abort:
-			"bg-error/16 hover:bg-error/25 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-error dark:text-error",
+		abort: "bg-error/16 hover:bg-error/25 text-error",
 	};
 
 	return (
@@ -84,7 +83,7 @@ function SuggestionButton({
 				"flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 				"disabled:opacity-50 disabled:cursor-not-allowed",
 				suggestion.isRecommended
-					? "ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-cream-900"
+					? "ring-2 ring-offset-2 ring-focus ring-offset-surface"
 					: "",
 				colorClasses[suggestion.action],
 			)}
@@ -122,9 +121,7 @@ function ErrorDetails({
 				<div
 					className={cn(
 						"p-2 rounded-lg",
-						strategy.category === "unknown"
-							? "bg-warm-200"
-							: "bg-error/8 dark:bg-red-900/20",
+						strategy.category === "unknown" ? "bg-warm-200" : "bg-error/8",
 					)}
 				>
 					<Icon className={cn("w-5 h-5", config.color)} />
@@ -174,7 +171,7 @@ function ErrorDetails({
 					{strategy.canAutoRetry && (
 						<div className="flex items-center gap-2">
 							<span className="font-medium">自动重试:</span>
-							<span className="text-green-500">支持</span>
+							<span className="text-success">支持</span>
 							{strategy.retryDelay && (
 								<span className="text-text-light">
 									(延迟 {strategy.retryDelay / 1000}s)
@@ -197,7 +194,10 @@ export default function ErrorRecovery({
 		suggestion: RecoverySuggestion,
 	) => void;
 }) {
-	const { pendingErrorRecovery, clearPendingErrorRecovery } = useAgentStore();
+	const pendingErrorRecovery = useAgentStoreSelector(
+		(s) => s.pendingErrorRecovery,
+	);
+	const { clearPendingErrorRecovery } = agentActions;
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -232,13 +232,11 @@ export default function ErrorRecovery({
 	};
 
 	return (
-		<div className="rounded-xl overflow-hidden bg-surface ring-1 ring-red-200 dark:ring-red-800/50 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-250">
+		<div className="rounded-xl overflow-hidden bg-surface ring-1 ring-error/30 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-250">
 			{/* 警告条 */}
-			<div className="px-4 py-2 bg-error/8 dark:bg-red-900/20 flex items-center gap-2">
+			<div className="px-4 py-2 bg-error/8 flex items-center gap-2">
 				<AlertTriangle className="w-4 h-4 text-error" />
-				<span className="text-sm font-medium text-error dark:text-error">
-					任务执行遇到问题
-				</span>
+				<span className="text-sm font-medium text-error">任务执行遇到问题</span>
 			</div>
 
 			{/* 内容区 */}
@@ -284,12 +282,10 @@ export function ErrorRecoveryInline({
 	const Icon = getCategoryIcon(config.icon);
 
 	return (
-		<div className="p-3 bg-error/8 dark:bg-red-900/20 rounded-lg space-y-3">
+		<div className="p-3 bg-error/8 rounded-lg space-y-3">
 			<div className="flex items-center gap-2">
 				<Icon className={cn("w-4 h-4", config.color)} />
-				<span className="text-sm font-medium text-error dark:text-error">
-					{config.label}
-				</span>
+				<span className="text-sm font-medium text-error">{config.label}</span>
 			</div>
 
 			<p className="text-xs text-text-secondary">
@@ -305,7 +301,7 @@ export function ErrorRecoveryInline({
 							"px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
 							suggestion.isRecommended
 								? "bg-focus text-white hover:bg-focus"
-								: "bg-warm-200 text-text-secondary hover:bg-warm-300 dark:hover:bg-cream-700",
+								: "bg-warm-200 text-text-secondary hover:bg-warm-300",
 						)}
 					>
 						{suggestion.label}

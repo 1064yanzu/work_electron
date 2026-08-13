@@ -232,7 +232,7 @@ function ImportButton({ icon, label, hint, onClick }: ImportButtonProps) {
 			type="button"
 			onClick={onClick}
 			title={hint}
-			className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-cream-300/70 dark:border-cream-600/40 text-text-secondary hover:text-text-primary hover:border-cream-400 dark:hover:border-cream-400/60 hover:bg-cream-50 dark:hover:bg-cream-800/30 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
+			className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border border-border/70 text-text-secondary hover:text-text-primary hover:border-warm-500 hover:bg-surface transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
 		>
 			{icon}
 			{label}
@@ -251,18 +251,18 @@ function ImportProgress({ state, onClose }: ImportProgressProps) {
 	const isZipMode = state.total === 0 && state.running;
 
 	return (
-		<div className="rounded-xl border border-cream-200/60 dark:border-cream-600/30 bg-cream-50/60 dark:bg-cream-800/20 overflow-hidden">
+		<div className="rounded-xl border border-border/60 bg-surface/60 overflow-hidden">
 			{/* 顶部状态栏 */}
-			<div className="flex items-center gap-2 px-3 py-2 border-b border-cream-200/50 dark:border-cream-600/20">
+			<div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
 				{state.running ? (
 					<Loader2
 						size={12}
-						className="animate-spin text-violet-500 shrink-0"
+						className="animate-spin text-text-muted shrink-0"
 					/>
 				) : successCount > 0 ? (
 					<CheckCircle2 size={12} className="text-mint-500 shrink-0" />
 				) : (
-					<XCircle size={12} className="text-red-400 shrink-0" />
+					<XCircle size={12} className="text-error shrink-0" />
 				)}
 				<span className="flex-1 text-xs text-text-secondary">
 					{state.running
@@ -284,7 +284,7 @@ function ImportProgress({ state, onClose }: ImportProgressProps) {
 
 			{/* 文件列表（超过 6 条滚动） */}
 			{state.results.length > 0 && (
-				<div className="max-h-36 overflow-y-auto divide-y divide-cream-200/40 dark:divide-cream-700/20">
+				<div className="max-h-36 overflow-y-auto divide-y divide-border/40">
 					{state.results.map((r, i) => (
 						<div
 							// biome-ignore lint/suspicious/noArrayIndexKey: 结果列表不会重排
@@ -297,13 +297,13 @@ function ImportProgress({ state, onClose }: ImportProgressProps) {
 									className="shrink-0 mt-0.5 text-mint-500"
 								/>
 							) : (
-								<XCircle size={11} className="shrink-0 mt-0.5 text-red-400" />
+								<XCircle size={11} className="shrink-0 mt-0.5 text-error" />
 							)}
-							<span className="flex-1 min-w-0 text-[11px] text-text-secondary truncate">
+							<span className="flex-1 min-w-0 text-2xs text-text-secondary truncate">
 								{r.file}
 							</span>
 							{r.error && (
-								<span className="text-[11px] text-red-400 shrink-0 max-w-[40%] truncate">
+								<span className="text-2xs text-error shrink-0 max-w-[40%] truncate">
 									{r.error}
 								</span>
 							)}

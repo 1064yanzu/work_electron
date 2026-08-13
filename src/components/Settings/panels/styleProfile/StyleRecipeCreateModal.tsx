@@ -103,14 +103,14 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 				ref={trapRef}
 				role="dialog"
 				aria-modal="true"
-				className="w-full max-w-lg bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-2xl border border-cream-300/50 dark:border-cream-600/30 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-150"
+				className="w-full max-w-lg bg-surface rounded-2xl shadow-2xl border border-border/50 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-150"
 			>
 				{/* Header */}
-				<div className="flex items-center justify-between px-6 py-4 border-b border-cream-200/60 dark:border-cream-700/40">
+				<div className="flex items-center justify-between px-6 py-4 border-b border-border/60">
 					<div className="flex items-center gap-2.5">
-						<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400/20 to-orange-400/20 dark:from-amber-400/10 dark:to-orange-400/10 flex items-center justify-center">
+						<div className="w-8 h-8 rounded-lg bg-primary-muted flex items-center justify-center">
 							<Blend
-								className="w-4 h-4 text-amber-600 dark:text-amber-400"
+								className="w-4 h-4 text-text-secondary"
 								strokeWidth={1.5}
 							/>
 						</div>
@@ -118,7 +118,7 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 							<div className="text-sm font-semibold text-text-primary">
 								新建混搭配方
 							</div>
-							<div className="text-[11px] text-text-muted mt-0.5">
+							<div className="text-2xs text-text-muted mt-0.5">
 								从多个风格包中挑选不同层级进行组合
 							</div>
 						</div>
@@ -126,7 +126,7 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 					<button
 						type="button"
 						onClick={onClose}
-						className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-cream-200/80 dark:hover:bg-cream-700/50 transition-colors"
+						className="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-warm-200/80 transition-colors"
 					>
 						<X className="w-4 h-4" strokeWidth={1.5} />
 					</button>
@@ -144,7 +144,7 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 							placeholder="例：专业评论 + 温暖叙事"
-							className="w-full px-3 py-2 text-sm bg-cream-100/80 dark:bg-cream-800/50 border border-cream-300/50 dark:border-cream-600/30 rounded-xl text-text-primary placeholder-text-muted/50 outline-none focus:border-cream-400 dark:focus:border-cream-500 transition-colors"
+							className="w-full px-3 py-2 text-sm bg-background/80 border border-border/50 rounded-xl text-text-primary placeholder-text-muted/50 outline-none focus:border-warm-500 transition-colors"
 						/>
 					</div>
 
@@ -159,7 +159,7 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 							value={description}
 							onChange={(e) => setDescription(e.target.value)}
 							placeholder="描述这个配方的使用场景"
-							className="w-full px-3 py-2 text-sm bg-cream-100/80 dark:bg-cream-800/50 border border-cream-300/50 dark:border-cream-600/30 rounded-xl text-text-primary placeholder-text-muted/50 outline-none focus:border-cream-400 dark:focus:border-cream-500 transition-colors"
+							className="w-full px-3 py-2 text-sm bg-background/80 border border-border/50 rounded-xl text-text-primary placeholder-text-muted/50 outline-none focus:border-warm-500 transition-colors"
 						/>
 					</div>
 
@@ -195,8 +195,8 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 									onClick={() => setIntensity(opt.value)}
 									className={`px-3 py-1.5 text-xs rounded-lg border transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 										intensity === opt.value
-											? "bg-cream-200/80 dark:bg-cream-700/60 border-cream-400/60 dark:border-cream-500/50 text-text-primary font-medium"
-											: "bg-transparent border-cream-300/40 dark:border-cream-600/30 text-text-muted hover:text-text-secondary hover:border-cream-400/50"
+											? "bg-warm-200/80 border-border/60 text-text-primary font-medium"
+											: "bg-transparent border-border/40 text-text-muted hover:text-text-secondary hover:border-warm-500/50"
 									}`}
 								>
 									{opt.label}
@@ -207,7 +207,7 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 				</div>
 
 				{/* Footer */}
-				<div className="flex items-center justify-end gap-3 px-6 py-3.5 border-t border-cream-200/60 dark:border-cream-700/40 bg-cream-100/30 dark:bg-cream-800/20">
+				<div className="flex items-center justify-end gap-3 px-6 py-3.5 border-t border-border/60 bg-background/30">
 					<button
 						type="button"
 						onClick={onClose}
@@ -221,8 +221,8 @@ export function StyleRecipeCreateModal({ onClose, onCreated }: Props) {
 						disabled={!canSubmit}
 						className={`px-5 py-1.5 text-sm font-medium rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 							canSubmit
-								? "bg-cream-800 dark:bg-cream-200 text-cream-50 dark:text-cream-900 hover:bg-cream-900 dark:hover:bg-cream-100 shadow-sm"
-								: "bg-cream-300 dark:bg-cream-700 text-cream-500 dark:text-cream-500 cursor-not-allowed"
+								? "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm"
+								: "bg-warm-200 text-text-muted cursor-not-allowed"
 						}`}
 					>
 						{submitting ? "创建中…" : "创建"}
@@ -251,17 +251,17 @@ function LayerSelector({
 	onSelect,
 }: LayerSelectorProps) {
 	return (
-		<div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-cream-200/50 dark:border-cream-600/25 bg-cream-50/60 dark:bg-cream-800/30">
+		<div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border/50 bg-surface/60">
 			<div className="flex-1 min-w-0">
 				<div className="text-xs font-medium text-text-primary">{label}</div>
-				<div className="text-[11px] text-text-muted mt-0.5 leading-snug">
+				<div className="text-2xs text-text-muted mt-0.5 leading-snug">
 					{description}
 				</div>
 			</div>
 			<select
 				value={selectedId ?? ""}
 				onChange={(e) => onSelect(e.target.value || null)}
-				className="w-[140px] shrink-0 text-xs px-2 py-1.5 rounded-lg bg-cream-100/80 dark:bg-cream-800/60 border border-cream-300/50 dark:border-cream-600/30 text-text-primary outline-none focus:border-cream-400 dark:focus:border-cream-500 transition-colors cursor-pointer appearance-none"
+				className="w-[140px] shrink-0 text-xs px-2 py-1.5 rounded-lg bg-background/80 border border-border/50 text-text-primary outline-none focus:border-warm-500 transition-colors cursor-pointer appearance-none"
 				style={{
 					backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
 					backgroundRepeat: "no-repeat",

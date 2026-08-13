@@ -510,15 +510,22 @@ export function usePetEventBridge(): PetEventBridge {
 			.then(applyState)
 			.catch(() => {});
 
+		let cancelled = false;
 		let unlisten: UnlistenFn | null = null;
 		void (async () => {
 			try {
-				unlisten = await listen<{ patch: Record<string, unknown> }>(
+				const fn = await listen<{ patch: Record<string, unknown> }>(
 					"pet-settings-changed",
 					(event) => {
+						if (cancelled) return;
 						applyState(event.payload?.patch ?? {});
 					},
 				);
+				if (cancelled) {
+					fn();
+					return;
+				}
+				unlisten = fn;
 			} catch {
 				// noop
 			}
@@ -533,6 +540,7 @@ export function usePetEventBridge(): PetEventBridge {
 		}, 60_000);
 
 		return () => {
+			cancelled = true;
 			unlisten?.();
 			clearInterval(interval);
 		};
@@ -598,15 +606,17 @@ export function usePetEventBridge(): PetEventBridge {
 
 	// 接收 pet-trigger-reminder（番茄钟 / 外部驱动）
 	useEffect(() => {
+		let cancelled = false;
 		let unlisten: UnlistenFn | null = null;
 		void (async () => {
 			try {
-				unlisten = await listen<{
+				const fn = await listen<{
 					kind: PetReminderKind;
 					title: string;
 					detail?: string;
 					id?: string;
 				}>("pet-trigger-reminder", (event) => {
+					if (cancelled) return;
 					const p = event.payload;
 					if (!p?.title) return;
 					dispatch({
@@ -619,22 +629,30 @@ export function usePetEventBridge(): PetEventBridge {
 						},
 					});
 				});
+				if (cancelled) {
+					fn();
+					return;
+				}
+				unlisten = fn;
 			} catch {
 				// noop
 			}
 		})();
 		return () => {
+			cancelled = true;
 			unlisten?.();
 		};
 	}, []);
 
 	useEffect(() => {
+		let cancelled = false;
 		let unlisten: UnlistenFn | null = null;
 
 		const setup = async () => {
-			unlisten = await listen<AgentSdkEventPayload>(
+			const fn = await listen<AgentSdkEventPayload>(
 				"agent-sdk-event",
 				(event) => {
+					if (cancelled) return;
 					const payload = event.payload;
 					const runId = String(payload.runId || "").trim();
 					if (!runId) return;
@@ -733,12 +751,18 @@ export function usePetEventBridge(): PetEventBridge {
 					}
 				},
 			);
+			if (cancelled) {
+				fn();
+				return;
+			}
+			unlisten = fn;
 		};
 
 		void setup();
 		resetIdleTimer();
 
 		return () => {
+			cancelled = true;
 			unlisten?.();
 			if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
 			if (progressDebounceRef.current)
@@ -901,10 +925,11 @@ export function usePetEventBridge(): PetEventBridge {
 	// pet-speak：外部主动让桌宠"说一句话"——主进程 IPC 转发到这里。
 	// 走 notification 队列让气泡正常出现，同时朗读受 force 控制（默认走 scene_pet 设置）。
 	useEffect(() => {
+		let cancelled = false;
 		let unlisten: UnlistenFn | null = null;
 		void (async () => {
 			try {
-				unlisten = await listen<{
+				const fn = await listen<{
 					text: string;
 					motion?: string;
 					bubble?: "notification" | "reminder";
@@ -913,6 +938,7 @@ export function usePetEventBridge(): PetEventBridge {
 					reminderKind?: PetReminderKind;
 					force?: boolean;
 				}>("pet-speak", (event) => {
+					if (cancelled) return;
 					const p = event.payload;
 					if (!p?.text) return;
 					if (p.bubble === "reminder") {
@@ -940,11 +966,17 @@ export function usePetEventBridge(): PetEventBridge {
 						force: p.force !== false,
 					});
 				});
+				if (cancelled) {
+					fn();
+					return;
+				}
+				unlisten = fn;
 			} catch {
 				// noop
 			}
 		})();
 		return () => {
+			cancelled = true;
 			unlisten?.();
 		};
 	}, [getPersonalityId]);

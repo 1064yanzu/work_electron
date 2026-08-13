@@ -117,12 +117,15 @@ export function usePetEdgePeek(enabled: boolean): PetEdgePeekApi {
 	}, [enabled, evaluateStuck, schedulePeek]);
 
 	// 监听 pet-landed（落地反弹），重新评估是否贴墙
+	// cancelled 标志位防止「listen resolve 前已卸载」产生孤儿监听器
 	useEffect(() => {
 		if (!enabled) return;
+		let cancelled = false;
 		let unlisten: UnlistenFn | null = null;
 		void (async () => {
 			try {
-				unlisten = await listen("pet-landed", () => {
+				const fn = await listen("pet-landed", () => {
+					if (cancelled) return;
 					setPeeking(false);
 					void (async () => {
 						const result = await evaluateStuck();
@@ -133,11 +136,17 @@ export function usePetEdgePeek(enabled: boolean): PetEdgePeekApi {
 						}
 					})();
 				});
+				if (cancelled) {
+					fn();
+					return;
+				}
+				unlisten = fn;
 			} catch {
 				// noop
 			}
 		})();
 		return () => {
+			cancelled = true;
 			unlisten?.();
 		};
 	}, [enabled, evaluateStuck, schedulePeek]);

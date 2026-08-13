@@ -5,8 +5,6 @@
  * 支持会话保存、恢复和多目录访问。
  */
 
-import { invoke } from "../tauriCompat";
-
 /**
  * 会话状态
  */
@@ -40,16 +38,6 @@ export interface AgentSession {
 export interface SessionResumeInfo {
 	sessionId: string;
 	lastMessageId?: string;
-}
-
-/**
- * 可访问目录配置
- */
-export interface AccessiblePathsConfig {
-	/** 主工作目录 */
-	cwd: string;
-	/** 额外可访问目录（最多 10 个） */
-	additionalDirectories?: string[];
 }
 
 /**
@@ -278,43 +266,3 @@ class SessionStore {
 
 // 单例实例
 export const sessionStore = new SessionStore();
-
-/**
- * 验证目录路径
- */
-export async function validateDirectory(
-	path: string,
-): Promise<{ valid: boolean; error?: string }> {
-	try {
-		const exists = await invoke<boolean>("path_exists", { path });
-		if (!exists) {
-			return { valid: false, error: "目录不存在" };
-		}
-
-		const isDir = await invoke<boolean>("is_directory", { path });
-		if (!isDir) {
-			return { valid: false, error: "路径不是目录" };
-		}
-
-		return { valid: true };
-	} catch (e) {
-		return { valid: false, error: String(e) };
-	}
-}
-
-/**
- * 构建多目录访问配置
- */
-export function buildAccessiblePaths(
-	cwd: string,
-	additionalDirectories?: string[],
-): AccessiblePathsConfig {
-	const config: AccessiblePathsConfig = { cwd };
-
-	if (additionalDirectories && additionalDirectories.length > 0) {
-		// 最多 10 个额外目录
-		config.additionalDirectories = additionalDirectories.slice(0, 10);
-	}
-
-	return config;
-}

@@ -364,7 +364,7 @@ function ReadyView({
 		<div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
 			{/* QR 码 */}
 			<div className="mx-auto flex flex-col items-center md:mx-0">
-				<div className="rounded-2xl bg-surface p-3 ring-1 ring-cream-200 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:ring-cream-700">
+				<div className="rounded-2xl bg-surface p-3 ring-1 ring-border shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
 					<img
 						src={qrDataUrl}
 						alt="飞书扫码授权"
@@ -416,7 +416,7 @@ function ReadyView({
 					</div>
 					<div className="mt-2 text-xs text-text-muted">
 						User code：
-						<code className="ml-1 rounded bg-surface px-1 py-0.5 font-mono">
+						<code className="ml-1 rounded-lg bg-surface px-1 py-0.5 font-mono">
 							{userCode}
 						</code>
 					</div>
@@ -435,7 +435,7 @@ function StepLine({
 }) {
 	return (
 		<li className="flex items-start gap-2.5">
-			<span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-warm-300/70 text-[11px] font-semibold text-text-secondary">
+			<span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-warm-300/70 text-2xs font-semibold text-text-secondary">
 				{index}
 			</span>
 			<span>{children}</span>
@@ -512,20 +512,20 @@ function SuccessView({
 			<div className="w-full max-w-md rounded-xl border border-border bg-surface p-3 text-left text-xs">
 				<div className="flex items-center justify-between">
 					<span className="text-text-muted">App ID</span>
-					<code className="rounded bg-warm-200 px-1.5 py-0.5 font-mono text-xs">
+					<code className="rounded-lg bg-warm-200 px-1.5 py-0.5 font-mono text-xs">
 						{appId}
 					</code>
 				</div>
 				<div className="mt-1.5 flex items-center justify-between">
 					<span className="text-text-muted">域名</span>
-					<code className="rounded bg-warm-200 px-1.5 py-0.5 font-mono text-xs">
+					<code className="rounded-lg bg-warm-200 px-1.5 py-0.5 font-mono text-xs">
 						{domain}
 					</code>
 				</div>
 				{openId ? (
 					<div className="mt-1.5 flex items-center justify-between">
 						<span className="text-text-muted">你的 open_id</span>
-						<code className="truncate rounded bg-warm-200 px-1.5 py-0.5 font-mono text-xs">
+						<code className="truncate rounded-lg bg-warm-200 px-1.5 py-0.5 font-mono text-xs">
 							{openId}
 						</code>
 					</div>

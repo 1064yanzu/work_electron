@@ -140,7 +140,7 @@ export function CopilotMessageJumper({
 										className={`group flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors ${
 											isActive
 												? "bg-primary/8 text-primary"
-												: "hover:bg-warm-200 dark:hover:bg-cream-800/50 text-text-secondary"
+												: "hover:bg-warm-200 text-text-secondary"
 										}`}
 										onClick={() => scrollToMessage(msg.id)}
 									>
@@ -161,7 +161,7 @@ export function CopilotMessageJumper({
 													e.stopPropagation();
 													onDeleteMessage(msg.id);
 												}}
-												className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-500 transition-[color,background-color,border-color,opacity,box-shadow,transform]"
+												className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-error-muted hover:text-error transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 												title="删除此消息"
 											>
 												<X className="w-3 h-3" />

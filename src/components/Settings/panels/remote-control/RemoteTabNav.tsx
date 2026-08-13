@@ -111,7 +111,7 @@ export function RemoteTabNav({
 						{typeof tab.badge === "number" && tab.badge > 0 ? (
 							<span
 								className={cn(
-									"inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-[11px] font-semibold leading-4 tabular-nums",
+									"inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-2xs font-semibold leading-4 tabular-nums",
 									badgeToneClass,
 								)}
 							>

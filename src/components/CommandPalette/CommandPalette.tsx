@@ -205,7 +205,7 @@ export function CommandPalette({
 		>
 			{/* Backdrop — 暖色蒙版，不用毛玻璃避免 impeccable glassmorphism 违规 */}
 			<div
-				className="absolute inset-0 bg-cream-900/30 animate-in fade-in duration-150"
+				className="absolute inset-0 bg-black/30 animate-in fade-in duration-150"
 				onClick={handleClose}
 				aria-hidden="true"
 			/>
@@ -237,7 +237,7 @@ export function CommandPalette({
 									: undefined
 							}
 						/>
-						<kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium text-text-muted bg-warm-200">
+						<kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-2xs font-medium text-text-muted bg-warm-200">
 							ESC
 						</kbd>
 					</div>
@@ -259,7 +259,7 @@ export function CommandPalette({
 						) : (
 							grouped.map(([groupName, groupItems]) => (
 								<div key={groupName} className="mb-2 last:mb-0">
-									<div className="px-5 pt-2 pb-1 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+									<div className="px-5 pt-2 pb-1 flex items-center justify-between text-2xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 										<span className="flex items-center gap-1">
 											{groupName === RECENT_GROUP && (
 												<History className="w-3 h-3" strokeWidth={1.5} />
@@ -270,7 +270,7 @@ export function CommandPalette({
 											<button
 												type="button"
 												onClick={() => commandPaletteStore.clearRecent()}
-												className="normal-case tracking-normal font-normal text-[11px] text-text-light hover:text-text-secondary transition-colors"
+												className="normal-case tracking-normal font-normal text-2xs text-text-light hover:text-text-secondary transition-colors"
 											>
 												清除
 											</button>
@@ -335,7 +335,7 @@ export function CommandPalette({
 														{item.shortcut.map((key, i) => (
 															<kbd
 																key={i}
-																className="px-1.5 py-0.5 rounded-md text-[11px] font-medium text-text-muted bg-warm-200"
+																className="px-1.5 py-0.5 rounded-md text-2xs font-medium text-text-muted bg-warm-200"
 															>
 																{key}
 															</kbd>
@@ -358,27 +358,27 @@ export function CommandPalette({
 
 					{/* 底部 hint */}
 					<div className="flex items-center justify-between px-5 py-2.5 border-t border-border bg-warm-50/50">
-						<div className="flex items-center gap-3 text-[11px] text-text-muted">
+						<div className="flex items-center gap-3 text-2xs text-text-muted">
 							<span className="flex items-center gap-1">
-								<kbd className="px-1.5 py-0.5 rounded text-[11px] bg-warm-200">
+								<kbd className="px-1.5 py-0.5 rounded text-2xs bg-warm-200">
 									↑↓
 								</kbd>
 								<span>选择</span>
 							</span>
 							<span className="flex items-center gap-1">
-								<kbd className="px-1.5 py-0.5 rounded text-[11px] bg-warm-200">
+								<kbd className="px-1.5 py-0.5 rounded text-2xs bg-warm-200">
 									⏎
 								</kbd>
 								<span>执行</span>
 							</span>
 							<span className="flex items-center gap-1">
-								<kbd className="px-1.5 py-0.5 rounded text-[11px] bg-warm-200">
+								<kbd className="px-1.5 py-0.5 rounded text-2xs bg-warm-200">
 									ESC
 								</kbd>
 								<span>关闭</span>
 							</span>
 						</div>
-						<div className="text-[11px] text-text-light">
+						<div className="text-2xs text-text-light">
 							{flatList.length} / {commands.length}
 						</div>
 					</div>

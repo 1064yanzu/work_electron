@@ -16,6 +16,7 @@ import {
 	type TTSSettings,
 } from "../tts/types";
 import { invalidateVoiceCache } from "../tts/voiceManager";
+import { decryptSecret, encryptSecret } from "../storage/secretVault";
 
 const SETTINGS_CACHE_TTL_MS = 10_000;
 
@@ -44,7 +45,10 @@ function parseProviders(raw: string | null | undefined): TTSProviderConfig[] {
 				id,
 				type,
 				name: typeof r.name === "string" ? r.name : id,
-				api_key: typeof r.api_key === "string" ? r.api_key : undefined,
+				// TTS provider 的 key 与 LLM provider 一样落 safeStorage 密文，
+				// 解密出口放在这里（parseProviders 是唯一的读路径）。
+				api_key:
+					typeof r.api_key === "string" ? decryptSecret(r.api_key) : undefined,
 				api_base: typeof r.api_base === "string" ? r.api_base : undefined,
 				model: typeof r.model === "string" ? r.model : undefined,
 				voice: typeof r.voice === "string" ? r.voice : undefined,
@@ -232,7 +236,14 @@ export async function updateTtsSettings(
 			next.scene_pet_persona_prompt,
 			next.scene_pet_persona_provider_id,
 			next.scene_pet_persona_model,
-			JSON.stringify(next.providers),
+			// 落库前加密每个 provider 的 api_key；内存中的 `next` 保持明文，
+			// 这样刚保存完的这次返回值仍能被调用方直接使用。
+			JSON.stringify(
+				next.providers.map((p) => ({
+					...p,
+					api_key: p.api_key ? encryptSecret(p.api_key) : p.api_key,
+				})),
+			),
 			next.updated_at,
 		],
 	});

@@ -209,7 +209,7 @@ export function WikiGraphFullscreen() {
 					}`}
 				>
 					<div className="px-3 py-3 min-w-[176px]">
-						<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-2">
+						<div className="text-2xs uppercase tracking-[0.18em] text-text-light mb-2">
 							节点类型
 						</div>
 						<div className="space-y-0.5">
@@ -237,7 +237,7 @@ export function WikiGraphFullscreen() {
 										<span className="flex-1 text-xs text-text-secondary truncate">
 											{meta.label}
 										</span>
-										<span className="text-[11px] tabular-nums text-text-light shrink-0">
+										<span className="text-2xs tabular-nums text-text-light shrink-0">
 											{count}
 										</span>
 									</label>
@@ -246,10 +246,10 @@ export function WikiGraphFullscreen() {
 						</div>
 
 						<div className="mt-4 pt-3 border-t border-border/60">
-							<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-2">
+							<div className="text-2xs uppercase tracking-[0.18em] text-text-light mb-2">
 								操作提示
 							</div>
-							<ul className="space-y-1.5 text-[11px] text-text-muted leading-relaxed">
+							<ul className="space-y-1.5 text-2xs text-text-muted leading-relaxed">
 								<li>· 点击节点 → 聚焦到该节点</li>
 								<li>· 聚焦后再次点击 → 打开页面</li>
 								<li>· 拖拽节点调整布局</li>
@@ -343,11 +343,11 @@ function WikiNodeDetailContent({
 						className="inline-block w-2 h-2 rounded-full shrink-0"
 						style={{ background: color }}
 					/>
-					<span className="text-[11px] uppercase tracking-[0.18em] text-text-light truncate">
+					<span className="text-2xs uppercase tracking-[0.18em] text-text-light truncate">
 						{page.page_type ?? "entity"}
 					</span>
 					{page.status && page.status !== "active" && (
-						<span className="text-[11px] uppercase tracking-wider text-peach-500 bg-peach-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded shrink-0">
+						<span className="text-2xs uppercase tracking-wider text-peach-500 bg-peach-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded shrink-0">
 							{page.status}
 						</span>
 					)}
@@ -373,14 +373,14 @@ function WikiNodeDetailContent({
 
 			{page.aliases && page.aliases.length > 0 && (
 				<div className="mb-3">
-					<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-1">
+					<div className="text-2xs uppercase tracking-[0.18em] text-text-light mb-1">
 						别名
 					</div>
 					<div className="flex flex-wrap gap-1">
 						{page.aliases.map((a) => (
 							<span
 								key={a}
-								className="px-1.5 py-0.5 text-[11px] bg-warm-200 text-text-secondary rounded"
+								className="px-1.5 py-0.5 text-2xs bg-warm-200 text-text-secondary rounded"
 							>
 								{a}
 							</span>
@@ -391,14 +391,14 @@ function WikiNodeDetailContent({
 
 			{page.tags.length > 0 && (
 				<div className="mb-3">
-					<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-1">
+					<div className="text-2xs uppercase tracking-[0.18em] text-text-light mb-1">
 						标签
 					</div>
 					<div className="flex flex-wrap gap-1">
 						{page.tags.map((t) => (
 							<span
 								key={t}
-								className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium bg-primary/8 text-primary/80 rounded"
+								className="inline-flex items-center gap-1 px-1.5 py-0.5 text-2xs font-medium bg-primary/8 text-primary/80 rounded"
 							>
 								<Tag className="h-2.5 w-2.5" />
 								{t}
@@ -410,7 +410,7 @@ function WikiNodeDetailContent({
 
 			{page.sources && page.sources.length > 0 && (
 				<div className="mb-3">
-					<div className="text-[11px] uppercase tracking-[0.18em] text-text-light mb-1">
+					<div className="text-2xs uppercase tracking-[0.18em] text-text-light mb-1">
 						溯源（{page.sources.length}）
 					</div>
 					<ul className="space-y-0.5">
@@ -424,7 +424,7 @@ function WikiNodeDetailContent({
 							</li>
 						))}
 						{page.sources.length > 6 && (
-							<li className="text-[11px] text-text-light">
+							<li className="text-2xs text-text-light">
 								...还有 {page.sources.length - 6} 个来源
 							</li>
 						)}
@@ -440,7 +440,7 @@ function WikiNodeDetailContent({
 					<Pencil className="h-3.5 w-3.5" />
 					在编辑器中打开
 				</button>
-				<div className="flex items-center gap-1.5 text-[11px] text-text-light">
+				<div className="flex items-center gap-1.5 text-2xs text-text-light">
 					<FileText className="h-3 w-3 shrink-0" />
 					<span className="truncate">{page.slug}</span>
 				</div>

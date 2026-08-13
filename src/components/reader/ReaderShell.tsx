@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -872,7 +873,9 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 						<div className="reader-shell__loading-pulse" />
 					) : error ? (
 						<div className="reader-error">
-							<div className="reader-error__icon">⚠️</div>
+							<div className="reader-error__icon">
+								<AlertTriangle size={28} strokeWidth={1.5} aria-hidden />
+							</div>
 							<p className="reader-error__title">无法加载内容</p>
 							<p className="reader-error__detail">
 								{error.includes("FILE_MISSING")

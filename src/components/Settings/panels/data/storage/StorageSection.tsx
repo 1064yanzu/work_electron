@@ -100,7 +100,7 @@ export function StorageSection({
 				id="data.storage.advanced"
 				title="Obsidian 互通与冲突策略"
 			>
-				<div className="rounded-xl border border-border/70 bg-cream-50/60 px-4 py-2">
+				<div className="rounded-xl border border-border/70 bg-surface/60 px-4 py-2">
 					<div
 						id="data.storage.obsidian_frontmatter"
 						data-settings-anchor="data.storage.obsidian_frontmatter"

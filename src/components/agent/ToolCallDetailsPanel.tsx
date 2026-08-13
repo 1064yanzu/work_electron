@@ -48,7 +48,7 @@ export function ToolCallDetailsPanel({
 					<button
 						type="button"
 						onClick={onPreviewFile}
-						className="inline-flex items-center gap-1.5 rounded-lg bg-dark-muted text-white px-2.5 py-1.5 text-xs font-medium hover:opacity-90 transition-opacity"
+						className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground px-2.5 py-1.5 text-xs font-medium hover:opacity-90 transition-opacity"
 					>
 						<Eye className="w-3.5 h-3.5" />
 						预览文件
@@ -62,7 +62,7 @@ export function ToolCallDetailsPanel({
 						{Object.entries(input).map(([key, value]) => (
 							<div key={key} className="text-xs leading-relaxed">
 								<div className="text-text-muted">{key}</div>
-								<div className="mt-1 rounded-md bg-warm-200/70 p-2 text-text-secondary dark:text-cream-200 break-all whitespace-pre-wrap">
+								<div className="mt-1 rounded-md bg-warm-200/70 p-2 text-text-secondary break-all whitespace-pre-wrap">
 									{typeof value === "string"
 										? value
 										: JSON.stringify(value, null, 2)}
@@ -74,13 +74,8 @@ export function ToolCallDetailsPanel({
 			) : null}
 
 			{error ? (
-				<Section
-					title="Error"
-					className="border-[rgba(181,51,51,0.32)]/70 dark:border-red-900/60 bg-[rgba(181,51,51,0.08)]/60 dark:bg-red-900/20"
-				>
-					<div className="text-xs text-error dark:text-error whitespace-pre-wrap">
-						{error}
-					</div>
+				<Section title="Error" className="border-error/30 bg-error/8">
+					<div className="text-xs text-error whitespace-pre-wrap">{error}</div>
 				</Section>
 			) : null}
 

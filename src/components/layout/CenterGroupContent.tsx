@@ -10,7 +10,6 @@
  */
 import { Suspense, lazy } from "react";
 
-import { CenterCliTabs } from "./CenterCliTabs";
 import { CenterEmptyState } from "./CenterEmptyState";
 import { PanelLoadingFallback } from "./PanelLoadingFallback";
 import { ViewTransition } from "../ui/ViewTransition";
@@ -33,6 +32,12 @@ const AiHubPanel = lazy(() =>
 );
 const HubView = lazy(() =>
 	import("../hub/HubView").then((m) => ({ default: m.HubView })),
+);
+// CLI 标签整条链（→ TerminalInstance → @xterm/xterm）此前是静态导入，
+// 把 xterm 拖进了首屏 chunk。改懒加载 + 本组无 CLI 标签时不挂载，
+// 让 xterm 只在真的开了 CLI 标签时才下载。
+const CenterCliTabs = lazy(() =>
+	import("./CenterCliTabs").then((m) => ({ default: m.CenterCliTabs })),
 );
 
 export function CenterGroupContent({ groupId }: { groupId: string }) {
@@ -104,8 +109,13 @@ export function CenterGroupContent({ groupId }: { groupId: string }) {
 				</ViewTransition>
 			)}
 			{/* CLI 标签常挂不卸载：xterm 的滚动缓冲在渲染进程里，
-			    卸载一次整段对话记录就没了 */}
-			<CenterCliTabs tabs={cliTabs} activeTabId={activeTabId} />
+			    卸载一次整段对话记录就没了。但"本组没有 CLI 标签"时整块不挂载，
+			    xterm 的 chunk 也就不会被拉取 */}
+			{cliTabs.length > 0 ? (
+				<Suspense fallback={null}>
+					<CenterCliTabs tabs={cliTabs} activeTabId={activeTabId} />
+				</Suspense>
+			) : null}
 		</div>
 	);
 }

@@ -66,6 +66,9 @@ export const EVENTS = {
 	// 中间栏标签页
 	AIHUB_SITES_CHANGED: "AIHUB_SITES_CHANGED", // Web AI 站点清单变更（设置面板增删/启停后广播）
 
+	// 对话
+	NEW_THREAD_REQUEST: "NEW_THREAD_REQUEST", // 请求新建对话（命令面板 / 快捷键 → ThreadsView 选目录建会话）
+
 	// 远程控制
 	REMOTE_CHAT_INJECT: "REMOTE_CHAT_INJECT", // 远程消息注入到 UI 对话
 

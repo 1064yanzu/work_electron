@@ -22,6 +22,7 @@ export type ChannelNavItem = {
 	description?: string;
 	icon: LucideIcon;
 	accent: string;
+	/** 图标容器平色背景 class（如 bg-warm-200） */
 	iconBg: string;
 	enabled: boolean;
 	running?: boolean;
@@ -97,7 +98,7 @@ export function ChannelNav({
 						{/* 图标 */}
 						<span
 							className={cn(
-								"relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br",
+								"relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg",
 								item.iconBg,
 								!item.enabled ? "opacity-60 saturate-50" : "",
 							)}
@@ -117,7 +118,7 @@ export function ChannelNav({
 								{item.badge ? (
 									<span
 										className={cn(
-											"inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium",
+											"inline-flex items-center rounded-full px-1.5 py-0.5 text-2xs font-medium",
 											item.badge.tone === "amber"
 												? "bg-peach-500/10 text-peach-500"
 												: item.badge.tone === "sky"
@@ -145,7 +146,7 @@ export function ChannelNav({
 						>
 							{item.locked ? (
 								<span
-									className="inline-flex items-center gap-1 rounded-full bg-peach-500/10 px-1.5 py-0.5 text-[11px] text-peach-500"
+									className="inline-flex items-center gap-1 rounded-full bg-peach-500/10 px-1.5 py-0.5 text-2xs text-peach-500"
 									title={item.lockedHint}
 								>
 									<Lock className="h-3 w-3" />

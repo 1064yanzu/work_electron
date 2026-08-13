@@ -26,12 +26,12 @@ function TerminalPreview({ code }: { code: string }) {
 	}, [code]);
 
 	return (
-		<div className="rounded-xl overflow-hidden border border-border/60 shadow-inner bg-gradient-to-br from-cream-50 to-cream-100/80 dark:from-cream-900 dark:to-cream-900/80">
+		<div className="rounded-xl overflow-hidden border border-border/60 shadow-inner bg-gradient-to-br from-surface to-background/80">
 			{/* 终端头部装饰 */}
 			<div className="flex items-center gap-1.5 px-3 py-2 bg-warm-200/80 border-b border-border/60">
 				<div className="w-2.5 h-2.5 rounded-full bg-error/80 shadow-sm" />
-				<div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80 shadow-sm" />
-				<div className="w-2.5 h-2.5 rounded-full bg-green-500/80 shadow-sm" />
+				<div className="w-2.5 h-2.5 rounded-full bg-warning/80 shadow-sm" />
+				<div className="w-2.5 h-2.5 rounded-full bg-success/80 shadow-sm" />
 			</div>
 
 			{/* 终端内容 */}
@@ -42,7 +42,7 @@ function TerminalPreview({ code }: { code: string }) {
 					</span>
 					<div className="flex-1 text-text-secondary whitespace-pre-wrap break-words leading-relaxed">
 						{lastLines}
-						<span className="inline-block w-0.5 h-4 ml-1 bg-success dark:bg-emerald-400 animate-pulse align-middle rounded-full" />
+						<span className="inline-block w-0.5 h-4 ml-1 bg-success animate-pulse align-middle rounded-full" />
 					</div>
 				</div>
 			</div>
@@ -79,9 +79,7 @@ function EntryCard({
 					)}
 				</div>
 				<div>
-					<div className="text-sm font-medium text-text-primary dark:text-cream-200">
-						{title}
-					</div>
+					<div className="text-sm font-medium text-text-primary">{title}</div>
 					<div className="text-xs text-text-muted mt-0.5">点击查看详情</div>
 				</div>
 			</div>
@@ -94,7 +92,7 @@ function EntryCard({
 						e.stopPropagation();
 						onDownload();
 					}}
-					className="p-2 rounded-lg text-text-light hover:text-success dark:hover:text-success hover:bg-success/8 dark:hover:bg-emerald-900/20"
+					className="p-2 rounded-lg text-text-light hover:text-success hover:bg-success/8"
 					title="下载代码"
 				>
 					<Download className="w-4 h-4" />
@@ -117,7 +115,7 @@ function EntryCard({
 						e.stopPropagation();
 						onOpen("preview");
 					}}
-					className="p-2 rounded-lg text-text-light hover:text-focus dark:hover:text-focus hover:bg-focus/8 dark:hover:bg-blue-900/20"
+					className="p-2 rounded-lg text-text-light hover:text-focus hover:bg-focus/8"
 					title="预览"
 				>
 					<Maximize2 className="w-4 h-4" />
@@ -180,7 +178,7 @@ function FullScreenModal({
 				<div className="relative h-14 px-4 flex items-center justify-between gap-4 bg-warm-50/80 border-b border-border backdrop-blur-sm">
 					{/* 左侧：标题 */}
 					<div className="flex items-center gap-3 min-w-0 flex-1">
-						<div className="text-sm font-semibold text-text-primary dark:text-cream-200 truncate">
+						<div className="text-sm font-semibold text-text-primary truncate">
 							{title}
 						</div>
 					</div>
@@ -195,7 +193,7 @@ function FullScreenModal({
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150
                                     ${
 																			viewMode === "code"
-																				? "bg-surface dark:bg-cream-700 text-text-primary shadow-sm"
+																				? "bg-surface text-text-primary shadow-sm"
 																				: "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
 																		}
                                 `}
@@ -210,7 +208,7 @@ function FullScreenModal({
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150
                                     ${
 																			viewMode === "preview"
-																				? "bg-surface dark:bg-cream-700 text-success dark:text-success shadow-sm"
+																				? "bg-surface text-success shadow-sm"
 																				: "text-text-muted hover:text-text-secondary dark:hover:text-text-light"
 																		}
                                 `}
@@ -425,7 +423,7 @@ ${transformed}
 			return (
 				<div className="flex flex-col items-center justify-center p-6 gap-3 rounded-xl border border-border bg-surface">
 					<div className="relative">
-						<div className="w-5 h-5 border-2 border-border border-t-emerald-500 rounded-full animate-spin" />
+						<div className="w-5 h-5 border-2 border-border border-t-success rounded-full animate-spin" />
 					</div>
 					<div className="text-xs text-text-light font-mono animate-pulse">
 						代码生成中，暂不写入文件

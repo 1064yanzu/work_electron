@@ -320,7 +320,7 @@ export const SourceDetailView = forwardRef<
 	const getScopeBadgeClassName = useCallback((source: Source) => {
 		return source.scope === "project"
 			? "bg-warm-200/80 text-text-secondary"
-			: "bg-indigo-50 dark:bg-indigo-900/25 text-indigo-600 dark:text-indigo-300";
+			: "bg-warm-200 text-text-secondary";
 	}, []);
 
 	if (!previewSource) return null;
@@ -341,7 +341,7 @@ export const SourceDetailView = forwardRef<
 				>
 					<button
 						onClick={handleInsertSelection}
-						className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-muted hover:bg-dark-surface text-white text-xs font-medium rounded-lg shadow-lg transition-colors"
+						className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-medium rounded-lg shadow-lg transition-colors"
 					>
 						<Quote className="w-3 h-3" />
 						引用到编辑器
@@ -357,7 +357,7 @@ export const SourceDetailView = forwardRef<
 						onClick={() => setContentContextMenu(null)}
 					/>
 					<div
-						className="fixed z-50 bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-bai-pop border border-cream-400 dark:border-cream-500 py-1.5 min-w-[160px] animate-in fade-in zoom-in-95 duration-150"
+						className="fixed z-50 bg-surface rounded-2xl shadow-bai-pop border border-border py-1.5 min-w-[160px] animate-in fade-in zoom-in-95 duration-150"
 						style={{ left: contentContextMenu.x, top: contentContextMenu.y }}
 					>
 						<button
@@ -365,7 +365,7 @@ export const SourceDetailView = forwardRef<
 								handleInsertSelection();
 								setContentContextMenu(null);
 							}}
-							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-cream-700 flex items-center gap-2"
+							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 flex items-center gap-2"
 						>
 							<Quote className="w-4 h-4" />
 							引用到编辑器
@@ -378,7 +378,7 @@ export const SourceDetailView = forwardRef<
 								}
 								setContentContextMenu(null);
 							}}
-							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 dark:hover:bg-cream-700 flex items-center gap-2"
+							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 flex items-center gap-2"
 						>
 							<Copy className="w-4 h-4" />
 							复制
@@ -403,7 +403,7 @@ export const SourceDetailView = forwardRef<
 						<input
 							value={editTitle}
 							onChange={(e) => setEditTitle(e.target.value)}
-							className="w-full px-2 py-1 text-sm font-semibold bg-warm-200 rounded focus:outline-none focus:ring-2 focus:ring-cream-200"
+							className="w-full px-2 py-1 text-sm font-semibold bg-warm-200 rounded focus:outline-none focus:ring-2 focus:ring-border/60"
 							placeholder="标题"
 						/>
 					) : (
@@ -443,7 +443,7 @@ export const SourceDetailView = forwardRef<
 							<button
 								onClick={handleSaveEdit}
 								disabled={isSaving}
-								className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"
+								className="p-1.5 text-success hover:bg-success-muted rounded-lg"
 							>
 								{isSaving ? (
 									<Loader2 className="w-4 h-4 animate-spin" />
@@ -458,7 +458,7 @@ export const SourceDetailView = forwardRef<
 
 			{/* Content */}
 			<div
-				className="flex-1 overflow-y-auto scrollbar-hide bg-surface"
+				className="flex-1 overflow-y-auto bg-surface"
 				onContextMenu={handleContentContextMenu}
 			>
 				{isLoadingDetail ? (
@@ -489,7 +489,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.BrowserClip && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-success/8 dark:bg-emerald-900/20 text-success dark:text-success rounded text-[11px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-success/8 text-success rounded text-2xs font-medium">
 											<Globe className="w-2.5 h-2.5" />
 											浏览器剪存
 										</span>
@@ -497,7 +497,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.WebSearch && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-focus/8 dark:bg-blue-900/20 text-focus dark:text-focus rounded text-[11px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-focus/8 text-focus rounded text-2xs font-medium">
 											<Search className="w-2.5 h-2.5" />
 											网络搜索
 										</span>
@@ -505,14 +505,14 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.Import && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200/70 text-text-secondary rounded text-[11px] font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200/70 text-text-secondary rounded text-2xs font-medium">
 											<ArrowDownToLine className="w-2.5 h-2.5" />
 											本地导入
 										</span>
 									)}
 								{isSource && (
 									<span
-										className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium ${getScopeBadgeClassName(previewSource as Source)}`}
+										className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium ${getScopeBadgeClassName(previewSource as Source)}`}
 									>
 										{getScopeLabel(previewSource as Source)}
 									</span>
@@ -523,7 +523,7 @@ export const SourceDetailView = forwardRef<
 										.map((tag) => (
 											<span
 												key={`${previewSource.id}-detail-tag-${tag}`}
-												className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-warm-200/80 text-text-secondary"
+												className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-warm-200/80 text-text-secondary"
 											>
 												#{tag}
 											</span>
@@ -574,13 +574,13 @@ export const SourceDetailView = forwardRef<
 												setEditHtmlContent(e.currentTarget.innerHTML)
 											}
 											dangerouslySetInnerHTML={{ __html: editHtmlContent }}
-											className="w-full min-h-[60vh] p-6 bg-surface border border-border rounded-xl text-base leading-7 focus:outline-none focus:ring-2 focus:ring-cream-300 dark:focus:ring-cream-600 prose prose-zinc dark:prose-invert max-w-none overflow-auto"
+											className="w-full min-h-[60vh] p-6 bg-surface border border-border rounded-xl text-base leading-7 focus:outline-none focus:ring-2 focus:ring-border prose prose-zinc dark:prose-invert max-w-none overflow-auto"
 										/>
 									) : (
 										<textarea
 											value={editContent}
 											onChange={(e) => setEditContent(e.target.value)}
-											className="w-full h-[60vh] p-4 bg-warm-50/50 border border-border rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-cream-200 resize-none font-mono"
+											className="w-full h-[60vh] p-4 bg-warm-50/50 border border-border rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-border/60 resize-none font-mono"
 											placeholder="输入内容..."
 										/>
 									)}
@@ -744,7 +744,7 @@ export const SourceDetailView = forwardRef<
 						)}
 						<button
 							onClick={handleCopyToEditor}
-							className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-dark-muted text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+							className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
 						>
 							<PenLine className="w-4 h-4" />
 							添加到编辑器
@@ -753,7 +753,7 @@ export const SourceDetailView = forwardRef<
 							<Tooltip content="删除" placement="top">
 								<button
 									onClick={() => onDeleteSource(previewSource as Source)}
-									className="p-2.5 text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-colors"
+									className="p-2.5 text-text-light hover:text-error hover:bg-error/8 rounded-xl transition-colors"
 								>
 									<Trash2 className="w-4 h-4" />
 								</button>

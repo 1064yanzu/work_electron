@@ -15,7 +15,8 @@ import {
 	XCircle,
 } from "lucide-react";
 import { useState } from "react";
-import { type AgentTask, type ToolCall, useAgentStore } from "../../lib/agent";
+import type { AgentTask, ToolCall } from "../../lib/agent";
+import { useAgentStoreSelector } from "../../lib/agent/store";
 import { cn } from "../../lib/utils";
 
 // 工具图标映射
@@ -31,7 +32,7 @@ const toolIcons: Record<string, React.ComponentType<{ className?: string }>> = {
 const statusColors: Record<string, string> = {
 	pending: "text-text-light",
 	running: "text-focus",
-	completed: "text-green-500",
+	completed: "text-success",
 	error: "text-error",
 	cancelled: "text-text-light",
 };
@@ -50,14 +51,14 @@ function StatusIcon({
 		case "executing":
 			return <Loader2 className={cn("animate-spin", className)} />;
 		case "completed":
-			return <CheckCircle2 className={cn("text-green-500", className)} />;
+			return <CheckCircle2 className={cn("text-success", className)} />;
 		case "error":
 			return <XCircle className={cn("text-error", className)} />;
 		case "cancelled":
 			return <AlertCircle className={cn("text-text-light", className)} />;
 		default:
 			return (
-				<div className={cn("w-2 h-2 rounded-full bg-cream-400", className)} />
+				<div className={cn("w-2 h-2 rounded-full bg-border", className)} />
 			);
 	}
 }
@@ -102,10 +103,8 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCall }) {
 
 					{/* 输出结果 */}
 					{toolCall.output && (
-						<div className="bg-green-50 dark:bg-green-900/20 rounded p-2">
-							<div className="text-green-600 dark:text-green-400 mb-1">
-								输出:
-							</div>
+						<div className="bg-success-muted rounded p-2">
+							<div className="text-success mb-1">输出:</div>
 							<pre className="text-text-secondary overflow-x-auto whitespace-pre-wrap">
 								{typeof toolCall.output === "string"
 									? toolCall.output.slice(0, 500)
@@ -116,9 +115,9 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCall }) {
 
 					{/* 错误信息 */}
 					{toolCall.error && (
-						<div className="bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 rounded p-2">
-							<div className="text-error dark:text-error mb-1">错误:</div>
-							<pre className="text-error dark:text-error whitespace-pre-wrap">
+						<div className="bg-error/8 rounded p-2">
+							<div className="text-error mb-1">错误:</div>
+							<pre className="text-error whitespace-pre-wrap">
 								{toolCall.error}
 							</pre>
 						</div>
@@ -147,7 +146,7 @@ function TaskStatus({ task }: { task: AgentTask }) {
 			>
 				<StatusIcon status={task.status} className="w-5 h-5" />
 				<div className="flex-1 text-left">
-					<div className="font-medium text-text-primary dark:text-cream-200 text-sm">
+					<div className="font-medium text-text-primary text-sm">
 						{task.title || task.query.slice(0, 30)}
 					</div>
 					<div className="text-xs text-text-muted">
@@ -177,8 +176,8 @@ function TaskStatus({ task }: { task: AgentTask }) {
 
 			{/* 错误信息 */}
 			{task.error && (
-				<div className="border-t border-[rgba(181,51,51,0.16)] dark:border-red-900/30 bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20 p-3">
-					<div className="flex items-center gap-2 text-error dark:text-error text-sm">
+				<div className="border-t border-error/16 bg-error/8 p-3">
+					<div className="flex items-center gap-2 text-error text-sm">
 						<XCircle className="w-4 h-4" />
 						<span>{task.error}</span>
 					</div>
@@ -190,7 +189,9 @@ function TaskStatus({ task }: { task: AgentTask }) {
 
 // 主组件
 export default function AgentStatus() {
-	const { currentTask, isExecuting, taskHistory } = useAgentStore();
+	const currentTask = useAgentStoreSelector((s) => s.currentTask);
+	const isExecuting = useAgentStoreSelector((s) => s.isExecuting);
+	const taskHistory = useAgentStoreSelector((s) => s.taskHistory);
 	const [showHistory, setShowHistory] = useState(false);
 
 	if (!currentTask && taskHistory.length === 0) {
@@ -211,7 +212,7 @@ export default function AgentStatus() {
 							当前任务
 						</span>
 						{isExecuting && (
-							<span className="text-xs bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus px-2 py-0.5 rounded-full">
+							<span className="text-xs bg-focus/16 text-focus px-2 py-0.5 rounded-full">
 								执行中
 							</span>
 						)}
@@ -250,7 +251,8 @@ export default function AgentStatus() {
 
 // 紧凑版状态指示器（用于消息气泡内）
 export function AgentStatusBadge({ taskId }: { taskId?: string }) {
-	const { currentTask, taskHistory } = useAgentStore();
+	const currentTask = useAgentStoreSelector((s) => s.currentTask);
+	const taskHistory = useAgentStoreSelector((s) => s.taskHistory);
 
 	const task = taskId
 		? currentTask?.id === taskId

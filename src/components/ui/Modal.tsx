@@ -106,28 +106,19 @@ export function Modal({
 		if (!panel && !overlay) finish();
 	}, [onClose]);
 
-	// ESC 键关闭
-	const handleKeyDown = useCallback(
-		(e: KeyboardEvent) => {
-			if (e.key === "Escape") {
-				handleClose();
-			}
-		},
-		[handleClose],
-	);
+	// ESC 关闭统一交给 FocusTrap 的 onEscape（走全局 overlay 栈，只关栈顶）。
+	// 这里不再自挂 document keydown，否则叠层弹窗会被一次 Esc 连带关闭。
 
 	// 控制渲染和动画状态
 	useEffect(() => {
 		if (isOpen) {
 			setShouldRender(true);
-			document.addEventListener("keydown", handleKeyDown);
 			document.body.style.overflow = "hidden";
 		}
 		return () => {
-			document.removeEventListener("keydown", handleKeyDown);
 			document.body.style.overflow = "";
 		};
-	}, [isOpen, handleKeyDown]);
+	}, [isOpen]);
 
 	// 关闭后清理渲染状态
 	useEffect(() => {
@@ -202,9 +193,9 @@ export function Modal({
 				data-modal-panel
 				className={cn(
 					"relative w-full rounded-2xl",
-					"bg-cream-50 dark:bg-cream-900",
+					"bg-surface",
 					"shadow-bai-pop",
-					"border border-cream-300 dark:border-cream-500",
+					"border border-border",
 					"overflow-hidden",
 					sizeStyles[size],
 				)}
@@ -216,7 +207,7 @@ export function Modal({
 				{/* Header */}
 				<div
 					data-modal-section
-					className="flex items-center justify-between border-b border-cream-300 dark:border-cream-500/60 px-6 py-4"
+					className="flex items-center justify-between border-b border-border px-6 py-4"
 				>
 					<h3
 						id="modal-title"
@@ -253,7 +244,7 @@ export function Modal({
 				{footer && (
 					<div
 						data-modal-section
-						className="flex items-center justify-end gap-3 border-t border-cream-300 dark:border-cream-500/60 px-6 py-4"
+						className="flex items-center justify-end gap-3 border-t border-border px-6 py-4"
 					>
 						{footer}
 					</div>

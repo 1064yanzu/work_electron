@@ -287,38 +287,26 @@ function ToolCallInlineImpl({
 		}
 	}, [toolCall?.status]);
 
-	if (!toolCall) return null;
-
-	const {
-		icon: Icon,
-		prefix,
-		fileName,
-		filePath,
-		suffix,
-		detail,
-	} = getReadableDescription(toolCall);
-	const isRunning = toolCall.status === "running";
-	const isError = toolCall.status === "error";
+	// 以下几个 Hook 原本写在 `if (!toolCall) return null` 之后，属于 Rules of Hooks
+	// 违规：toolCall 来自 store 里按 id 的查找，流式期间工具调用是「先没有、后出现」的，
+	// 同一个组件实例前后两次渲染的 Hook 数量会从 3 变成 7，React 直接抛
+	// "Rendered more hooks than during the previous render"。
+	// 全部上移到早返回之前，并把内部对 toolCall 的访问改成可选链。
 
 	// 状态落定的一次注意力提示；首次挂载（回放历史消息）不放
 	const statusIconRef = useRef<HTMLSpanElement>(null);
 	const seenStatusRef = useRef<string | null>(null);
 	useGsapMotion(
 		() => {
+			const status = toolCall?.status;
+			if (!status) return;
 			const previous = seenStatusRef.current;
-			seenStatusRef.current = toolCall.status;
-			if (previous === null || previous === toolCall.status) return;
-			if (toolCall.status !== "completed" && toolCall.status !== "error")
-				return;
+			seenStatusRef.current = status;
+			if (previous === null || previous === status) return;
+			if (status !== "completed" && status !== "error") return;
 			attentionPulse(statusIconRef.current, { scale: 1.3, duration: 0.4 });
 		},
-		{ dependencies: [toolCall.status] },
-	);
-	const hasDetails = !!(
-		toolCall.output ||
-		toolCall.error ||
-		detail ||
-		(toolCall.input && Object.keys(toolCall.input).length > 0)
+		{ dependencies: [toolCall?.status] },
 	);
 
 	const openFilePreview = useCallback(async () => {
@@ -336,6 +324,26 @@ function ToolCallInlineImpl({
 			fileSize,
 		});
 	}, [toolCall]);
+
+	if (!toolCall) return null;
+
+	const {
+		icon: Icon,
+		prefix,
+		fileName,
+		filePath,
+		suffix,
+		detail,
+	} = getReadableDescription(toolCall);
+	const isRunning = toolCall.status === "running";
+	const isError = toolCall.status === "error";
+
+	const hasDetails = !!(
+		toolCall.output ||
+		toolCall.error ||
+		detail ||
+		(toolCall.input && Object.keys(toolCall.input).length > 0)
+	);
 
 	const canPreviewFile = (() => {
 		const name = toolCall.name?.toLowerCase() || "";
@@ -465,10 +473,10 @@ function ToolCallInlineImpl({
 					className={cn(
 						"text-sm flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden",
 						isError
-							? "text-error dark:text-error"
+							? "text-error"
 							: isRunning
-								? "text-text-primary dark:text-cream-100"
-								: "text-text-secondary dark:text-cream-200",
+								? "text-text-primary"
+								: "text-text-secondary",
 					)}
 				>
 					<span
@@ -500,7 +508,7 @@ function ToolCallInlineImpl({
 							className={cn(
 								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warm-200 text-xs text-text-secondary max-w-[200px] min-w-0",
 								canPreviewFile
-									? "hover:bg-warm-300/70 dark:hover:bg-cream-700/60 cursor-pointer"
+									? "hover:bg-warm-300/70 cursor-pointer"
 									: "cursor-default",
 							)}
 							title={canPreviewFile ? "点击预览" : fileName}

@@ -121,8 +121,8 @@ export function ToolbarMenu({
 			ref={menuRef}
 			className={cn(
 				"fixed z-[100] rounded-2xl overflow-hidden",
-				"bg-cream-50/95 dark:bg-cream-900/95 backdrop-blur-md",
-				"border border-cream-400/70 dark:border-cream-500/60 shadow-bai-pop",
+				"bg-surface/95 backdrop-blur-md",
+				"border border-border shadow-bai-pop",
 				"animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-150 origin-bottom-left",
 			)}
 			style={{
@@ -131,19 +131,19 @@ export function ToolbarMenu({
 				width: `${width}px`,
 			}}
 		>
-			<div className="px-3 pt-2 pb-2 border-b border-cream-300/70 dark:border-cream-500/40">
+			<div className="px-3 pt-2 pb-2 border-b border-border/70">
 				<div className="flex items-center justify-between gap-2">
-					<div className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted">
+					<div className="text-2xs font-bold uppercase tracking-[0.08em] text-text-muted">
 						{title}
 					</div>
 					{hint && (
-						<div className="text-[11px] text-text-muted/60 font-mono shrink-0">
+						<div className="text-2xs text-text-muted/60 font-mono shrink-0">
 							{hint}
 						</div>
 					)}
 				</div>
 				{description !== undefined && (
-					<div className="text-[11px] text-text-muted/80 mt-1 leading-snug min-h-[14px]">
+					<div className="text-2xs text-text-muted/80 mt-1 leading-snug min-h-[14px]">
 						{description}
 					</div>
 				)}
@@ -158,7 +158,7 @@ export function ToolbarMenu({
 export function ToolbarMenuSection({ label }: { label: string }) {
 	return (
 		<div className="px-2.5 pt-2 pb-1 first:pt-1">
-			<div className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted/70">
+			<div className="text-2xs font-bold uppercase tracking-[0.08em] text-text-muted/70">
 				{label}
 			</div>
 		</div>
@@ -167,9 +167,7 @@ export function ToolbarMenuSection({ label }: { label: string }) {
 
 /** 菜单内分隔线。 */
 export function ToolbarMenuDivider() {
-	return (
-		<div className="mx-2 my-1 border-t border-cream-300/60 dark:border-cream-600/30" />
-	);
+	return <div className="mx-2 my-1 border-t border-border/60" />;
 }
 
 // ── 菜单项 ──────────────────────────────────────────────────────────────────
@@ -205,8 +203,8 @@ export function ToolbarMenuOption({
 				"w-full text-left flex items-center gap-2.5 pl-2 pr-1.5 py-1.5 rounded-lg",
 				"transition-[background-color,color] duration-150",
 				active
-					? "bg-cream-200/80 dark:bg-cream-800 text-text-primary"
-					: "text-text-secondary hover:bg-cream-100 dark:hover:bg-cream-800/60 hover:text-text-primary",
+					? "bg-warm-200/80 text-text-primary"
+					: "text-text-secondary hover:bg-background hover:text-text-primary",
 			)}
 		>
 			{leading && <span className="shrink-0 flex items-center">{leading}</span>}
@@ -220,7 +218,7 @@ export function ToolbarMenuOption({
 					{label}
 				</span>
 				{description && (
-					<span className="block text-[11px] text-text-muted mt-1 leading-snug truncate">
+					<span className="block text-2xs text-text-muted mt-1 leading-snug truncate">
 						{description}
 					</span>
 				)}

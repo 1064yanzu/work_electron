@@ -211,7 +211,7 @@ function AttemptsInput({
 					}
 					onCommit(Math.round(Math.min(50, n)));
 				}}
-				className="w-[72px] rounded-lg border border-border bg-surface px-2.5 py-1 text-right text-xs tabular-nums text-text-secondary focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/8 dark:bg-cream-900/40"
+				className="w-[72px] rounded-lg border border-border bg-surface px-2.5 py-1 text-right text-xs tabular-nums text-text-secondary focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/8"
 			/>
 			<span className="text-xs text-text-light">次</span>
 		</div>

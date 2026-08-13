@@ -116,7 +116,7 @@ export function NewFolderModal({
 					</button>
 					<button
 						onClick={handleSubmit}
-						className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+						className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						创建
 					</button>
@@ -129,7 +129,7 @@ export function NewFolderModal({
 					ref={inputRef}
 					type="text"
 					defaultValue=""
-					className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700"
+					className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-border/60"
 					placeholder="输入文件夹名称..."
 					autoFocus
 					onKeyDown={(e) => {
@@ -228,7 +228,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						<button
 							onClick={handleMoveSelectedToFolder}
 							disabled={!selectedIds.length}
-							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							移动
 						</button>
@@ -251,7 +251,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						type="text"
 						value={renameFolderName}
 						onChange={(e) => setRenameFolderName(e.target.value)}
-						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700"
+						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-border/60"
 						placeholder="输入新名称..."
 						autoFocus
 						onKeyDown={(e) => {
@@ -272,7 +272,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						<button
 							onClick={handleRenameFolder}
 							disabled={!renameFolderName.trim()}
-							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							确认
 						</button>
@@ -320,7 +320,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						</button>
 						<button
 							onClick={handleMoveFolderTo}
-							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90"
+							className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90"
 						>
 							移动
 						</button>
@@ -350,8 +350,8 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 								}
 								className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
 									singleSourceMoveTargetId === UNASSIGNED_FOLDER_ID
-										? "bg-focus/8 dark:bg-blue-900/20 text-focus dark:text-focus border border-focus/30 dark:border-focus"
-										: "hover:bg-warm-200 dark:hover:bg-cream-700 text-text-secondary"
+										? "bg-focus/8 text-focus border border-focus/30"
+										: "hover:bg-warm-200 text-text-secondary"
 								}`}
 							>
 								<FolderIcon className="w-4 h-4 shrink-0" />
@@ -364,12 +364,12 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 									onClick={() => setSingleSourceMoveTargetId(opt.id)}
 									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
 										singleSourceMoveTargetId === opt.id
-											? "bg-focus/8 dark:bg-blue-900/20 text-focus dark:text-focus border border-focus/30 dark:border-focus"
-											: "hover:bg-warm-200 dark:hover:bg-cream-700 text-text-secondary"
+											? "bg-focus/8 text-focus border border-focus/30"
+											: "hover:bg-warm-200 text-text-secondary"
 									}`}
 									style={{ paddingLeft: 12 + opt.depth * 20 }}
 								>
-									<FolderIcon className="w-4 h-4 shrink-0 text-peach-500 dark:text-amber-400" />
+									<FolderIcon className="w-4 h-4 shrink-0 text-peach-500" />
 									<span className="text-sm font-medium truncate">
 										{opt.name}
 									</span>
@@ -383,13 +383,13 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 								setSingleSourceMoveModal(null);
 								setSingleSourceMoveTargetId("");
 							}}
-							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary dark:hover:text-cream-200 hover:bg-warm-200 rounded-lg transition-colors"
+							className="px-4 py-2 text-sm text-text-muted hover:text-text-primary hover:bg-warm-200 rounded-lg transition-colors"
 						>
 							取消
 						</button>
 						<button
 							onClick={handleSingleSourceMove}
-							className="px-4 py-2 text-sm bg-dark-muted text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+							className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
 						>
 							移动
 						</button>
@@ -414,7 +414,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 								onClick={() => setActiveTab(tab)}
 								className={`flex-1 py-2 text-xs font-medium rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
 									activeTab === tab
-										? "bg-surface dark:bg-cream-700 shadow-sm text-text-primary"
+										? "bg-surface shadow-sm text-text-primary"
 										: "text-text-muted"
 								}`}
 							>
@@ -431,7 +431,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						type="text"
 						value={newSourceTitle}
 						onChange={(e) => setNewSourceTitle(e.target.value)}
-						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700"
+						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-border/60"
 						placeholder="输入标题..."
 					/>
 
@@ -440,7 +440,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 							type="url"
 							value={newSourceContent}
 							onChange={(e) => setNewSourceContent(e.target.value)}
-							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm font-mono placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700"
+							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm font-mono placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-border/60"
 							placeholder="https://..."
 						/>
 					)}
@@ -449,7 +449,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						<textarea
 							value={newSourceContent}
 							onChange={(e) => setNewSourceContent(e.target.value)}
-							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm h-48 resize-none placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-cream-200 dark:focus:ring-cream-700 leading-relaxed"
+							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm h-48 resize-none placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-border/60 leading-relaxed"
 							placeholder="输入内容..."
 						/>
 					)}
@@ -498,7 +498,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						</button>
 						<button
 							onClick={handleCreateSource}
-							className="px-6 py-2 bg-black hover:bg-dark-surface text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+							className="px-6 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium rounded-lg shadow-sm transition-colors"
 						>
 							导入
 						</button>

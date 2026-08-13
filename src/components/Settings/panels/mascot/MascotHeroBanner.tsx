@@ -103,7 +103,7 @@ export function MascotHeroBanner({
 							style={{ animationDuration: "5s" }}
 						/>
 					) : (
-						<div className="relative z-10 flex h-[170px] w-[170px] items-center justify-center rounded-full bg-cream-200 text-[28px] font-semibold text-text-secondary md:h-[200px] md:w-[200px]">
+						<div className="relative z-10 flex h-[170px] w-[170px] items-center justify-center rounded-full bg-warm-200 text-[28px] font-semibold text-text-secondary md:h-[200px] md:w-[200px]">
 							{meta.label.slice(0, 2)}
 						</div>
 					)}
@@ -127,10 +127,10 @@ export function MascotHeroBanner({
 						</span>
 						<span
 							className={cn(
-								"inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
+								"inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium",
 								windowEnabled
 									? "border-mint-500/40 bg-mint-500/10 text-mint-600"
-									: "border-border bg-cream-100 text-text-muted",
+									: "border-border bg-background text-text-muted",
 							)}
 						>
 							<span
@@ -164,12 +164,12 @@ export function MascotHeroBanner({
 						/>
 						<span>
 							accent 主色{" "}
-							<code className="rounded bg-cream-200 px-1.5 py-0.5 font-mono text-[11px] text-text-secondary">
+							<code className="rounded-lg bg-warm-200 px-1.5 py-0.5 font-mono text-2xs text-text-secondary">
 								{accent}
 							</code>
 						</span>
 						{!meta.isBuiltin && (
-							<span className="rounded-full bg-cream-200 px-2 py-0.5 text-[11px] font-medium text-text-secondary">
+							<span className="rounded-full bg-warm-200 px-2 py-0.5 text-2xs font-medium text-text-secondary">
 								自定义
 							</span>
 						)}

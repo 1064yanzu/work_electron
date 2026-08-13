@@ -260,7 +260,7 @@ export function ImageGenSettings() {
 						return (
 							<div
 								key={group.label}
-								className="rounded-2xl border border-border bg-cream-50 p-3"
+								className="rounded-2xl border border-border bg-surface p-3"
 							>
 								<div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 									<GroupIcon className="h-3 w-3" strokeWidth={1.6} />
@@ -278,7 +278,7 @@ export function ImageGenSettings() {
 													"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 													active
 														? "bg-primary text-primary-foreground shadow-bai-card"
-														: "bg-surface border border-border text-text-secondary hover:border-cream-500 hover:text-text-primary",
+														: "bg-surface border border-border text-text-secondary hover:border-warm-500 hover:text-text-primary",
 												)}
 											>
 												<RatioGlyph w={opt.w} h={opt.h} active={active} />

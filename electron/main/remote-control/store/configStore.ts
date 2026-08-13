@@ -14,6 +14,7 @@ import type {
 	RemoteTerminalPreset,
 } from "../core/types";
 import { parseJsonSafely } from "../core/utils";
+import { decryptSecret, encryptSecret } from "../../storage/secretVault";
 
 const VALID_CHANNEL_IDS: RemoteChannelId[] = [
 	"feishu",
@@ -472,14 +473,19 @@ function mergeTerminalConfig(
 export class RemoteControlConfigStore {
 	constructor(private readonly db: DbContext) {}
 
+	/**
+	 * 整块配置在库里是 safeStorage 密文（里面有飞书 appSecret、各 IM 的 bot token）。
+	 * `decryptSecret` 对旧的明文 JSON 幂等，所以加密迁移前后都能读。
+	 */
 	async load(): Promise<RemoteControlConfig> {
 		const row = await this.db.client.execute({
 			sql: "SELECT value FROM app_config WHERE key = ?",
 			args: [REMOTE_CONTROL_CONFIG_KEY],
 		});
 		const value = row.rows[0]?.value;
+		const plain = typeof value === "string" ? decryptSecret(value) : null;
 		const raw = parseJsonSafely<unknown>(
-			typeof value === "string" ? value : null,
+			typeof plain === "string" ? plain : null,
 		);
 		return mergeConfig(raw, DEFAULT_REMOTE_CONTROL_CONFIG);
 	}
@@ -488,7 +494,11 @@ export class RemoteControlConfigStore {
 		await this.db.client.execute({
 			sql: `INSERT INTO app_config (key, value, updated_at) VALUES (?, ?, ?)
       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-			args: [REMOTE_CONTROL_CONFIG_KEY, JSON.stringify(config), Date.now()],
+			args: [
+				REMOTE_CONTROL_CONFIG_KEY,
+				encryptSecret(JSON.stringify(config)),
+				Date.now(),
+			],
 		});
 	}
 }

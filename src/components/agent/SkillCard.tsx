@@ -48,7 +48,7 @@ function StepStatusIcon({
 			return <XCircle className="w-3 h-3 text-error flex-shrink-0" />;
 		default:
 			return (
-				<div className="w-3 h-3 rounded-full border border-cream-400 dark:border-cream-500 flex-shrink-0" />
+				<div className="w-3 h-3 rounded-full border border-border flex-shrink-0" />
 			);
 	}
 }
@@ -75,11 +75,11 @@ export function SkillCard({
 					"rounded-xl overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 					hideHeader ? "border-none ring-0 bg-transparent" : "",
 					isActive && !hideHeader
-						? "bg-surface/80 ring-2 ring-blue-200/50 dark:ring-blue-800/30 shadow-sm border-l-[3px] border-l-focus/50"
+						? "bg-surface/80 ring-2 ring-focus/30 shadow-sm border-l-[3px] border-l-focus/50"
 						: hasError && !hideHeader
-							? "bg-surface/80 ring-2 ring-red-200/50 dark:ring-red-800/30 shadow-sm border-l-[3px] border-l-error/50"
+							? "bg-surface/80 ring-2 ring-error/30 shadow-sm border-l-[3px] border-l-error/50"
 							: !hideHeader
-								? "bg-surface/60 ring-1 ring-cream-200/30 dark:ring-cream-700/30 border-l-[3px] border-l-mint-500/40"
+								? "bg-surface/60 ring-1 ring-border/30 border-l-[3px] border-l-border"
 								: "",
 				)}
 			>
@@ -90,9 +90,9 @@ export function SkillCard({
 							className={cn(
 								"p-1.5 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 								isActive
-									? "bg-focus/8 dark:bg-blue-900/20"
+									? "bg-focus/8"
 									: hasError
-										? "bg-error/8 dark:bg-red-900/20"
+										? "bg-error/8"
 										: "bg-warm-50/50",
 							)}
 						>
@@ -100,7 +100,7 @@ export function SkillCard({
 								className={cn(
 									"w-4 h-4 transition-colors",
 									isActive
-										? "bai-icon-violet"
+										? "text-text-secondary"
 										: hasError
 											? "text-error"
 											: "text-text-muted",
@@ -165,7 +165,7 @@ export function SkillCard({
 							{skill.loadedFiles.map((file, i) => (
 								<span
 									key={i}
-									className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-warm-50/60 rounded text-[11px] text-text-muted"
+									className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-warm-50/60 rounded text-2xs text-text-muted"
 								>
 									<File className="w-2.5 h-2.5" />
 									{file.path.split("/").pop()}
@@ -177,7 +177,7 @@ export function SkillCard({
 
 				{/* 错误显示 */}
 				{skill.error && (
-					<div className="px-3 py-1.5 bg-error/[0.04] dark:bg-red-900/20 text-xs text-error dark:text-error border-t border-error/10 dark:border-red-800/30">
+					<div className="px-3 py-1.5 bg-error/[0.04] text-xs text-error border-t border-error/10">
 						错误: {skill.error}
 					</div>
 				)}
@@ -191,9 +191,9 @@ export function SkillCard({
 			{/* 头部 */}
 			<div className="flex items-center gap-2 px-3 py-2.5 bg-warm-200/60 border-b border-border">
 				<div className="p-1.5 rounded-lg bg-surface border border-border">
-					<Blocks className="w-4 h-4 bai-icon-violet" strokeWidth={1.5} />
+					<Blocks className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
 				</div>
-				<span className="text-sm font-medium text-text-secondary dark:text-cream-200 flex-1">
+				<span className="text-sm font-medium text-text-secondary flex-1">
 					{skill.skillName} 执行中
 				</span>
 				<StatusIcon status={skill.status} />
@@ -215,7 +215,7 @@ export function SkillCard({
 									className={
 										step.status === "pending"
 											? "text-text-light"
-											: "text-text-secondary dark:text-cream-200 font-medium"
+											: "text-text-secondary font-medium"
 									}
 								>
 									{step.label}
@@ -239,13 +239,13 @@ export function SkillCard({
 						{skill.loadedFiles.map((file, i) => (
 							<div
 								key={i}
-								className="flex items-center gap-1.5 px-2 py-1 bg-surface border border-border dark:border-cream-500 rounded text-xs text-text-secondary"
+								className="flex items-center gap-1.5 px-2 py-1 bg-surface border border-border rounded text-xs text-text-secondary"
 							>
 								<File className="w-3 h-3 text-text-light" />
 								<span className="truncate max-w-[200px]" title={file.path}>
 									{file.path.split("/").pop()}
 								</span>
-								<span className="text-text-light text-[11px]">
+								<span className="text-text-light text-2xs">
 									{(file.size / 1024).toFixed(1)}KB
 								</span>
 							</div>
@@ -256,7 +256,7 @@ export function SkillCard({
 
 			{/* 错误显示 */}
 			{skill.error && (
-				<div className="px-3 py-2 bg-error/8 dark:bg-red-900/20 text-error dark:text-error text-xs border-t border-error/16 dark:border-red-800/30">
+				<div className="px-3 py-2 bg-error/8 text-error text-xs border-t border-error/16">
 					错误: {skill.error}
 				</div>
 			)}

@@ -97,7 +97,7 @@ function CliTabPanel({ tab, isActive }: { tab: CenterTab; isActive: boolean }) {
 					</span>
 				) : null}
 				{exited ? (
-					<span className="shrink-0 rounded-full bg-warm-200 px-2 py-0.5 text-[11px] text-text-muted">
+					<span className="shrink-0 rounded-full bg-warm-200 px-2 py-0.5 text-2xs text-text-muted">
 						进程已退出
 					</span>
 				) : null}

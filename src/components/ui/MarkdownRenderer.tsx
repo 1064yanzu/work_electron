@@ -114,7 +114,7 @@ const STATIC_COMPONENTS = {
 	},
 	blockquote({ children }: { children?: any }) {
 		return (
-			<blockquote className="border-l-4 border-cream-400 dark:border-cream-500 pl-4 my-3 italic text-text-secondary">
+			<blockquote className="border-l-2 border-border pl-4 my-3 italic text-text-secondary">
 				{children}
 			</blockquote>
 		);
@@ -147,10 +147,10 @@ const STATIC_COMPONENTS = {
 function LoadingImagePlaceholder({ alt }: { alt?: string }) {
 	return (
 		<span className="block my-4 flex items-center justify-center">
-			<span className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-cream-50 to-cream-100 dark:from-cream-800 dark:to-cream-900 rounded-2xl border border-border shadow-sm">
+			<span className="flex flex-col items-center gap-3 p-8 bg-gradient-to-br from-surface to-background rounded-2xl border border-border shadow-sm">
 				<span className="relative block w-12 h-12">
 					<span className="absolute inset-0 rounded-full border-4 border-border" />
-					<span className="absolute inset-0 rounded-full border-4 border-transparent border-t-cream-700 animate-spin" />
+					<span className="absolute inset-0 rounded-full border-4 border-transparent border-t-text-secondary animate-spin" />
 				</span>
 				<span className="flex items-center gap-2 text-sm text-text-muted">
 					<Palette
@@ -240,7 +240,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 			if (isInline) {
 				return (
 					<code
-						className="px-1.5 py-0.5 bg-warm-200 rounded text-sm font-mono text-text-primary dark:text-cream-200"
+						className="px-1.5 py-0.5 bg-warm-200 rounded text-sm font-mono text-text-primary"
 						{...props}
 					>
 						{children}
@@ -259,7 +259,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 							<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
 								{language}
 							</div>
-							<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
+							<pre className="bg-warm-200 text-text-primary rounded-xl p-4 overflow-x-auto text-sm">
 								<code className={className} {...props}>
 									{children}
 								</code>
@@ -288,7 +288,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 							<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
 								{language}
 							</div>
-							<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
+							<pre className="bg-warm-200 text-text-primary rounded-xl p-4 overflow-x-auto text-sm">
 								<code className={className} {...props}>
 									{children}
 								</code>
@@ -318,7 +318,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 							<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
 								{language}
 							</div>
-							<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
+							<pre className="bg-warm-200 text-text-primary rounded-xl p-4 overflow-x-auto text-sm">
 								<code className={className} {...props}>
 									{children}
 								</code>
@@ -346,7 +346,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 						<div className="absolute top-2 right-2 text-xs text-text-light font-mono">
 							{language}
 						</div>
-						<pre className="bg-dark-muted text-surface rounded-xl p-4 overflow-x-auto text-sm">
+						<pre className="bg-warm-200 text-text-primary rounded-xl p-4 overflow-x-auto text-sm">
 							<code className={className} {...props}>
 								{children}
 							</code>

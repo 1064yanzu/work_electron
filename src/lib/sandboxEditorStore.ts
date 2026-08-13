@@ -5,7 +5,7 @@
 
 import { useSyncExternalStore } from "react";
 import { safeInvoke } from "./tauriBridge";
-import { toast } from "../components/ui/Toast";
+import { toast } from "../components/ui/toastBus";
 
 // ==================== 类型定义 ====================
 

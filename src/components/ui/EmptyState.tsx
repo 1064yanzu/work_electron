@@ -195,7 +195,7 @@ export function IllustratedEmptyState({
 	}
 
 	const getIllustration = () => {
-		const baseClasses = "w-24 h-24 mb-6 text-cream-300 animate-pulse-subtle";
+		const baseClasses = "w-24 h-24 mb-6 text-warm-300 animate-pulse-subtle";
 
 		switch (illustration) {
 			case "folder":
@@ -251,7 +251,7 @@ export function IllustratedEmptyState({
 							width="30"
 							height="3"
 							rx="1.5"
-							className="fill-cream-200 dark:fill-cream-800"
+							className="fill-warm-200"
 						/>
 						<rect
 							x="25"
@@ -259,7 +259,7 @@ export function IllustratedEmptyState({
 							width="25"
 							height="3"
 							rx="1.5"
-							className="fill-cream-200 dark:fill-cream-800"
+							className="fill-warm-200"
 						/>
 						<rect
 							x="25"
@@ -267,7 +267,7 @@ export function IllustratedEmptyState({
 							width="20"
 							height="3"
 							rx="1.5"
-							className="fill-cream-200 dark:fill-cream-800"
+							className="fill-warm-200"
 						/>
 					</svg>
 				);
@@ -278,24 +278,9 @@ export function IllustratedEmptyState({
 							d="M15 50V25C15 21.134 18.134 18 22 18H58C61.866 18 65 21.134 65 25V45C65 48.866 61.866 52 58 52H30L20 62V52H22C18.134 52 15 48.866 15 45V50Z"
 							fill="currentColor"
 						/>
-						<circle
-							cx="30"
-							cy="35"
-							r="3"
-							className="fill-cream-200 dark:fill-cream-800"
-						/>
-						<circle
-							cx="40"
-							cy="35"
-							r="3"
-							className="fill-cream-200 dark:fill-cream-800"
-						/>
-						<circle
-							cx="50"
-							cy="35"
-							r="3"
-							className="fill-cream-200 dark:fill-cream-800"
-						/>
+						<circle cx="30" cy="35" r="3" className="fill-warm-200" />
+						<circle cx="40" cy="35" r="3" className="fill-warm-200" />
+						<circle cx="50" cy="35" r="3" className="fill-warm-200" />
 					</svg>
 				);
 			default:

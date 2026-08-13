@@ -1,5 +1,6 @@
 import type { DbContext } from "../db/client";
 import { withBatch, yieldToEventLoop } from "../db/batch";
+import { dropLegacyFtsIfReady, legacyFtsTableExists } from "./ftsLegacyCleanup";
 
 /**
  * D1+D2：`note_chunks_fts_v2`（trigram 中文索引）的启动后分批回填。
@@ -63,9 +64,12 @@ async function writeConfig(
 let cachedFtsVersion: number | null = null;
 
 /**
- * 当前生效的 FTS 版本：2 = note_chunks_fts_v2（trigram）已回填完成，
- * 其余 = 继续用旧 note_chunks_fts（unicode61）。
- * 结果按进程缓存；本进程内回填完成会主动翻转缓存。
+ * **读路径**当前该用哪套 FTS 索引：2 = note_chunks_fts_v2（trigram），
+ * 其余 = 旧 note_chunks_fts（unicode61）。结果按进程缓存。
+ *
+ * 注意它与 `app_config.fts_version` 不完全等价：后者驱动回填进度，前者还要
+ * 考虑「旧表是否已被 v9 清理」。旧表没了而回填又没跑完（VACUUM 后重建窗口）时，
+ * 只能读 v2 —— 结果暂时不全，但总好过去查一张不存在的表。
  */
 export async function getActiveFtsVersion(db: DbContext): Promise<number> {
 	if (cachedFtsVersion !== null) return cachedFtsVersion;
@@ -74,6 +78,9 @@ export async function getActiveFtsVersion(db: DbContext): Promise<number> {
 		version = (await readConfigInt(db, FTS_VERSION_KEY)) ?? 1;
 	} catch {
 		version = 1;
+	}
+	if (version < 2 && !(await legacyFtsTableExists(db))) {
+		version = 2;
 	}
 	cachedFtsVersion = version;
 	return version;
@@ -172,6 +179,10 @@ async function runFtsBackfillInner(
 		batches,
 		elapsedMs: Date.now() - startedAt,
 	});
+
+	// 读路径已经不看旧表了，顺手把它和三个触发器清掉，
+	// note_chunks 的每次写入就不用再维护两套倒排索引。
+	await dropLegacyFtsIfReady(db, logger);
 }
 
 // ---------------------------------------------------------------------------
@@ -192,8 +203,12 @@ export async function resetFtsAfterVacuum(
 	logger?: FtsLogger,
 ): Promise<void> {
 	try {
+		// 存储版本必须退回 1，否则 runFtsBackfill 会因为「已经是 2」而直接返回，
+		// v2 索引被 delete-all 之后就再也补不回来了。
 		await writeConfig(db, FTS_VERSION_KEY, "1");
-		cachedFtsVersion = 1;
+		// 读路径的回落只在旧表还在时才有意义：v9 之后旧表已清，继续读 v2
+		// （重建窗口内结果不全）远好于去查一张不存在的表。
+		cachedFtsVersion = (await legacyFtsTableExists(db)) ? 1 : 2;
 		await db.client.execute(
 			`INSERT INTO note_chunks_fts_v2(note_chunks_fts_v2) VALUES('delete-all')`,
 		);

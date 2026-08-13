@@ -8,6 +8,7 @@ import {
 	generateWikiFromSources,
 	getGenerationStatus,
 } from "../../kb/wikiGeneration";
+import { sendToLiveWebContents } from "../../utils/safeWebContentsSend";
 
 type Handler<K extends keyof IPCSchema> = (
 	_event: IpcMainInvokeEvent,
@@ -46,7 +47,8 @@ export function createWikiGenerationHandlers(
 				is_generating: false,
 				error: `生成失败: ${errMsg}`,
 			});
-			mainWindowRef.current?.webContents.send(
+			sendToLiveWebContents(
+				mainWindowRef.current,
 				"wiki_generation_progress",
 				getStatus(),
 			);

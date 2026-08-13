@@ -3,14 +3,15 @@
  *
  * Phase 6 拆分自 `panels/GeneralSettings.tsx`。相比原面板：
  *   - 移除「设置详细程度」Select（Experience Mode 在 Phase 7 整体废弃）；
- *   - 保留色彩主题（ThemeColorPicker）、动效偏好、语言三块；
+ *   - 保留色彩主题（ThemeColorPicker）、玻璃性能模式、动效偏好三块；
+ *   - 「语言」Select 已移除：它只写 config 无人消费，i18n 从未接入（见
+ *     docs/施工文档-审查落地-2026-08-13.md），留着等于给用户一个假开关；
  *   - 每个字段容器挂 `id` + `data-settings-anchor`，供顶部 SettingsSearch 跳转定位。
  */
 import { Palette } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Select } from "../../../ui/Select";
 import {
-	getConfig,
 	getMotionPreference,
 	setConfig,
 	setMotionPreference,
@@ -37,7 +38,6 @@ const ANCHOR = {
 	theme: "general.appearance.theme",
 	glassPerf: "general.appearance.glass-perf",
 	motion: "general.appearance.motion",
-	language: "general.appearance.language",
 	windowsClose: "general.appearance.windows-close",
 } as const;
 
@@ -49,7 +49,6 @@ export function AppearancePanel() {
 	const [glassPerfMode, setGlassPerfMode] = useState<boolean>(
 		themeManager.getGlassPerformanceMode(),
 	);
-	const [language, setLanguage] = useState<string>("zh-CN");
 	const [platform, setPlatform] = useState<NodeJS.Platform | null>(null);
 	const [windowsCloseBehavior, setWindowsCloseBehavior] =
 		useState<AppCloseBehavior>("ask");
@@ -60,8 +59,7 @@ export function AppearancePanel() {
 		let cancelled = false;
 		void (async () => {
 			try {
-				const [lang, motionPref, closeBehavior] = await Promise.all([
-					getConfig("language"),
+				const [motionPref, closeBehavior] = await Promise.all([
 					getMotionPreference(),
 					invoke<{
 						windows: AppCloseBehavior;
@@ -69,7 +67,6 @@ export function AppearancePanel() {
 					}>("app_get_close_behavior"),
 				]);
 				if (cancelled) return;
-				if (typeof lang === "string" && lang.trim()) setLanguage(lang);
 				setMotionPreferenceState(motionPref);
 				setPlatform(closeBehavior.platform);
 				setWindowsCloseBehavior(closeBehavior.windows);
@@ -117,18 +114,6 @@ export function AppearancePanel() {
 		} catch (error) {
 			console.error("[AppearancePanel] 保存玻璃主题性能模式失败:", error);
 			toast.error("保存性能模式失败");
-		}
-	};
-
-	const handleLanguageChange = async (nextLang: string) => {
-		const prev = language;
-		setLanguage(nextLang);
-		try {
-			await setConfig("language", nextLang);
-		} catch (error) {
-			console.error("[AppearancePanel] 保存语言失败:", error);
-			setLanguage(prev);
-			toast.error("保存语言失败");
 		}
 	};
 
@@ -225,24 +210,6 @@ export function AppearancePanel() {
 									{ value: "expressive", label: "丰富动效" },
 									{ value: "standard", label: "标准动效" },
 									{ value: "reduced", label: "减少动效" },
-								]}
-							/>
-						}
-					/>
-				</div>
-				<div id={ANCHOR.language} data-settings-anchor={ANCHOR.language}>
-					<SettingsRow
-						label="语言"
-						description="切换界面语言需要重启应用后完全生效。"
-						action={
-							<Select
-								value={language}
-								onChange={(e) => handleLanguageChange(e.target.value)}
-								variant="inline"
-								containerClassName="w-auto min-w-[120px]"
-								options={[
-									{ value: "zh-CN", label: "简体中文" },
-									{ value: "en-US", label: "English" },
 								]}
 							/>
 						}

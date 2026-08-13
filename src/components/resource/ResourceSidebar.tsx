@@ -1,14 +1,6 @@
 // 资料侧边栏 - 主容器（组合各子模块）
 
-import { ArrowLeft, Search, Settings } from "lucide-react";
-import {
-	Suspense,
-	lazy,
-	useCallback,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	fileDelete,
@@ -30,13 +22,12 @@ import {
 	workspaceStore,
 } from "../../lib/workspaceStore";
 import type { Source } from "../../types";
-import { ResourceSidebarDialogs } from "./sidebar/ResourceSidebarDialogs";
 import { useResourceSidebarActions } from "./sidebar/useResourceSidebarActions";
+import { confirmDialog } from "../ui/ConfirmDialog";
 import { ContextMenu } from "../ui/ContextMenu";
 import { DragAndDropImportUI } from "../ui/DragAndDropImportUI";
 import { inputDialog } from "../ui/InputDialog";
 import { toast } from "../ui/Toast";
-import { Tooltip } from "../ui/Tooltip";
 import { ViewTransition } from "../ui/ViewTransition";
 import { KnowledgeTabBar } from "./KnowledgeTabBar";
 import { isKnowledgeTabView } from "./knowledgeSection";
@@ -64,9 +55,6 @@ import { ProjectFilesView } from "./ProjectFilesView";
 import { SkillsView } from "./SkillsView";
 import { WikiView } from "../wiki/WikiView";
 
-const AgentTaskPanel = lazy(() => import("../agent/AgentTaskPanel"));
-const WebSearchModule = lazy(() => import("../WebSearchModule"));
-
 interface ResourceSidebarProps {
 	onOpenSettings: () => void;
 }
@@ -88,8 +76,6 @@ export default function ResourceSidebar({
 	} | null>(null);
 
 	// 删除确认
-	const [deleteConfirm, setDeleteConfirm] = useState<Source | null>(null);
-
 	// Modal State
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState<"web" | "text" | "file">("web");
@@ -134,10 +120,6 @@ export default function ResourceSidebar({
 			document.removeEventListener("visibilitychange", handleVisibilityChange);
 		};
 	}, []);
-	const preloadAgentTaskPanel = useCallback(() => {
-		void import("../agent/AgentTaskPanel");
-	}, []);
-
 	const debugLog = useCallback(
 		(...args: unknown[]) => {
 			if (!uiDebugLogsEnabled) return;
@@ -221,9 +203,10 @@ export default function ResourceSidebar({
 							toast.success("已恢复删除的资料");
 						} catch (error) {
 							console.error("撤销删除资料失败:", error);
-							toast.error("撤销删除失败，请重试");
 							toast.error(
-								`撤销失败: ${error instanceof Error ? error.message : String(error)}`,
+								`撤销删除失败，请重试：${
+									error instanceof Error ? error.message : String(error)
+								}`,
 							);
 						}
 					},
@@ -322,17 +305,25 @@ export default function ResourceSidebar({
 	const handleDeleteSource = useCallback(
 		async (source: Source, skipConfirm = false) => {
 			if (!skipConfirm) {
-				setDeleteConfirm(source);
-				return;
+				const confirmed = await confirmDialog.show({
+					type: "danger",
+					title: "删除资料",
+					message: `确定要删除「${source.title}」吗？删除后可在 5 秒内撤销。`,
+					confirmText: "删除",
+					cancelText: "取消",
+				});
+				if (!confirmed) return;
 			}
 
 			try {
 				await deleteSourcesWithUndo([source.id]);
-				setDeleteConfirm(null);
 			} catch (error) {
 				console.error("删除失败:", error);
-				toast.error("删除失败，请重试");
-				toast.error("删除失败，请重试");
+				toast.error(
+					`删除失败，请重试：${
+						error instanceof Error ? error.message : String(error)
+					}`,
+				);
 			}
 			setContextMenu(null);
 		},
@@ -540,266 +531,180 @@ export default function ResourceSidebar({
 	const computedFolderContextMenuItems = folderContextMenuItems();
 
 	return (
-		<div className="flex flex-row h-full w-full min-w-0">
-			<aside
-				data-resource-sidebar
-				className="flex-1 bg-transparent flex flex-col h-full font-sans min-w-0 relative"
-				onDragOver={dragDrop.handleContainerDragOver}
-				onDrop={dragDrop.handleContainerDrop}
-			>
-				<DragAndDropImportUI
-					isDragging={
-						sourceImport.dragImport.isDragging && !dragDrop.draggedSourceId
-					}
-					queue={sourceImport.dragImport.queue}
-					queueStatus={sourceImport.dragImport.queueStatus}
-					onStart={sourceImport.handleStartDragImport}
-					onCancel={sourceImport.handleCancelDragImport}
-					onClear={sourceImport.dragImport.clearQueue}
-					onRemoveItem={sourceImport.dragImport.removeItem}
+		// 原先外面还包了一层只有单子元素的 div.flex-row，无语义且干扰 min-w-0 链路，已拍平
+		<aside
+			data-resource-sidebar
+			className="bg-transparent flex flex-col h-full w-full font-sans min-w-0 relative"
+			onDragOver={dragDrop.handleContainerDragOver}
+			onDrop={dragDrop.handleContainerDrop}
+		>
+			<DragAndDropImportUI
+				isDragging={
+					sourceImport.dragImport.isDragging && !dragDrop.draggedSourceId
+				}
+				queue={sourceImport.dragImport.queue}
+				queueStatus={sourceImport.dragImport.queueStatus}
+				onStart={sourceImport.handleStartDragImport}
+				onCancel={sourceImport.handleCancelDragImport}
+				onClear={sourceImport.dragImport.clearQueue}
+				onRemoveItem={sourceImport.dragImport.removeItem}
+			/>
+			{/* 右键菜单 */}
+			{contextMenu && computedContextMenuItems.length > 0 ? (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					items={computedContextMenuItems}
+					onClose={() => setContextMenu(null)}
 				/>
-				<ResourceSidebarDialogs
-					deleteConfirm={deleteConfirm}
-					onCancelDeleteSource={() => setDeleteConfirm(null)}
-					onConfirmDeleteSource={(source) => {
-						void handleDeleteSource(source, true);
-					}}
-					cardDeleteConfirm={null}
-					onCancelDeleteCard={() => {}}
-					onConfirmDeleteCard={() => {}}
-					batchDeleteConfirm={selection.batchDeleteConfirm}
-					onCancelBatchDelete={selection.handleCancelBatchDelete}
-					onConfirmBatchDelete={() => {
-						void selection.handleConfirmBatchDelete();
-					}}
-					folderDeleteConfirm={folderMgmt.folderDeleteConfirm}
-					onCancelDeleteFolder={() => folderMgmt.setFolderDeleteConfirm(null)}
-					onConfirmDeleteFolder={(folder) => {
-						void folderMgmt.handleDeleteFolder(folder, true);
-					}}
+			) : null}
+
+			{/* 文件夹右键菜单 */}
+			{folderMgmt.folderContextMenu &&
+			computedFolderContextMenuItems.length > 0 ? (
+				<ContextMenu
+					x={folderMgmt.folderContextMenu.x}
+					y={folderMgmt.folderContextMenu.y}
+					items={computedFolderContextMenuItems}
+					onClose={() => folderMgmt.setFolderContextMenu(null)}
 				/>
+			) : null}
 
-				{/* 右键菜单 */}
-				{contextMenu && computedContextMenuItems.length > 0 ? (
-					<ContextMenu
-						x={contextMenu.x}
-						y={contextMenu.y}
-						items={computedContextMenuItems}
-						onClose={() => setContextMenu(null)}
-					/>
-				) : null}
-
-				{/* 文件夹右键菜单 */}
-				{folderMgmt.folderContextMenu &&
-				computedFolderContextMenuItems.length > 0 ? (
-					<ContextMenu
-						x={folderMgmt.folderContextMenu.x}
-						y={folderMgmt.folderContextMenu.y}
-						items={computedFolderContextMenuItems}
-						onClose={() => folderMgmt.setFolderContextMenu(null)}
-					/>
-				) : null}
-
-				{/* 「知识」区一级 tab（资料库 / 卡片 / Wiki）——rail 上它们合成了一个入口。
+			{/* 「知识」区一级 tab（资料库 / 卡片 / Wiki）——rail 上它们合成了一个入口。
 					    放在 ViewTransition 外面：切 tab 时只有下方内容做进场过渡，tab 条本身不闪。 */}
-				{isKnowledgeTabView(leftSidebarView) ? (
-					<KnowledgeTabBar
-						active={leftSidebarView}
-						onSelect={setLeftSidebarView}
-					/>
-				) : null}
-
-				{/* 主内容区域 - 根据视图模式切换（ViewTransition 提供统一进场过渡） */}
-				<ViewTransition
-					viewKey={
-						leftSidebarView === "detail"
-							? `detail:${previewSource?.id ?? "none"}`
-							: leftSidebarView
-					}
-					className="min-h-0 flex-1"
-				>
-					{leftSidebarView === "detail" && previewSource ? (
-						<SourceDetailView
-							ref={sourceDetailViewRef}
-							fetchSources={fetchSources}
-							onDeleteSource={(source) => void handleDeleteSource(source)}
-						/>
-					) : leftSidebarView === "research" ? (
-						<ResearchView
-							onOpenResearchSource={(source) => {
-								setPreviewSource(source);
-							}}
-						/>
-					) : leftSidebarView === "agent" ? (
-						<Suspense
-							fallback={
-								<div className="flex h-full items-center justify-center text-xs text-text-muted">
-									正在加载 Agent 面板...
-								</div>
-							}
-						>
-							<div onMouseEnter={preloadAgentTaskPanel}>
-								<AgentTaskPanel
-									onBack={() => setLeftSidebarView("sources")}
-									onArtifactClick={(artifact) => {
-										if (artifact.url) {
-											workspaceStore.setMainView("browser");
-										}
-									}}
-								/>
-							</div>
-						</Suspense>
-					) : leftSidebarView === "cards" ? (
-						<CardsHubView />
-					) : leftSidebarView === "threads" ? (
-						<ThreadsView />
-					) : leftSidebarView === "files" ? (
-						<ProjectFilesView />
-					) : leftSidebarView === "skills" ? (
-						<SkillsView />
-					) : leftSidebarView === "wiki" ? (
-						<WikiView />
-					) : leftSidebarView === "websearch" ? (
-						<div className="flex flex-col h-full">
-							{/* Header */}
-							<div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-border">
-								<div className="flex items-center gap-2">
-									<Tooltip content="返回" placement="bottom">
-										<button
-											onClick={() => setLeftSidebarView("sources")}
-											className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-										>
-											<ArrowLeft className="w-4 h-4" />
-										</button>
-									</Tooltip>
-									<Search className="w-4 h-4 text-focus" />
-									<h2 className="font-semibold text-sm text-text-primary">
-										网络搜索
-									</h2>
-								</div>
-								<Tooltip content="设置" placement="bottom">
-									<button
-										onClick={onOpenSettings}
-										className="p-1.5 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-lg transition-colors"
-									>
-										<Settings className="w-4 h-4" />
-									</button>
-								</Tooltip>
-							</div>
-
-							{/* Search Module */}
-							<div className="flex-1 overflow-y-auto scrollbar-hide p-3">
-								<Suspense
-									fallback={
-										<div className="flex h-full items-center justify-center text-xs text-text-muted">
-											正在加载搜索模块...
-										</div>
-									}
-								>
-									<WebSearchModule
-										onAddSource={(_sourceId) => {
-											void fetchSources();
-										}}
-									/>
-								</Suspense>
-							</div>
-						</div>
-					) : (
-						<SourceListView
-							sources={sources}
-							setSources={setSources}
-							setRawSources={setRawSources}
-							errorMessage={errorMessage}
-							isLoading={isLoading}
-							viewMode={viewMode}
-							setViewMode={setViewMode}
-							currentSubfolders={folderMgmt.currentSubfolders}
-							breadcrumbPath={folderMgmt.breadcrumbPath}
-							getFolderSubtreeCount={folderMgmt.getFolderSubtreeCount}
-							draggedSourceId={dragDrop.draggedSourceId}
-							dragOverFolderId={dragDrop.dragOverFolderId}
-							setDragOverFolderId={dragDrop.setDragOverFolderId}
-							handleDragStart={dragDrop.handleDragStart}
-							handleDragEnd={dragDrop.handleDragEnd}
-							handleFolderDragOver={dragDrop.handleFolderDragOver}
-							handleFolderDragLeave={dragDrop.handleFolderDragLeave}
-							handleFolderDrop={dragDrop.handleFolderDrop}
-							selectionMode={selection.selectionMode}
-							setSelectionMode={selection.setSelectionMode}
-							selectedIds={selection.selectedIds}
-							selectedIdSet={selection.selectedIdSet}
-							selectedSources={selection.selectedSources}
-							exitSelectionMode={selection.exitSelectionMode}
-							toggleSelection={selection.toggleSelection}
-							handleSelectAll={selection.handleSelectAll}
-							handleBulkAddToContext={selection.handleBulkAddToContext}
-							handleDeleteSelected={selection.handleDeleteSelected}
-							setIsMoveFolderModalOpen={selection.setIsMoveFolderModalOpen}
-							setMoveFolderTargetId={selection.setMoveFolderTargetId}
-							handleFolderContextMenu={folderMgmt.handleFolderContextMenu}
-							setContextMenu={setContextMenu}
-							fetchSources={fetchSources}
-							onOpenDetail={handleOpenDetail}
-							onOpenSettings={onOpenSettings}
-							onDeleteSource={(source) => void handleDeleteSource(source)}
-							onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
-							setIsAddModalOpen={setIsAddModalOpen}
-							viewTabs={null}
-							currentResearch={currentResearch}
-							uiDebugLogsEnabled={uiDebugLogsEnabled}
-							debugLog={debugLog}
-							debugWarn={debugWarn}
-						/>
-					)}
-				</ViewTransition>
-
-				{/* Modals */}
-				<ResourceModals
-					isFolderModalOpen={folderMgmt.isFolderModalOpen}
-					setIsFolderModalOpen={folderMgmt.setIsFolderModalOpen}
-					handleCreateFolder={folderMgmt.handleCreateFolder}
-					currentFolderId={currentFolderId}
-					foldersById={folderMgmt.foldersById}
-					isMoveFolderModalOpen={selection.isMoveFolderModalOpen}
-					setIsMoveFolderModalOpen={selection.setIsMoveFolderModalOpen}
-					moveFolderTargetId={selection.moveFolderTargetId}
-					setMoveFolderTargetId={selection.setMoveFolderTargetId}
-					handleMoveSelectedToFolder={selection.handleMoveSelectedToFolder}
-					selectedIds={selection.selectedIds}
-					flatFolderOptions={folderMgmt.flatFolderOptions}
-					isRenameFolderModalOpen={folderMgmt.isRenameFolderModalOpen}
-					setIsRenameFolderModalOpen={folderMgmt.setIsRenameFolderModalOpen}
-					renameFolderTarget={folderMgmt.renameFolderTarget}
-					setRenameFolderTarget={folderMgmt.setRenameFolderTarget}
-					renameFolderName={folderMgmt.renameFolderName}
-					setRenameFolderName={folderMgmt.setRenameFolderName}
-					handleRenameFolder={folderMgmt.handleRenameFolder}
-					isMoveFolderToModalOpen={folderMgmt.isMoveFolderToModalOpen}
-					setIsMoveFolderToModalOpen={folderMgmt.setIsMoveFolderToModalOpen}
-					moveFolderSource={folderMgmt.moveFolderSource}
-					setMoveFolderSource={folderMgmt.setMoveFolderSource}
-					moveFolderToTargetId={folderMgmt.moveFolderToTargetId}
-					setMoveFolderToTargetId={folderMgmt.setMoveFolderToTargetId}
-					handleMoveFolderTo={folderMgmt.handleMoveFolderTo}
-					getAvailableParentFolders={folderMgmt.getAvailableParentFolders}
-					singleSourceMoveModal={folderMgmt.singleSourceMoveModal}
-					setSingleSourceMoveModal={folderMgmt.setSingleSourceMoveModal}
-					singleSourceMoveTargetId={folderMgmt.singleSourceMoveTargetId}
-					setSingleSourceMoveTargetId={folderMgmt.setSingleSourceMoveTargetId}
-					handleSingleSourceMove={handleSingleSourceMove}
-					isAddModalOpen={isAddModalOpen}
-					setIsAddModalOpen={setIsAddModalOpen}
-					activeTab={activeTab}
-					setActiveTab={setActiveTab}
-					newSourceTitle={newSourceTitle}
-					setNewSourceTitle={setNewSourceTitle}
-					newSourceContent={newSourceContent}
-					setNewSourceContent={setNewSourceContent}
-					selectedFile={selectedFile}
-					setSelectedFile={setSelectedFile}
-					handleCreateSource={handleCreateSource}
+			{isKnowledgeTabView(leftSidebarView) ? (
+				<KnowledgeTabBar
+					active={leftSidebarView}
+					onSelect={setLeftSidebarView}
 				/>
-			</aside>
-		</div>
+			) : null}
+
+			{/* 主内容区域 - 根据视图模式切换（ViewTransition 提供统一进场过渡） */}
+			<ViewTransition
+				viewKey={
+					leftSidebarView === "detail"
+						? `detail:${previewSource?.id ?? "none"}`
+						: leftSidebarView
+				}
+				className="min-h-0 flex-1"
+			>
+				{leftSidebarView === "detail" && previewSource ? (
+					<SourceDetailView
+						ref={sourceDetailViewRef}
+						fetchSources={fetchSources}
+						onDeleteSource={(source) => void handleDeleteSource(source)}
+					/>
+				) : leftSidebarView === "research" ? (
+					<ResearchView
+						onOpenResearchSource={(source) => {
+							setPreviewSource(source);
+						}}
+					/>
+				) : leftSidebarView === "cards" ? (
+					<CardsHubView />
+				) : leftSidebarView === "threads" ? (
+					<ThreadsView />
+				) : leftSidebarView === "files" ? (
+					<ProjectFilesView />
+				) : leftSidebarView === "skills" ? (
+					<SkillsView />
+				) : leftSidebarView === "wiki" ? (
+					<WikiView />
+				) : (
+					<SourceListView
+						sources={sources}
+						setSources={setSources}
+						setRawSources={setRawSources}
+						errorMessage={errorMessage}
+						isLoading={isLoading}
+						viewMode={viewMode}
+						setViewMode={setViewMode}
+						currentSubfolders={folderMgmt.currentSubfolders}
+						breadcrumbPath={folderMgmt.breadcrumbPath}
+						getFolderSubtreeCount={folderMgmt.getFolderSubtreeCount}
+						draggedSourceId={dragDrop.draggedSourceId}
+						dragOverFolderId={dragDrop.dragOverFolderId}
+						setDragOverFolderId={dragDrop.setDragOverFolderId}
+						handleDragStart={dragDrop.handleDragStart}
+						handleDragEnd={dragDrop.handleDragEnd}
+						handleFolderDragOver={dragDrop.handleFolderDragOver}
+						handleFolderDragLeave={dragDrop.handleFolderDragLeave}
+						handleFolderDrop={dragDrop.handleFolderDrop}
+						selectionMode={selection.selectionMode}
+						setSelectionMode={selection.setSelectionMode}
+						selectedIds={selection.selectedIds}
+						selectedIdSet={selection.selectedIdSet}
+						selectedSources={selection.selectedSources}
+						exitSelectionMode={selection.exitSelectionMode}
+						toggleSelection={selection.toggleSelection}
+						handleSelectAll={selection.handleSelectAll}
+						handleBulkAddToContext={selection.handleBulkAddToContext}
+						handleDeleteSelected={selection.handleDeleteSelected}
+						setIsMoveFolderModalOpen={selection.setIsMoveFolderModalOpen}
+						setMoveFolderTargetId={selection.setMoveFolderTargetId}
+						handleFolderContextMenu={folderMgmt.handleFolderContextMenu}
+						setContextMenu={setContextMenu}
+						fetchSources={fetchSources}
+						onOpenDetail={handleOpenDetail}
+						onOpenSettings={onOpenSettings}
+						onDeleteSource={(source) => void handleDeleteSource(source)}
+						onOpenFolderModal={() => folderMgmt.setIsFolderModalOpen(true)}
+						setIsAddModalOpen={setIsAddModalOpen}
+						viewTabs={null}
+						currentResearch={currentResearch}
+						uiDebugLogsEnabled={uiDebugLogsEnabled}
+						debugLog={debugLog}
+						debugWarn={debugWarn}
+					/>
+				)}
+			</ViewTransition>
+
+			{/* Modals */}
+			<ResourceModals
+				isFolderModalOpen={folderMgmt.isFolderModalOpen}
+				setIsFolderModalOpen={folderMgmt.setIsFolderModalOpen}
+				handleCreateFolder={folderMgmt.handleCreateFolder}
+				currentFolderId={currentFolderId}
+				foldersById={folderMgmt.foldersById}
+				isMoveFolderModalOpen={selection.isMoveFolderModalOpen}
+				setIsMoveFolderModalOpen={selection.setIsMoveFolderModalOpen}
+				moveFolderTargetId={selection.moveFolderTargetId}
+				setMoveFolderTargetId={selection.setMoveFolderTargetId}
+				handleMoveSelectedToFolder={selection.handleMoveSelectedToFolder}
+				selectedIds={selection.selectedIds}
+				flatFolderOptions={folderMgmt.flatFolderOptions}
+				isRenameFolderModalOpen={folderMgmt.isRenameFolderModalOpen}
+				setIsRenameFolderModalOpen={folderMgmt.setIsRenameFolderModalOpen}
+				renameFolderTarget={folderMgmt.renameFolderTarget}
+				setRenameFolderTarget={folderMgmt.setRenameFolderTarget}
+				renameFolderName={folderMgmt.renameFolderName}
+				setRenameFolderName={folderMgmt.setRenameFolderName}
+				handleRenameFolder={folderMgmt.handleRenameFolder}
+				isMoveFolderToModalOpen={folderMgmt.isMoveFolderToModalOpen}
+				setIsMoveFolderToModalOpen={folderMgmt.setIsMoveFolderToModalOpen}
+				moveFolderSource={folderMgmt.moveFolderSource}
+				setMoveFolderSource={folderMgmt.setMoveFolderSource}
+				moveFolderToTargetId={folderMgmt.moveFolderToTargetId}
+				setMoveFolderToTargetId={folderMgmt.setMoveFolderToTargetId}
+				handleMoveFolderTo={folderMgmt.handleMoveFolderTo}
+				getAvailableParentFolders={folderMgmt.getAvailableParentFolders}
+				singleSourceMoveModal={folderMgmt.singleSourceMoveModal}
+				setSingleSourceMoveModal={folderMgmt.setSingleSourceMoveModal}
+				singleSourceMoveTargetId={folderMgmt.singleSourceMoveTargetId}
+				setSingleSourceMoveTargetId={folderMgmt.setSingleSourceMoveTargetId}
+				handleSingleSourceMove={handleSingleSourceMove}
+				isAddModalOpen={isAddModalOpen}
+				setIsAddModalOpen={setIsAddModalOpen}
+				activeTab={activeTab}
+				setActiveTab={setActiveTab}
+				newSourceTitle={newSourceTitle}
+				setNewSourceTitle={setNewSourceTitle}
+				newSourceContent={newSourceContent}
+				setNewSourceContent={setNewSourceContent}
+				selectedFile={selectedFile}
+				setSelectedFile={setSelectedFile}
+				handleCreateSource={handleCreateSource}
+			/>
+		</aside>
 	);
 }

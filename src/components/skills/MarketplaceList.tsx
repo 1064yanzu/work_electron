@@ -74,7 +74,7 @@ export function MarketplaceList() {
 						<button
 							type="button"
 							onClick={() => setQuery("")}
-							className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-text-light hover:text-text-secondary hover:bg-cream-200/70"
+							className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-text-light hover:text-text-secondary hover:bg-warm-200/70"
 						>
 							<X className="w-3 h-3" />
 						</button>
@@ -97,10 +97,9 @@ export function MarketplaceList() {
 						onClick={() => setErrorsExpanded((v) => !v)}
 						className={cn(
 							"w-full flex items-center gap-2 px-3 py-2 rounded-lg",
-							"bg-amber-50/80 dark:bg-amber-500/10",
-							"border border-amber-200/80 dark:border-amber-500/30",
-							"text-xs text-amber-800 dark:text-amber-300",
-							"hover:bg-amber-100/70 dark:hover:bg-amber-500/15 transition",
+							"bg-warning-muted border border-warning/30",
+							"text-xs text-warning",
+							"hover:bg-warning/15 transition",
 						)}
 					>
 						<AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -111,7 +110,7 @@ export function MarketplaceList() {
 								e.stopPropagation();
 								handleRetry();
 							}}
-							className="text-[11px] underline underline-offset-2 hover:no-underline"
+							className="text-2xs underline underline-offset-2 hover:no-underline"
 						>
 							重试
 						</button>
@@ -127,20 +126,20 @@ export function MarketplaceList() {
 							{errors.map((e) => (
 								<div
 									key={e.sourceId}
-									className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-amber-50/40 dark:bg-amber-500/5"
+									className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-warning-muted/60"
 								>
 									<div className="flex-1 min-w-0">
-										<div className="text-[11px] font-medium text-amber-800 dark:text-amber-300">
+										<div className="text-2xs font-medium text-warning">
 											{sourceName(e.sourceId)}
 										</div>
-										<div className="text-[11px] font-mono text-amber-700/80 dark:text-amber-400/70 truncate">
+										<div className="text-2xs font-mono text-warning/80 truncate">
 											{e.error}
 										</div>
 									</div>
 									<button
 										type="button"
 										onClick={() => handleDisableSource(e.sourceId)}
-										className="text-[11px] text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-200 px-1.5 py-0.5 rounded hover:bg-amber-100 dark:hover:bg-amber-500/15 shrink-0"
+										className="text-2xs text-warning hover:opacity-80 px-1.5 py-0.5 rounded hover:bg-warning/15 shrink-0"
 									>
 										禁用
 									</button>
@@ -180,7 +179,7 @@ export function MarketplaceList() {
 								>
 									显示更多（剩 {entries.length - visibleCount} 条）
 								</button>
-								<span className="text-[11px] text-text-light">
+								<span className="text-2xs text-text-light">
 									已显示 {visibleCount} / {entries.length}
 								</span>
 							</div>

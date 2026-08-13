@@ -192,9 +192,9 @@ export function SourceListView({
 								}
 								setCurrentFolder(item.id);
 							}}
-							className={`px-1.5 py-0.5 rounded hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors ${
+							className={`px-1.5 py-0.5 rounded hover:bg-warm-300 transition-colors ${
 								index === breadcrumbPath.length - 1
-									? "text-text-primary dark:text-cream-200 font-medium"
+									? "text-text-primary font-medium"
 									: "text-text-muted"
 							}`}
 						>
@@ -278,26 +278,24 @@ export function SourceListView({
 						}}
 						className={`group cursor-pointer p-3 flex flex-col rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 border relative ${
 							isDragOver
-								? "bg-focus/16 dark:bg-blue-900/30 border-focus dark:border-focus ring-2 ring-blue-400/50 scale-[1.02]"
-								: "bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-900/10 dark:to-orange-900/10 hover:from-amber-100/80 hover:to-orange-100/60 dark:hover:from-amber-900/20 dark:hover:to-orange-900/15 border-amber-200/50 dark:border-amber-800/30 hover:shadow-[0_4px_16px_rgba(251,191,36,0.08)] hover:-translate-y-0.5"
+								? "bg-focus/16 border-focus ring-2 ring-focus/50 scale-[1.02]"
+								: "bg-warm-200/60 hover:bg-warm-200 border-border/50 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
 						}`}
 					>
 						<div
 							className={`w-10 h-10 rounded-xl flex items-center justify-center pointer-events-none transition-colors duration-150 ${
-								isDragOver
-									? "bg-blue-200 dark:bg-blue-800/50"
-									: "bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/30"
+								isDragOver ? "bg-focus/16" : "bg-warm-200"
 							}`}
 						>
 							<FolderIcon
-								className={`w-5 h-5 ${isDragOver ? "text-focus dark:text-focus" : "text-peach-500 dark:text-amber-400"}`}
+								className={`w-5 h-5 ${isDragOver ? "text-focus" : "text-peach-500"}`}
 							/>
 						</div>
 						<div className="mt-2 pointer-events-none">
-							<h3 className="text-sm font-medium text-text-primary dark:text-cream-200 line-clamp-2 leading-snug">
+							<h3 className="text-sm font-medium text-text-primary line-clamp-2 leading-snug">
 								{folder.name}
 							</h3>
-							<p className="text-[11px] text-text-light mt-1">{count} 项</p>
+							<p className="text-2xs text-text-light mt-1">{count} 项</p>
 						</div>
 						<Tooltip content="更多操作" placement="top">
 							<button
@@ -373,26 +371,24 @@ export function SourceListView({
 					}}
 					className={`group cursor-pointer p-2 flex items-center gap-3 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 						isDragOver
-							? "bg-focus/16 dark:bg-blue-900/30 ring-2 ring-blue-400/50"
-							: "hover:bg-peach-100/70 dark:hover:bg-amber-900/10 hover:pl-3"
+							? "bg-focus/16 ring-2 ring-focus/50"
+							: "hover:bg-warm-200/70 hover:pl-3"
 					}`}
 				>
 					<div
 						className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 pointer-events-none transition-colors duration-150 ${
-							isDragOver
-								? "bg-blue-200 dark:bg-blue-800/50"
-								: "bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/30"
+							isDragOver ? "bg-focus/16" : "bg-warm-200"
 						}`}
 					>
 						<FolderIcon
-							className={`w-4 h-4 ${isDragOver ? "text-focus dark:text-focus" : "text-peach-500 dark:text-amber-400"}`}
+							className={`w-4 h-4 ${isDragOver ? "text-focus" : "text-peach-500"}`}
 						/>
 					</div>
 					<div className="flex-1 min-w-0 ml-1 pointer-events-none">
-						<h3 className="text-sm font-medium text-text-primary dark:text-cream-200 truncate">
+						<h3 className="text-sm font-medium text-text-primary truncate">
 							{folder.name}
 						</h3>
-						<p className="text-[11px] text-text-light">{count} 项</p>
+						<p className="text-2xs text-text-light">{count} 项</p>
 					</div>
 					<Tooltip content="更多操作" placement="left">
 						<button
@@ -521,7 +517,7 @@ export function SourceListView({
 					<span className="text-text-muted">已选 {selectedIds.length} 条</span>
 					<button
 						onClick={handleSelectAll}
-						className="px-2 py-1 rounded-md border border-border text-text-muted hover:text-text-primary hover:border-cream-400 transition-colors"
+						className="px-2 py-1 rounded-md border border-border text-text-muted hover:text-text-primary hover:border-border transition-colors"
 					>
 						{selectedIds.length === sources.length ? "取消全选" : "全选"}
 					</button>
@@ -532,7 +528,7 @@ export function SourceListView({
 							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
 								selectedSources.length === 0
 									? "bg-warm-200 text-text-light/50"
-									: "bg-dark-muted text-white hover:bg-dark-surface"
+									: "bg-primary text-primary-foreground hover:bg-primary-hover"
 							}`}
 						>
 							添加到 AI 上下文
@@ -550,7 +546,7 @@ export function SourceListView({
 							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
 								selectedSources.length === 0
 									? "bg-warm-200 text-text-light/50"
-									: "bg-surface border border-border text-text-secondary dark:text-cream-200 hover:bg-warm-50"
+									: "bg-surface border border-border text-text-secondary hover:bg-warm-50"
 							}`}
 						>
 							移动
@@ -561,7 +557,7 @@ export function SourceListView({
 							className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
 								selectedSources.length === 0
 									? "bg-warm-200 text-text-light/50"
-									: "bg-[rgba(181,51,51,0.08)] text-error hover:bg-[rgba(181,51,51,0.16)]"
+									: "bg-error/8 text-error hover:bg-error/16"
 							}`}
 						>
 							删除
@@ -573,7 +569,7 @@ export function SourceListView({
 			{/* Content */}
 			<div
 				ref={sourceListScrollRef}
-				className="min-h-0 flex-1 overflow-y-auto scrollbar-hide p-3"
+				className="min-h-0 flex-1 overflow-y-auto p-3"
 				onScroll={handleListScroll}
 				onDragOver={(e) => {
 					const hasSourceData =

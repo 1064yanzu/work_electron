@@ -32,7 +32,7 @@ function stateTone(state: string): {
 	return {
 		bg: "bg-warm-200",
 		text: "text-text-secondary",
-		dot: "bg-cream-500",
+		dot: "bg-warm-500",
 		dotAnimate: false,
 	};
 }
@@ -68,7 +68,7 @@ export function SessionList(props: {
 				return (
 					<div
 						key={item.session_id}
-						className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:border-cream-400 hover:shadow-sm"
+						className="group rounded-xl border border-border bg-surface p-3.5 text-xs transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:border-warm-500 hover:shadow-sm"
 					>
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0 space-y-1.5">
@@ -82,7 +82,7 @@ export function SessionList(props: {
 										/>
 										{item.state}
 									</span>
-									<span className="inline-flex items-center rounded-md bg-warm-200 px-1.5 py-0.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider">
+									<span className="inline-flex items-center rounded-lg bg-warm-200 px-1.5 py-0.5 text-2xs font-semibold text-text-muted uppercase tracking-wider">
 										{item.channel_id}
 									</span>
 								</div>
@@ -90,7 +90,7 @@ export function SessionList(props: {
 									{item.prompt_preview}
 								</div>
 								<div className="text-text-muted flex items-center gap-2">
-									<span className="font-mono text-[11px] bg-warm-200 px-1.5 py-0.5 rounded">
+									<span className="font-mono text-2xs bg-warm-200 px-1.5 py-0.5 rounded-lg">
 										{runId || "—"}
 									</span>
 									<span>更新于 {formatTs(item.updated_at)}</span>

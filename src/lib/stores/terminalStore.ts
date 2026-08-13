@@ -5,7 +5,7 @@
 
 import { useSyncExternalStore } from "react";
 import { invoke } from "../../lib/tauriCompat";
-import { toast } from "../../components/ui/Toast";
+import { toast } from "../../components/ui/toastBus";
 import { getTerminalPrefs } from "../config/terminal";
 import { workspaceStore } from "../workspaceStore";
 

@@ -151,7 +151,7 @@ export function PermissionPolicySection({
 				id="ai.agent.permission.timeout.advanced"
 				title="高级权限设置"
 			>
-				<div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-cream-50 px-4 py-3">
+				<div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
 							<Clock
@@ -183,12 +183,12 @@ export function PermissionPolicySection({
 					<h5 className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 						内置工具风险等级
 					</h5>
-					<span className="text-[11px] text-text-light">
+					<span className="text-2xs text-text-light">
 						共 {Object.keys(TOOL_NAMES).length} 个工具
 					</span>
 				</div>
 				<div className="overflow-hidden rounded-xl border border-border">
-					<div className="grid grid-cols-[1fr_140px_140px] bg-cream-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+					<div className="grid grid-cols-[1fr_140px_140px] bg-surface px-4 py-2 text-2xs font-semibold uppercase tracking-[0.14em] text-text-muted">
 						<div>工具</div>
 						<div>风险等级</div>
 						<div>当前策略</div>
@@ -205,7 +205,7 @@ export function PermissionPolicySection({
 							return (
 								<div
 									key={toolType}
-									className="grid grid-cols-[1fr_140px_140px] items-center bg-surface px-4 py-2 text-xs transition-colors hover:bg-cream-50"
+									className="grid grid-cols-[1fr_140px_140px] items-center bg-surface px-4 py-2 text-xs transition-colors hover:bg-surface"
 								>
 									<div className="text-text-primary">
 										{TOOL_NAMES[toolType]}

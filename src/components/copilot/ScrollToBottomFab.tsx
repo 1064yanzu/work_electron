@@ -69,7 +69,7 @@ export function ScrollToBottomFab({
 			title="滚到底部"
 		>
 			{hasUnread && (
-				<span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-surface" />
+				<span className="absolute -top-1 -right-1 w-3 h-3 bg-error rounded-full border-2 border-surface" />
 			)}
 			<ArrowDown className="w-3.5 h-3.5" />
 		</button>

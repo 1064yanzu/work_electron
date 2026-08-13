@@ -227,7 +227,7 @@ export function PerfObservabilityCard() {
 									暂无启动记录，重启应用后会出现数据。
 								</p>
 							) : (
-								<div className="rounded-lg border border-border bg-cream-50 px-3 pt-3 pb-2">
+								<div className="rounded-lg border border-border bg-surface px-3 pt-3 pb-2">
 									<div className="flex items-end gap-1 h-16">
 										{startupBars.map((bar) => (
 											<div
@@ -240,7 +240,7 @@ export function PerfObservabilityCard() {
 											/>
 										))}
 									</div>
-									<div className="flex items-center justify-between mt-1.5 text-[11px] text-text-light tabular-nums">
+									<div className="flex items-center justify-between mt-1.5 text-2xs text-text-light tabular-nums">
 										<span>
 											{startupBars.length > 1
 												? formatTime(startupBars[0].ts)
@@ -262,18 +262,21 @@ export function PerfObservabilityCard() {
 							<div className="text-xs font-medium text-text-secondary mb-1.5">
 								渲染端长任务 · 最近 24 小时
 							</div>
-							<div className="grid grid-cols-2 gap-3 text-xs">
-								<div className="rounded-lg border border-border bg-cream-50 px-3 py-2">
-									<div className="text-text-muted">长任务次数（&gt;50ms）</div>
-									<div className="text-base tabular-nums text-text-primary">
+							{/* 键值行:label 左、数值右 */}
+							<div className="divide-y divide-border/60 text-xs">
+								<div className="flex items-center justify-between py-2">
+									<span className="text-text-secondary">
+										长任务次数（&gt;50ms）
+									</span>
+									<span className="tabular-nums text-sm font-medium text-text-primary">
 										{longtaskSummary.count}
-									</div>
+									</span>
 								</div>
-								<div className="rounded-lg border border-border bg-cream-50 px-3 py-2">
-									<div className="text-text-muted">累计阻塞时长</div>
-									<div className="text-base tabular-nums text-text-primary">
+								<div className="flex items-center justify-between py-2">
+									<span className="text-text-secondary">累计阻塞时长</span>
+									<span className="tabular-nums text-sm font-medium text-text-primary">
 										{formatDuration(longtaskSummary.totalMs)}
-									</div>
+									</span>
 								</div>
 							</div>
 						</div>
@@ -288,7 +291,7 @@ export function PerfObservabilityCard() {
 									最近 24 小时没有慢 IPC 调用，一切正常。
 								</p>
 							) : (
-								<div className="rounded-lg border border-border bg-cream-50 overflow-hidden">
+								<div className="rounded-lg border border-border bg-surface overflow-hidden">
 									<table className="w-full text-xs">
 										<thead>
 											<tr className="text-left text-xs text-text-muted border-b border-border">
@@ -332,7 +335,7 @@ export function PerfObservabilityCard() {
 					</div>
 				)}
 
-				<p className="text-[11px] text-text-light mt-3">
+				<p className="text-2xs text-text-light mt-3">
 					启动里程碑保留最近 7 天；长任务与慢 IPC 统计最近 24
 					小时。数据仅本地存储，不上报。
 				</p>

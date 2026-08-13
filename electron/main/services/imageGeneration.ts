@@ -8,6 +8,7 @@ import path from "node:path";
 import type { DbContext } from "../db/client";
 import type { Provider, ProviderType } from "../../shared/types";
 import { getCacheDir } from "../storage/cacheRoots";
+import { decryptSecret } from "../storage/secretVault";
 
 // ==================== 配置接口 ====================
 
@@ -142,7 +143,7 @@ async function getProvider(
 			id: row.id as string,
 			name: row.name as string,
 			provider_type: row.provider_type as ProviderType,
-			api_key: row.api_key as string | undefined,
+			api_key: decryptSecret(row.api_key as string | undefined),
 			api_base: row.api_base as string | undefined,
 			is_enabled: Boolean(row.is_enabled),
 			models:

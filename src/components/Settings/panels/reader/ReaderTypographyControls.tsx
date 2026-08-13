@@ -52,7 +52,7 @@ export function ReaderTypographyControls({
 				</ControlField>
 			</div>
 
-			<div className="grid grid-cols-1 gap-5 rounded-2xl border border-border bg-cream-50 p-5 lg:grid-cols-2">
+			<div className="grid grid-cols-1 gap-5 rounded-2xl border border-border bg-surface p-5 lg:grid-cols-2">
 				<SettingsSlider
 					label="字号"
 					value={settings.font_size}
@@ -112,7 +112,7 @@ function ControlField({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="space-y-1.5 rounded-2xl border border-border bg-cream-50 p-4">
+		<div className="space-y-1.5 rounded-2xl border border-border bg-surface p-4">
 			<div>
 				<div className="text-xs font-medium text-text-primary">{label}</div>
 				{hint && (

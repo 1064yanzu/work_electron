@@ -50,7 +50,7 @@ export function ResourceSidebarHeader({
 		.join(" · ");
 
 	return (
-		<div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-1.5">
+		<div className="flex h-header shrink-0 items-center justify-between gap-2 border-b border-border px-3">
 			<div className="flex min-w-0 items-center gap-2">
 				{viewTabs}
 				<span className="min-w-0 truncate text-xs text-text-muted">

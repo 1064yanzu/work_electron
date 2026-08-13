@@ -49,6 +49,7 @@ import {
 	DEFAULT_THREAD_MODEL,
 } from "../../lib/chat/threadSessions";
 import { sessionStore } from "../../lib/agent/sessionManager";
+import { EVENTS, events } from "../../lib/events";
 import { managedModeStore } from "../../lib/managedModeStore";
 import {
 	pickSystemDirectory,
@@ -286,7 +287,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 	);
 
 	/** 点击"+"新建对话：选目录 → 创建 AgentSession + ChatSession */
-	const handleCreateThread = async () => {
+	const handleCreateThread = useCallback(async () => {
 		try {
 			const { path } = await pickSystemDirectory("选择对话的工作目录");
 			if (!path) return;
@@ -295,7 +296,13 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 			console.error("创建对话失败:", error);
 			toast.error("创建对话失败");
 		}
-	};
+	}, [createThreadForPath]);
+
+	// 命令面板 / 快捷键的「新建对话」走同一条链路，避免两套建会话逻辑漂移
+	useEffect(
+		() => events.on(EVENTS.NEW_THREAD_REQUEST, () => void handleCreateThread()),
+		[handleCreateThread],
+	);
 
 	const handleSelectSession = useCallback(
 		(session: ChatSession) => {

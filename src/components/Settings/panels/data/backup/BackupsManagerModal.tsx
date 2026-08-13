@@ -228,7 +228,7 @@ export function BackupsManagerModal({
 								selectedFiles.size === backupFiles.length
 							}
 							onChange={toggleSelectAll}
-							className="rounded"
+							className="rounded-lg"
 						/>
 					</div>
 					<div className="col-span-5">文件名</div>
@@ -258,7 +258,7 @@ export function BackupsManagerModal({
 										type="checkbox"
 										checked={selectedFiles.has(backup.fileName)}
 										onChange={() => toggleSelect(backup.fileName)}
-										className="rounded"
+										className="rounded-lg"
 									/>
 								</div>
 								<div
@@ -278,7 +278,7 @@ export function BackupsManagerModal({
 										type="button"
 										onClick={() => handleRestore(backup.fileName)}
 										disabled={isRestoring !== null || isDeleting !== null}
-										className="p-1.5 text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-50"
+										className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
 										title="恢复"
 									>
 										{isRestoring === backup.fileName ? (
@@ -291,7 +291,7 @@ export function BackupsManagerModal({
 										type="button"
 										onClick={() => handleDelete(backup.fileName)}
 										disabled={isRestoring !== null || isDeleting !== null}
-										className="p-1.5 text-text-light hover:text-error hover:bg-error/8 rounded transition-colors disabled:opacity-50"
+										className="p-1.5 text-text-light hover:text-error hover:bg-error/8 rounded-lg transition-colors disabled:opacity-50"
 										title="删除"
 									>
 										{isDeleting === backup.fileName ? (

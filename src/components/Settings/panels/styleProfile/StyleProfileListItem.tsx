@@ -187,10 +187,8 @@ export function StyleProfileListItem({
 	return (
 		<div
 			className={`rounded-xl border overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
-				isActive
-					? "border-mint-400/60 dark:border-mint-500/40 shadow-sm shadow-mint-100/50 dark:shadow-mint-900/20"
-					: "border-cream-300/70 dark:border-cream-600/40"
-			} bg-white/60 dark:bg-cream-800/30`}
+				isActive ? "border-mint-500/40 shadow-sm" : "border-border/70"
+			} bg-surface/60`}
 		>
 			{/* ── 头部行 ─────────────────────────────────────────────────── */}
 			<div className="flex items-center gap-2.5 px-3.5 py-3">
@@ -205,13 +203,11 @@ export function StyleProfileListItem({
 						<div
 							className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 								isActive
-									? "border-mint-600 dark:border-mint-400"
-									: "border-cream-300 dark:border-cream-500/60 group-hover:border-cream-400 dark:group-hover:border-cream-400/70"
+									? "border-mint-600"
+									: "border-border group-hover:border-warm-500"
 							}`}
 						>
-							{isActive && (
-								<div className="w-2 h-2 rounded-full bg-mint-600 dark:bg-mint-400" />
-							)}
+							{isActive && <div className="w-2 h-2 rounded-full bg-mint-600" />}
 						</div>
 					</button>
 				)}
@@ -234,17 +230,17 @@ export function StyleProfileListItem({
 				{/* 状态徽章 + 样本数 */}
 				<div className="flex items-center gap-1.5 shrink-0">
 					{isActive && (
-						<span className="rounded-full bg-mint-100 dark:bg-mint-900/30 px-2 py-0.5 text-[11px] font-semibold text-mint-700 dark:text-mint-300">
+						<span className="rounded-full bg-mint-500/15 px-2 py-0.5 text-2xs font-semibold text-mint-600">
 							激活
 						</span>
 					)}
 					{analysis && (
-						<span className="rounded-full bg-violet-100/70 dark:bg-violet-900/30 px-2 py-0.5 text-[11px] font-medium text-violet-600 dark:text-violet-300">
+						<span className="rounded-full bg-primary-muted px-2 py-0.5 text-2xs font-medium text-text-secondary">
 							已分析
 						</span>
 					)}
 					{!expanded && samples.length > 0 && (
-						<span className="text-[11px] text-text-muted">
+						<span className="text-2xs text-text-muted">
 							{samples.length} 篇样本
 						</span>
 					)}
@@ -258,7 +254,7 @@ export function StyleProfileListItem({
 							onClick={() => void handleAnalyze()}
 							disabled={analyzing}
 							title="AI 分析样本，生成风格规则"
-							className="rounded-lg p-1.5 text-text-muted hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 disabled:opacity-40 transition-colors duration-150"
+							className="rounded-lg p-1.5 text-text-muted hover:text-text-primary hover:bg-primary-muted disabled:opacity-40 transition-colors duration-150"
 						>
 							{analyzing ? (
 								<Loader2 size={14} className="animate-spin" />
@@ -271,7 +267,7 @@ export function StyleProfileListItem({
 						type="button"
 						onClick={onArchive}
 						title={archived ? "恢复" : "归档"}
-						className="rounded-lg p-1.5 text-text-muted hover:text-text-primary hover:bg-cream-100 dark:hover:bg-cream-700/40 transition-colors duration-150"
+						className="rounded-lg p-1.5 text-text-muted hover:text-text-primary hover:bg-background transition-colors duration-150"
 					>
 						{archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
 					</button>
@@ -282,8 +278,8 @@ export function StyleProfileListItem({
 						title={confirmDelete ? "再次点击确认删除" : "删除"}
 						className={`rounded-lg p-1.5 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 							confirmDelete
-								? "text-white bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 scale-105"
-								: "text-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+								? "text-white bg-error hover:opacity-90 scale-105"
+								: "text-text-muted hover:text-error hover:bg-error-muted"
 						}`}
 					>
 						<Trash2 size={14} />
@@ -293,9 +289,9 @@ export function StyleProfileListItem({
 
 			{/* ── 二次确认提示条 ────────────────────────────────────────── */}
 			{confirmDelete && (
-				<div className="mx-3.5 mb-2 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200/70 dark:border-red-700/40 px-3 py-1.5">
-					<AlertCircle size={12} className="shrink-0 text-red-500" />
-					<span className="flex-1 text-xs text-red-600 dark:text-red-400">
+				<div className="mx-3.5 mb-2 flex items-center gap-2 rounded-lg bg-error-muted border border-error/30 px-3 py-1.5">
+					<AlertCircle size={12} className="shrink-0 text-error" />
+					<span className="flex-1 text-xs text-error">
 						确认删除「{profile.name}」？此操作不可恢复。
 					</span>
 					<button
@@ -310,9 +306,9 @@ export function StyleProfileListItem({
 
 			{/* ── 分析进度区 ────────────────────────────────────────────── */}
 			{(analyzing || analyzeSteps.length > 0 || analyzeError) && (
-				<div className="mx-3.5 mb-2 rounded-lg bg-cream-50/80 dark:bg-cream-800/30 border border-cream-200/60 dark:border-cream-600/30 px-3 py-2">
+				<div className="mx-3.5 mb-2 rounded-lg bg-surface/80 border border-border/60 px-3 py-2">
 					{analyzeError ? (
-						<div className="flex items-center gap-2 text-xs text-red-500">
+						<div className="flex items-center gap-2 text-xs text-error">
 							<AlertCircle size={12} className="shrink-0" />
 							{analyzeError}
 						</div>
@@ -322,7 +318,7 @@ export function StyleProfileListItem({
 								<div key={s.step} className="flex items-center gap-2">
 									<div
 										className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors duration-250 ${
-											s.done ? "bg-mint-500" : "bg-violet-400 animate-pulse"
+											s.done ? "bg-mint-500" : "bg-info animate-pulse"
 										}`}
 									/>
 									<span
@@ -346,7 +342,7 @@ export function StyleProfileListItem({
 
 			{/* ── 展开详情 ──────────────────────────────────────────────── */}
 			{expanded && (
-				<div className="border-t border-cream-200/60 dark:border-cream-600/30 px-4 pt-4 pb-5 space-y-5 bg-cream-50/20 dark:bg-cream-900/10">
+				<div className="border-t border-border/60 px-4 pt-4 pb-5 space-y-5 bg-surface/20">
 					{/* 样本列表 */}
 					<div>
 						<div className="mb-3 flex items-center justify-between">
@@ -362,7 +358,7 @@ export function StyleProfileListItem({
 								<button
 									type="button"
 									onClick={() => setShowTextForm(true)}
-									className="flex items-center gap-1 text-xs text-text-secondary hover:text-mint-600 dark:hover:text-mint-400 transition-colors duration-150"
+									className="flex items-center gap-1 text-xs text-text-secondary hover:text-mint-600 transition-colors duration-150"
 								>
 									<Plus size={11} />
 									粘贴文本
@@ -389,7 +385,7 @@ export function StyleProfileListItem({
 						</div>
 
 						{samples.length === 0 && !showTextForm ? (
-							<div className="rounded-xl border border-dashed border-cream-300 dark:border-cream-600/50 px-4 py-5 text-center">
+							<div className="rounded-xl border border-dashed border-border px-4 py-5 text-center">
 								<FileText
 									size={20}
 									className="mx-auto mb-2 text-text-muted/40"
@@ -400,7 +396,7 @@ export function StyleProfileListItem({
 								<button
 									type="button"
 									onClick={() => setShowTextForm(true)}
-									className="mt-3 flex items-center gap-1.5 mx-auto text-xs text-mint-600 dark:text-mint-400 hover:underline transition-colors duration-150"
+									className="mt-3 flex items-center gap-1.5 mx-auto text-xs text-mint-600 hover:underline transition-colors duration-150"
 								>
 									<Plus size={12} />
 									添加第一篇样本
@@ -411,7 +407,7 @@ export function StyleProfileListItem({
 								{samples.map((s) => (
 									<div
 										key={s.id}
-										className="flex items-center gap-2.5 rounded-lg bg-white/60 dark:bg-cream-800/40 border border-cream-200/50 dark:border-cream-600/20 px-3 py-2 group hover:border-cream-300/70 dark:hover:border-cream-500/30 transition-colors duration-150"
+										className="flex items-center gap-2.5 rounded-lg bg-surface/60 border border-border/50 px-3 py-2 group hover:border-warm-400/70 transition-colors duration-150"
 									>
 										<FileText
 											size={12}
@@ -420,13 +416,13 @@ export function StyleProfileListItem({
 										<span className="flex-1 min-w-0 truncate text-xs text-text-primary">
 											{s.title ?? "未命名样本"}
 										</span>
-										<span className="shrink-0 text-[11px] text-text-muted">
+										<span className="shrink-0 text-2xs text-text-muted">
 											{s.word_count.toLocaleString()} 字
 										</span>
 										<button
 											type="button"
 											onClick={() => void handleRemoveSample(s.id)}
-											className="shrink-0 text-text-muted/30 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
+											className="shrink-0 text-text-muted/30 hover:text-error opacity-0 group-hover:opacity-100 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150"
 											title="移除样本"
 										>
 											<Trash2 size={11} />

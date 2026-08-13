@@ -5,6 +5,7 @@ import {
 	FileJson,
 	FileText,
 	Image as ImageIcon,
+	RefreshCw,
 	Table,
 	Terminal as TerminalIcon,
 	X,
@@ -40,6 +41,9 @@ interface ManagedArtifactPreviewPanelProps {
 	onMoveFile: (file: SandboxFile) => Promise<void> | void;
 	onDeleteFile: (file: SandboxFile) => Promise<void> | void;
 	onSetTerminalDockCollapsed: (collapsed: boolean) => void;
+	/** 刷新沙盒文件列表（原 ManagedCenterHeader 的刷新入口，随头部裁撤移入 Tab 栏右端） */
+	onRefreshFiles?: () => void;
+	isRefreshingFiles?: boolean;
 	devLogs?: string[];
 	onClearDevLogs?: () => void;
 }
@@ -123,6 +127,8 @@ export const ManagedArtifactPreviewPanel = memo(
 		onMoveFile,
 		onDeleteFile,
 		onSetTerminalDockCollapsed,
+		onRefreshFiles,
+		isRefreshingFiles,
 		devLogs,
 		onClearDevLogs,
 	}: ManagedArtifactPreviewPanelProps) {
@@ -366,7 +372,7 @@ export const ManagedArtifactPreviewPanel = memo(
 								>
 									<ChevronLeft className="w-3 h-3" />
 								</button>
-								<span className="text-[11px] text-text-light tabular-nums px-0.5 min-w-[28px] text-center">
+								<span className="text-2xs text-text-light tabular-nums px-0.5 min-w-[28px] text-center">
 									{selectedArtifactIndex + 1}/{totalArtifacts}
 								</span>
 								<button
@@ -377,6 +383,26 @@ export const ManagedArtifactPreviewPanel = memo(
 									aria-label="下一个标签页"
 								>
 									<ChevronRight className="w-3 h-3" />
+								</button>
+							</div>
+						) : null}
+						{/* 刷新文件列表（原中栏内容头裁撤后移到这里） */}
+						{onRefreshFiles ? (
+							<div className="flex items-center px-1.5 shrink-0 border-l border-border/60">
+								<button
+									type="button"
+									onClick={onRefreshFiles}
+									disabled={isRefreshingFiles}
+									className="p-1 rounded text-text-muted hover:text-text-secondary hover:bg-warm-200/60 focus-ring disabled:opacity-50"
+									title="刷新文件列表"
+									aria-label="刷新文件列表"
+								>
+									<RefreshCw
+										className={cn(
+											"w-3 h-3",
+											isRefreshingFiles && "animate-spin",
+										)}
+									/>
 								</button>
 							</div>
 						) : null}

@@ -84,7 +84,7 @@ export function TTSVoiceList({
 
 	if (state.loading) {
 		return (
-			<div className="flex items-center gap-2 rounded-xl border border-dashed border-border bg-cream-50 px-3 py-3 text-xs text-text-muted">
+			<div className="flex items-center gap-2 rounded-xl border border-dashed border-border bg-surface px-3 py-3 text-xs text-text-muted">
 				<Loader2 className="h-3 w-3 animate-spin" /> 加载音色…
 			</div>
 		);
@@ -100,7 +100,7 @@ export function TTSVoiceList({
 
 	if (state.voices.length === 0) {
 		return (
-			<div className="rounded-xl border border-dashed border-border bg-cream-50 px-3 py-4 text-center text-xs text-text-muted">
+			<div className="rounded-xl border border-dashed border-border bg-surface px-3 py-4 text-center text-xs text-text-muted">
 				暂无可用音色（请先填写 API Key 或克隆新音色）
 			</div>
 		);
@@ -109,8 +109,8 @@ export function TTSVoiceList({
 	return (
 		<div className="space-y-2">
 			{onSelectAsDefault && (
-				<div className="flex items-center gap-1.5 text-[11px] text-text-muted">
-					<span className="rounded-full bg-cream-200 px-1.5 py-px text-[11px] uppercase tracking-wider text-text-secondary">
+				<div className="flex items-center gap-1.5 text-2xs text-text-muted">
+					<span className="rounded-full bg-warm-200 px-1.5 py-px text-2xs uppercase tracking-wider text-text-secondary">
 						提示
 					</span>
 					<span>点击任意音色卡即可将其设为默认朗读音色</span>
@@ -175,7 +175,7 @@ function VoiceCard({
 				"group relative flex items-center gap-3 rounded-xl border bg-surface px-3 py-2 transition-[color,background-color,border-color,box-shadow]",
 				selected
 					? "shadow-bai-card"
-					: "border-border hover:border-cream-500 hover:shadow-bai-card",
+					: "border-border hover:border-warm-500 hover:shadow-bai-card",
 				interactive && !selected && "cursor-pointer",
 			)}
 			style={
@@ -206,7 +206,7 @@ function VoiceCard({
 					"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold uppercase",
 					voice.is_cloned
 						? "border-violetx-500/40 bg-violetx-500/10 text-violetx-600"
-						: "border-border bg-cream-100 text-text-secondary",
+						: "border-border bg-background text-text-secondary",
 				)}
 			>
 				{voice.name.slice(0, 2)}
@@ -217,13 +217,13 @@ function VoiceCard({
 						{voice.name}
 					</span>
 					{voice.is_cloned && (
-						<span className="rounded-full bg-violetx-500/10 px-1.5 py-px text-[11px] font-semibold uppercase tracking-wider text-violetx-600">
+						<span className="rounded-full bg-violetx-500/10 px-1.5 py-px text-2xs font-semibold uppercase tracking-wider text-violetx-600">
 							克隆
 						</span>
 					)}
 					{selected && (
 						<span
-							className="inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-semibold uppercase tracking-wider"
+							className="inline-flex items-center gap-1 rounded-full px-1.5 py-px text-2xs font-semibold uppercase tracking-wider"
 							style={{
 								backgroundColor: `${accent}1f`,
 								color: accent,
@@ -234,9 +234,9 @@ function VoiceCard({
 						</span>
 					)}
 				</div>
-				<div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-text-muted">
+				<div className="mt-0.5 flex items-center gap-1.5 text-2xs text-text-muted">
 					{voice.language ? (
-						<span className="rounded-md bg-cream-200 px-1.5 py-px font-mono">
+						<span className="rounded-lg bg-warm-200 px-1.5 py-px font-mono">
 							{voice.language}
 						</span>
 					) : (
@@ -252,7 +252,7 @@ function VoiceCard({
 						onPreview();
 					}}
 					disabled={previewing}
-					className="rounded-md p-1.5 text-text-muted transition hover:bg-cream-200 hover:text-text-primary disabled:opacity-40"
+					className="rounded-lg p-1.5 text-text-muted transition hover:bg-warm-200 hover:text-text-primary disabled:opacity-40"
 					title="试听"
 				>
 					{previewing ? (
@@ -269,7 +269,7 @@ function VoiceCard({
 							onDelete();
 						}}
 						disabled={deleting}
-						className="rounded-md p-1.5 text-text-muted transition hover:bg-error/10 hover:text-error disabled:opacity-40 opacity-0 group-hover:opacity-100"
+						className="rounded-lg p-1.5 text-text-muted transition hover:bg-error/10 hover:text-error disabled:opacity-40 opacity-0 group-hover:opacity-100"
 						title="删除该克隆音色"
 					>
 						{deleting ? (

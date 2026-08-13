@@ -81,6 +81,14 @@ function computeThreadListSig(sessions: ChatSession[]): string {
 /**
  * 窄订阅所有会话的列表元数据。签名不变时返回上一次的数组引用
  * （useSyncExternalStore 以 Object.is 比较 snapshot ⇒ 组件不重渲染）。
+ *
+ * 注意：这里的 cacheRef **不是**在补偿 useChatStoreSelector 缺失的缓存，
+ * 两者解决的不是同一个问题，不能因为 selector 现在有缓存了就删掉它：
+ * - useChatStoreSelector 的缓存是**引用级**的（Object.is 比较 selector 结果）；
+ * - chatStore 每次 setState 都会 `sessions.map(...)` 产出新数组，引用必变，
+ *   所以引用级缓存对「列表元数据没变」这件事无能为力；
+ * - 这里比较的是**内容签名**：只要标题/置顶/消息数等列表相关字段没变，
+ *   就继续返回旧数组，流式输出期间线程列表因此完全不重渲染。
  */
 export function useThreadSessionsSnapshot(): ChatSession[] {
 	const cacheRef = useRef<{ sig: string; value: ChatSession[] } | null>(null);

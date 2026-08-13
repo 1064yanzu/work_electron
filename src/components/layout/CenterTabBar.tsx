@@ -510,7 +510,7 @@ export function CenterTabBar({ groupId }: { groupId: string }) {
 	return (
 		<div
 			className={cn(
-				"flex h-10 shrink-0 items-center gap-1 border-b border-border/80 bg-surface/92 px-2 backdrop-blur-sm",
+				"flex h-header shrink-0 items-center gap-1 border-b border-border/80 bg-surface/92 px-2 backdrop-blur-sm",
 				barIsDropTarget && "bg-terracotta/[0.06]",
 			)}
 			onDragOver={(event) => {

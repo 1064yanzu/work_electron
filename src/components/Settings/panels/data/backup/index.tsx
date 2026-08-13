@@ -28,7 +28,8 @@ import {
 	type WebDavConfig,
 	type WebdavBackupFile,
 	updateSyncConfig,
-	backupToLocal,
+	backupToLocalDir,
+	selectBackupDirectory,
 } from "../../../../../lib/api";
 import { safeInvoke } from "../../../../../lib/tauriBridge";
 import { confirmDialog as confirmUI } from "../../../../ui/ConfirmDialog";
@@ -203,18 +204,32 @@ export function DataBackupSettings() {
 		[buildWebdavConfig],
 	);
 
-	// 本地备份（立即备份到 userData/backups）
+	// 本地备份（立即备份到已配置的本地备份目录）
+	//
+	// 目录未配置时先唤起原生目录选择器并记住选择，避免这个按钮变成一个
+	// 「点了没反应」的死按钮——它和「本地备份目录」卡片里的「立即备份」
+	// 共用同一个目录配置与同一条后端链路（backup_to_local_dir）。
 	const handleLocalBackup = useCallback(async () => {
+		setIsBackingUpToLocal(true);
 		try {
-			const path = await backupToLocal();
-			toast.success(`备份已保存到：${path}`, 5000);
+			let dir = syncConfig?.local_backup_dir ?? null;
+			if (!dir) {
+				const picked = await selectBackupDirectory();
+				if (!picked.path) return;
+				dir = picked.path;
+				await saveConfig({ local_backup_dir: dir });
+			}
+			const result = await backupToLocalDir(dir);
+			toast.success(`备份已保存到：${result.path}`, 5000);
 			await loadData();
 		} catch (error) {
 			toast.error(
 				`备份失败：${error instanceof Error ? error.message : String(error)}`,
 			);
+		} finally {
+			setIsBackingUpToLocal(false);
 		}
-	}, [loadData]);
+	}, [loadData, saveConfig, syncConfig?.local_backup_dir]);
 
 	// 导出 JSON（D9：主进程保存对话框 + 直接写盘，整串 JSON 不再经过渲染端）
 	const handleExport = useCallback(async () => {

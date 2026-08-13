@@ -39,30 +39,31 @@ const KIND_META: Record<
 		color: string;
 	}
 > = {
+	// 诊断类别按严重度走语义 token：结构提示=中性、质量警告=warning、错误=error
 	orphan: {
 		label: "孤儿页面",
 		icon: GitBranch,
-		color: "bai-icon-violet bg-purple-50 dark:bg-purple-950/30",
+		color: "text-text-secondary bg-warm-200",
 	},
 	stub: {
 		label: "内容过短",
 		icon: Type,
-		color: "text-peach-500 bg-peach-100 dark:bg-amber-950/30",
+		color: "text-warning bg-warning-muted",
 	},
 	"broken-link": {
 		label: "断链",
 		icon: FileSymlink,
-		color: "text-error bg-[rgba(181,51,51,0.08)] dark:bg-red-950/30",
+		color: "text-error bg-error-muted",
 	},
 	"frontmatter-missing": {
 		label: "Frontmatter 缺失",
 		icon: Scale,
-		color: "text-orange-600 bg-orange-50 dark:bg-orange-950/30",
+		color: "text-warning bg-warning-muted",
 	},
 	"source-no-sources": {
 		label: "Source 页缺溯源",
 		icon: Package,
-		color: "text-error bg-[rgba(181,51,51,0.08)] dark:bg-rose-950/30",
+		color: "text-error bg-error-muted",
 	},
 };
 
@@ -117,7 +118,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 				{/* 建议 */}
 				{report.suggestions.length > 0 && (
 					<div className="rounded-xl bg-primary/5 border border-primary/15 p-3">
-						<div className="text-[11px] uppercase tracking-[0.18em] text-primary mb-1.5">
+						<div className="text-2xs uppercase tracking-[0.18em] text-primary mb-1.5">
 							建议
 						</div>
 						<ul className="space-y-1">
@@ -212,7 +213,7 @@ export function WikiLintPanel({ report, onDismiss, onOpenPage }: Props) {
 								</div>
 							))}
 							{report.un_ingested_sources.length > 20 && (
-								<div className="px-3 py-1.5 text-[11px] text-focus">
+								<div className="px-3 py-1.5 text-2xs text-focus">
 									…还有 {report.un_ingested_sources.length - 20} 个
 								</div>
 							)}

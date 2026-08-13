@@ -110,7 +110,7 @@ export function PetHistoryBubble({
 										{item.message}
 									</p>
 								</div>
-								<span className="shrink-0 text-[11px] text-[color:var(--t-text-light,#9d9d98)] mt-0.5">
+								<span className="shrink-0 text-2xs text-[color:var(--t-text-light,#9d9d98)] mt-0.5">
 									{formatTimeAgo(item.createdAt)}
 								</span>
 							</div>

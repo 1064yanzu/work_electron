@@ -2,8 +2,8 @@
  * Wiki 数据 Hook - 封装 Wiki 页面的增删改查
  */
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useIpcListen } from "../../hooks/useIpcListen";
 import { invoke } from "../../lib/tauriCompat";
-import { listen } from "../../lib/tauriEventCompat";
 import { managedModeStore, getMimeType } from "../../lib/managedModeStore";
 import { centerTabsStore } from "../../lib/stores/centerTabsStore";
 
@@ -127,35 +127,16 @@ export function useWiki(scopePath: string | null) {
 	const [isInitializing, setIsInitializing] = useState(false);
 	const [generationProgress, setGenerationProgress] =
 		useState<WikiGenerationProgress | null>(null);
-	const unlistenRef = useRef<(() => void) | null>(null);
 	const loadPagesRef = useRef<() => Promise<void>>(async () => {});
 
-	// 监听后端推送的生成进度事件
-	useEffect(() => {
-		let cancelled = false;
-		listen<WikiGenerationProgress>("wiki_generation_progress", (event) => {
-			if (cancelled) return;
-			const status = event.payload;
-			setGenerationProgress(status);
-			// 生成完成时自动刷新页面列表
-			if (!status.is_generating && status.generated_pages > 0) {
-				loadPagesRef.current();
-			}
-		})
-			.then((unlisten) => {
-				if (cancelled) {
-					unlisten();
-				} else {
-					unlistenRef.current = unlisten;
-				}
-			})
-			.catch(() => {});
-		return () => {
-			cancelled = true;
-			unlistenRef.current?.();
-			unlistenRef.current = null;
-		};
-	}, []);
+	// 监听后端推送的生成进度事件（useIpcListen 统一处理订阅竞态清理）
+	useIpcListen<WikiGenerationProgress>("wiki_generation_progress", (status) => {
+		setGenerationProgress(status);
+		// 生成完成时自动刷新页面列表
+		if (!status.is_generating && status.generated_pages > 0) {
+			loadPagesRef.current();
+		}
+	});
 
 	const ensureInitialMap = useCallback(async () => {
 		if (!scopePath) return false;

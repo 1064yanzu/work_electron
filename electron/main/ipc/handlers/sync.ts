@@ -9,6 +9,7 @@ import { autoSyncScheduler } from "../../services/AutoSyncScheduler";
 import { backupHistoryManager } from "../../services/BackupHistoryManager";
 import { importBackupPayload } from "../../services/backupPayload";
 import type { WebDavConfig } from "../../services/WebDavService";
+import { decryptSecret, encryptSecret } from "../../storage/secretVault";
 
 const now = () => Date.now();
 
@@ -119,7 +120,7 @@ export function createSyncHandlers(db: DbContext) {
 			webdav_enabled: Boolean(row.webdav_enabled),
 			webdav_url: row.webdav_url as string | undefined,
 			webdav_username: row.webdav_username as string | undefined,
-			webdav_password: row.webdav_password as string | undefined,
+			webdav_password: decryptSecret(row.webdav_password as string | undefined),
 			webdav_path: (row.webdav_path as string) || "/workbench-sync",
 			// WebDAV 高级配置
 			webdav_auto_sync: Boolean(row.webdav_auto_sync),
@@ -186,7 +187,7 @@ export function createSyncHandlers(db: DbContext) {
 		}
 		if (normalizedInput.webdav_password !== undefined) {
 			updates.push("webdav_password = ?");
-			args.push(normalizedInput.webdav_password ?? null);
+			args.push(encryptSecret(normalizedInput.webdav_password) ?? null);
 		}
 		if (normalizedInput.webdav_path !== undefined) {
 			updates.push("webdav_path = ?");

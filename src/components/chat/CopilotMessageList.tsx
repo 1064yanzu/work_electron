@@ -1,7 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useMemo } from "react";
 import type { RefObject } from "react";
-import { getCachedPerformanceTuning } from "../../lib/config";
+import { usePerformanceTuningSelector } from "../../lib/config";
 import type { ChatMessage as ChatMessageType } from "../../lib/chat/types";
 import { ChatMessage as ChatMessageComponent } from "./ChatMessage";
 
@@ -43,8 +43,11 @@ function CopilotMessageListImpl({
 	onEditMessage,
 	onDeleteMessage,
 }: CopilotMessageListProps) {
-	// 设置面板「长对话虚拟渲染」开关（默认开；关闭走全量渲染 + content-visibility）
-	const virtualizationEnabled = getCachedPerformanceTuning().chatVirtualization;
+	// 设置面板「长对话虚拟渲染」开关（默认开；关闭走全量渲染 + content-visibility）。
+	// 订阅式读取：设置面板改完即时生效，不必重开会话
+	const virtualizationEnabled = usePerformanceTuningSelector(
+		(s) => s.chatVirtualization,
+	);
 	const shouldVirtualizeMessages =
 		virtualizationEnabled &&
 		messages.length > VIRTUALIZE_MESSAGE_THRESHOLD + TAIL_ALWAYS_RENDERED;
@@ -87,7 +90,12 @@ function CopilotMessageListImpl({
 		return null;
 	}, [messages, sessionHasError]);
 
-	const renderMessage = (message: ChatMessageType) => (
+	// inVirtualizedHead：该消息由 virtualizer 的 measureElement 测量，
+	// 必须关掉 content-visibility，否则测到的是 contain-intrinsic-size 占位高度
+	const renderMessage = (
+		message: ChatMessageType,
+		inVirtualizedHead = false,
+	) => (
 		<ChatMessageComponent
 			key={message.id}
 			message={message}
@@ -100,6 +108,7 @@ function CopilotMessageListImpl({
 			isFailedUserMessage={
 				sessionHasError ? message.id === lastUserMessageId : undefined
 			}
+			disableContentVisibility={inVirtualizedHead}
 		/>
 	);
 
@@ -110,7 +119,7 @@ function CopilotMessageListImpl({
 					<button
 						type="button"
 						onClick={onLoadOlderMessages}
-						className="px-3 py-1.5 rounded-full text-xs text-text-muted bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors"
+						className="px-3 py-1.5 rounded-full text-xs text-text-muted bg-warm-200 hover:bg-warm-300 transition-colors"
 					>
 						加载更早消息（{hiddenMessageCount} 条）
 					</button>
@@ -142,7 +151,7 @@ function CopilotMessageListImpl({
 										transform: `translateY(${virtualRow.start}px)`,
 									}}
 								>
-									{renderMessage(message)}
+									{renderMessage(message, true)}
 								</div>
 							);
 						})}
@@ -169,18 +178,7 @@ function CopilotMessageListImpl({
 	);
 }
 
-export const CopilotMessageList = memo(
-	CopilotMessageListImpl,
-	(prev, next) =>
-		prev.scrollContainerRef === next.scrollContainerRef &&
-		prev.messagesEndRef === next.messagesEndRef &&
-		prev.messages === next.messages &&
-		prev.hiddenMessageCount === next.hiddenMessageCount &&
-		prev.preferBlocks === next.preferBlocks &&
-		prev.canRegenerateMessages === next.canRegenerateMessages &&
-		prev.sessionHasError === next.sessionHasError &&
-		prev.onLoadOlderMessages === next.onLoadOlderMessages &&
-		prev.onRegenerateMessage === next.onRegenerateMessage &&
-		prev.onEditMessage === next.onEditMessage &&
-		prev.onDeleteMessage === next.onDeleteMessage,
-);
+// 这里原本有一份逐字段 `===` 的比较器，覆盖全部 props 且全是引用比较，
+// 与 memo 的默认浅比较完全等价——唯一的区别是新增 prop 时容易忘记补一行，
+// 导致组件静默不更新。直接用默认比较。
+export const CopilotMessageList = memo(CopilotMessageListImpl);

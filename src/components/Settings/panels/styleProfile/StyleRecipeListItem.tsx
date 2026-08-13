@@ -19,48 +19,48 @@ const LAYER_DISPLAY = [
 	{
 		key: "soul_profile_name" as const,
 		label: "灵魂",
-		color: "text-violet-500 dark:text-violet-400",
+		color: "text-text-secondary",
 	},
 	{
 		key: "thinking_profile_name" as const,
 		label: "思维",
-		color: "text-blue-500 dark:text-blue-400",
+		color: "text-text-secondary",
 	},
 	{
 		key: "articulation_profile_name" as const,
 		label: "篇章",
-		color: "text-cyan-500 dark:text-cyan-400",
+		color: "text-text-secondary",
 	},
 	{
 		key: "texture_profile_name" as const,
 		label: "血肉",
-		color: "text-amber-500 dark:text-amber-400",
+		color: "text-text-secondary",
 	},
 	{
 		key: "relational_profile_name" as const,
 		label: "关系",
-		color: "text-emerald-500 dark:text-emerald-400",
+		color: "text-text-secondary",
 	},
 	// v1 层级（向后兼容旧配方）
 	{
 		key: "cognitive_profile_name" as const,
 		label: "认知",
-		color: "text-blue-500 dark:text-blue-400",
+		color: "text-text-secondary",
 	},
 	{
 		key: "rhetorical_profile_name" as const,
 		label: "话语",
-		color: "text-emerald-500 dark:text-emerald-400",
+		color: "text-text-secondary",
 	},
 	{
 		key: "aesthetic_profile_name" as const,
 		label: "审美",
-		color: "text-violet-500 dark:text-violet-400",
+		color: "text-text-secondary",
 	},
 	{
 		key: "anchors_profile_name" as const,
 		label: "锚点",
-		color: "text-amber-500 dark:text-amber-400",
+		color: "text-text-secondary",
 	},
 ] as const;
 
@@ -88,8 +88,8 @@ export function StyleRecipeListItem({
 		<div
 			className={`flex items-start gap-3 rounded-xl border px-4 py-3 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 				isActive
-					? "border-amber-400/40 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-900/10"
-					: "border-cream-200/70 dark:border-cream-600/30 bg-transparent hover:bg-cream-50 dark:hover:bg-cream-800/20 hover:border-cream-300 dark:hover:border-cream-500/40"
+					? "border-primary/40 bg-primary-muted"
+					: "border-border/70 bg-transparent hover:bg-surface hover:border-warm-400"
 			}`}
 		>
 			{/* Radio 选择器 */}
@@ -101,14 +101,10 @@ export function StyleRecipeListItem({
 			>
 				<div
 					className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
-						isActive
-							? "border-amber-600 dark:border-amber-400"
-							: "border-cream-300 dark:border-cream-500/60"
+						isActive ? "border-primary" : "border-border"
 					}`}
 				>
-					{isActive && (
-						<div className="w-2 h-2 rounded-full bg-amber-600 dark:bg-amber-400" />
-					)}
+					{isActive && <div className="w-2 h-2 rounded-full bg-primary" />}
 				</div>
 			</button>
 
@@ -116,7 +112,7 @@ export function StyleRecipeListItem({
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-2">
 					<Blend
-						className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0"
+						className="w-3.5 h-3.5 text-text-secondary shrink-0"
 						strokeWidth={1.5}
 					/>
 					<span
@@ -128,7 +124,7 @@ export function StyleRecipeListItem({
 					</span>
 					{isActive && (
 						<Check
-							className="w-3 h-3 text-amber-500 dark:text-amber-400 shrink-0"
+							className="w-3 h-3 text-primary shrink-0"
 							strokeWidth={2.5}
 						/>
 					)}
@@ -146,7 +142,7 @@ export function StyleRecipeListItem({
 						{usedLayers.map((layer) => (
 							<span
 								key={layer.key}
-								className="inline-flex items-center gap-1 text-[11px] leading-none px-1.5 py-0.5 rounded-md bg-cream-100/80 dark:bg-cream-800/50 border border-cream-200/50 dark:border-cream-600/20"
+								className="inline-flex items-center gap-1 text-2xs leading-none px-1.5 py-0.5 rounded-lg bg-background/80 border border-border/50"
 							>
 								<span className={`font-medium ${layer.color}`}>
 									{layer.label}
@@ -167,8 +163,8 @@ export function StyleRecipeListItem({
 				title={confirmDelete ? "再次点击确认删除" : "删除配方"}
 				className={`shrink-0 mt-0.5 w-6 h-6 flex items-center justify-center rounded-lg transition-colors duration-150 ${
 					confirmDelete
-						? "text-red-500 bg-red-50 dark:bg-red-900/20"
-						: "text-text-muted/40 hover:text-red-500 hover:bg-cream-100 dark:hover:bg-cream-800/40"
+						? "text-error bg-error-muted"
+						: "text-text-muted/40 hover:text-error hover:bg-background"
 				}`}
 			>
 				<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />

@@ -43,7 +43,7 @@ export function FileTreeEmptyState({
 				<button
 					type="button"
 					onClick={onOpenFolder}
-					className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-warm-50 hover:bg-warm-200 dark:hover:bg-cream-700 text-text-secondary transition-colors cursor-pointer"
+					className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-warm-50 hover:bg-warm-200 text-text-secondary transition-colors cursor-pointer"
 				>
 					<FolderOpen className="w-3.5 h-3.5" />
 					打开文件夹

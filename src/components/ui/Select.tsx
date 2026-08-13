@@ -351,16 +351,16 @@ function SelectComponent(
 				className={`
 					group relative w-full flex items-center justify-between gap-2
 					${variantStyles.trigger}
-					bg-cream-50 dark:bg-cream-900
-					border border-cream-300 dark:border-cream-500
+					bg-surface
+					border border-border
 					rounded-xl
 					text-text-primary font-medium
 					cursor-pointer
 					shadow-[0_1px_2px_rgba(0,0,0,0.03)]
 					text-left
 
-					hover:bg-cream-100 dark:hover:bg-cream-800
-					hover:border-cream-400 dark:hover:border-cream-500
+					hover:bg-background
+					hover:border-border
 					hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]
 
 					focus:outline-none
@@ -372,7 +372,7 @@ function SelectComponent(
 					disabled:cursor-not-allowed
 					disabled:bg-warm-200 dark:disabled:bg-dark-surface
 					disabled:hover:bg-warm-200 dark:disabled:hover:bg-dark-surface
-					disabled:hover:border-cream-300 dark:disabled:hover:border-dark-border
+					disabled:hover:border-border
 					disabled:shadow-none
 
 					transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ease-out
@@ -413,7 +413,7 @@ function SelectComponent(
 							width: position.width,
 							zIndex: 9999,
 						}}
-						className="bg-cream-50 dark:bg-cream-900 rounded-2xl border border-cream-400 dark:border-cream-500 shadow-bai-pop overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col"
+						className="bg-surface rounded-2xl border border-border shadow-bai-pop overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col"
 					>
 						<div
 							data-select-dropdown-scroll=""
@@ -440,10 +440,10 @@ function SelectComponent(
 											${opt.disabled ? "opacity-40 cursor-not-allowed" : ""}
 											${
 												isSelected
-													? "bg-cream-200 dark:bg-cream-800 text-text-primary font-medium"
+													? "bg-warm-200 text-text-primary font-medium"
 													: isActive
-														? "bg-cream-100 dark:bg-cream-800/60 text-text-primary"
-														: "text-text-secondary hover:bg-cream-100 dark:hover:bg-cream-800/40"
+														? "bg-background text-text-primary"
+														: "text-text-secondary hover:bg-background"
 											}
 										`}
 									>

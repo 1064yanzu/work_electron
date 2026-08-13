@@ -43,7 +43,7 @@ export function ProviderApiBaseSection({
 				<label className="text-sm font-medium text-text-secondary">
 					API 地址
 				</label>
-				<span className="rounded-md bg-warm-200 px-2 py-0.5 text-xs text-text-light">
+				<span className="rounded-lg bg-warm-200 px-2 py-0.5 text-xs text-text-light">
 					可选
 				</span>
 			</div>

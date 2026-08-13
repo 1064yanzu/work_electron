@@ -199,7 +199,7 @@ export function BrowserShell({
 								{title}
 							</span>
 							{isLoading ? (
-								<span className="inline-flex items-center gap-1 text-[11px] text-text-light">
+								<span className="inline-flex items-center gap-1 text-2xs text-text-light">
 									<span className="block w-1 h-1 rounded-full bg-terracotta animate-pulse" />
 									加载中
 								</span>

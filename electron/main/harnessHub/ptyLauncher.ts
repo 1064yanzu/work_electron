@@ -20,6 +20,7 @@ import { createLogger } from "../logging/logger";
 import { harnessRuntimeMonitor } from "./automation/runtimeMonitor";
 import { launchCommandFor } from "./detect";
 import type { HarnessKind } from "./types";
+import { sendToLiveWebContents } from "../utils/safeWebContentsSend";
 
 const logger = createLogger();
 
@@ -195,7 +196,7 @@ export async function launchHarnessWithHandoff(
 	const unsubMirror = terminalService.onData(ptyId, (chunk) => {
 		harnessRuntimeMonitor.noteOutput(runtimeId, chunk);
 		try {
-			getMainWindow()?.webContents.send("terminal-data", {
+			sendToLiveWebContents(getMainWindow(), "terminal-data", {
 				id: ptyId,
 				data: chunk,
 			});
@@ -223,7 +224,7 @@ export async function launchHarnessWithHandoff(
 	const unsubExit = terminalService.onExit(ptyId, (exitCode, signal) => {
 		harnessRuntimeMonitor.markExited(runtimeId, exitCode);
 		try {
-			getMainWindow()?.webContents.send("terminal-exit", {
+			sendToLiveWebContents(getMainWindow(), "terminal-exit", {
 				id: ptyId,
 				exitCode,
 				signal,
@@ -238,7 +239,7 @@ export async function launchHarnessWithHandoff(
 
 	// 先把 pty 挂进 TerminalPanel，用户能实时看到 CLI 启动过程
 	try {
-		getMainWindow()?.webContents.send("harness-terminal-attached", {
+		sendToLiveWebContents(getMainWindow(), "harness-terminal-attached", {
 			pty_id: ptyId,
 			harness,
 			terminal: {

@@ -75,6 +75,7 @@ import {
 	listCookieSources,
 } from "../../services/browserCookieImport";
 import { createFsSafeHandlers } from "./fsSafe";
+import { sendToLiveWebContents } from "../../utils/safeWebContentsSend";
 
 const logger = createLogger();
 
@@ -497,7 +498,7 @@ export function createHarnessHubHandlers(
 	) => {
 		const result = await scanAll(db, (progress) => {
 			try {
-				deps.getMainWindow()?.webContents.send("harness-ingest-progress", {
+				sendToLiveWebContents(deps.getMainWindow(), "harness-ingest-progress", {
 					phase: progress.phase,
 					harness: progress.harness,
 					processed: progress.processed,
@@ -644,11 +645,15 @@ export function createHarnessHubHandlers(
 				model: input.model,
 				onProgress: (p) => {
 					try {
-						deps.getMainWindow()?.webContents.send("harness-handoff-event", {
-							phase: p.phase,
-							current: p.current,
-							total: p.total,
-						});
+						sendToLiveWebContents(
+							deps.getMainWindow(),
+							"harness-handoff-event",
+							{
+								phase: p.phase,
+								current: p.current,
+								total: p.total,
+							},
+						);
 					} catch {
 						// 窗口已销毁
 					}

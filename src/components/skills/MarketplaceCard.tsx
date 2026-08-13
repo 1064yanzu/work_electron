@@ -43,7 +43,7 @@ const TRUST_META: Record<
 	custom: {
 		label: "自定义",
 		icon: ShieldAlert,
-		tone: "text-amber-600 dark:text-amber-400",
+		tone: "text-warning",
 	},
 };
 
@@ -162,12 +162,12 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							{entry.displayName || entry.name}
 						</span>
 						{entry.version && (
-							<span className="text-[11px] text-text-light font-mono shrink-0">
+							<span className="text-2xs text-text-light font-mono shrink-0">
 								v{entry.version.replace(/^v/, "")}
 							</span>
 						)}
 						{entry.installed && (
-							<span className="text-[11px] font-medium text-success tracking-wide uppercase shrink-0">
+							<span className="text-2xs font-medium text-success tracking-wide uppercase shrink-0">
 								已装
 							</span>
 						)}
@@ -175,7 +175,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 					<p className="text-xs text-text-muted mt-0.5 line-clamp-2 leading-snug">
 						{entry.description || "（暂无描述）"}
 					</p>
-					<div className="flex items-center gap-1.5 mt-1 text-[11px] text-text-light min-w-0">
+					<div className="flex items-center gap-1.5 mt-1 text-2xs text-text-light min-w-0">
 						{entry.author && (
 							<span className="truncate max-w-[40%]">{entry.author}</span>
 						)}
@@ -216,7 +216,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							className={cn(
 								"inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition shrink-0",
 								installing
-									? "bg-cream-200 text-text-muted cursor-not-allowed"
+									? "bg-warm-200 text-text-muted cursor-not-allowed"
 									: "bg-primary text-primary-foreground hover:bg-primary-hover",
 							)}
 						>
@@ -239,7 +239,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 						<button
 							type="button"
 							onClick={handlePreview}
-							className="p-1 rounded text-text-light hover:text-text-secondary hover:bg-cream-200/70"
+							className="p-1 rounded text-text-light hover:text-text-secondary hover:bg-warm-200/70"
 							title="预览 SKILL.md"
 						>
 							<Eye className="w-3 h-3" />
@@ -249,7 +249,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 								href={entry.homepage}
 								target="_blank"
 								rel="noreferrer"
-								className="p-1 rounded text-text-light hover:text-text-secondary hover:bg-cream-200/70"
+								className="p-1 rounded text-text-light hover:text-text-secondary hover:bg-warm-200/70"
 								title="打开主页"
 							>
 								<ExternalLink className="w-3 h-3" />
@@ -276,7 +276,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 					{(progress.message || progress.error) && (
 						<p
 							className={cn(
-								"mt-1 text-[11px] truncate",
+								"mt-1 text-2xs truncate",
 								failed ? "text-error" : "text-text-light",
 							)}
 						>
@@ -297,7 +297,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							加载中…
 						</p>
 					) : (
-						<pre className="text-[11px] leading-relaxed text-text-secondary whitespace-pre-wrap font-mono">
+						<pre className="text-2xs leading-relaxed text-text-secondary whitespace-pre-wrap font-mono">
 							{previewText || "（SKILL.md 内容为空）"}
 						</pre>
 					)}

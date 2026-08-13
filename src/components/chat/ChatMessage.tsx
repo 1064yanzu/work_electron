@@ -19,13 +19,12 @@ import {
 	useTTS,
 	useTtsStoreSelector,
 } from "../../lib/tts";
-import ToolCallInline from "../agent/ToolCallInline";
 import { TTSToolbarButton } from "../tts/TTSToolbarButton";
 import { ContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
 import { Tooltip } from "../ui/Tooltip";
-import { AgentBlocksInline } from "./AgentBlocksInline";
 import { AttachmentList } from "./AttachmentCard";
 import { ChatMessageAssistantContent } from "./ChatMessageAssistantContent";
+import { ChatTraceMessage, shouldRenderAsTrace } from "./ChatTraceMessage";
 import { InlineEditBubble } from "./InlineEditBubble";
 import { TokenDisplay } from "./TokenDisplay";
 import { extractCodeBlocks } from "./chatMessageDerivations";
@@ -38,15 +37,26 @@ interface ChatMessageProps {
 	onDelete?: (messageId: string) => void; // 删除回调
 	/** 最后一条用户消息且会话处于 error 状态，显示重试 */
 	isFailedUserMessage?: boolean;
+	/**
+	 * 关闭 `content-visibility: auto` 离屏优化。
+	 *
+	 * 虚拟化列表必须传 true：@tanstack/react-virtual 的 `measureElement` 靠真实
+	 * 布局高度回填测量缓存，而 `content-visibility: auto` 会让离屏子树跳过布局、
+	 * 只汇报 `contain-intrinsic-size` 的占位高度（320px）。两者同时开启会把假高度
+	 * 写进虚拟化的测量缓存，`getTotalSize()` 失真、上滚出现跳动。
+	 * 非虚拟化路径（全量渲染）没有 measureElement，保留该优化。
+	 */
+	disableContentVisibility?: boolean;
 }
 
-function ChatMessageImpl({
+function ChatStandardMessageImpl({
 	message,
 	preferBlocks = true,
 	onRegenerate,
 	onEditSubmit,
 	onDelete,
 	isFailedUserMessage,
+	disableContentVisibility,
 }: ChatMessageProps) {
 	const [copied, setCopied] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
@@ -98,93 +108,6 @@ function ChatMessageImpl({
 		message.metadata!.blocks!.some(
 			(b) => b.type !== "text" || (b.type === "text" && !!b.text.trim()),
 		);
-
-	const renderableAgentBlocks =
-		message.role === "trace" &&
-		!message.metadata?.trace &&
-		Array.isArray(message.metadata?.blocks) &&
-		message.metadata.blocks.some(
-			(b) =>
-				b.type === "tool_call" ||
-				b.type === "thought" ||
-				b.type === "task_list" ||
-				b.type === "file_update" ||
-				b.type === "image",
-		);
-	const messageTaskId =
-		message.metadata?.taskId ||
-		(message.metadata?.trace?.type === "agent_task"
-			? message.metadata.trace.taskId
-			: undefined);
-
-	if (renderableAgentBlocks) {
-		return (
-			<div
-				className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-250 w-full"
-				style={{
-					contentVisibility: "auto",
-					containIntrinsicSize: "320px",
-				}}
-			>
-				<AgentBlocksInline
-					blocks={message.metadata!.blocks!}
-					isStreaming={isStreaming}
-					summaryTaskId={messageTaskId}
-				/>
-			</div>
-		);
-	}
-
-	if (
-		message.role === "trace" &&
-		message.metadata?.trace?.type === "agent_task"
-	) {
-		if (!Array.isArray(message.metadata?.blocks)) return null;
-
-		return (
-			<div
-				className="group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-250 w-full"
-				style={{
-					contentVisibility: "auto",
-					containIntrinsicSize: "320px",
-				}}
-			>
-				<AgentBlocksInline
-					blocks={message.metadata.blocks}
-					isStreaming={isStreaming}
-					summaryTaskId={messageTaskId}
-				/>
-			</div>
-		);
-	}
-
-	if (
-		message.role === "trace" &&
-		message.metadata?.trace?.type === "tool_call"
-	) {
-		return (
-			<div
-				className="group mb-4 animate-in fade-in slide-in-from-bottom-2 duration-250 w-full"
-				style={{
-					contentVisibility: "auto",
-					containIntrinsicSize: "320px",
-				}}
-			>
-				{Array.isArray(message.metadata?.blocks) ? (
-					<AgentBlocksInline
-						blocks={message.metadata.blocks}
-						isStreaming={isStreaming}
-						summaryTaskId={messageTaskId}
-					/>
-				) : (
-					<ToolCallInline
-						taskId={message.metadata.trace.taskId}
-						toolCallId={message.metadata.trace.toolCallId}
-					/>
-				)}
-			</div>
-		);
-	}
 
 	// 提取代码块
 	const codeBlocks = useMemo(
@@ -324,10 +247,17 @@ function ChatMessageImpl({
 				className={`group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-250 w-full`}
 				onContextMenu={handleContextMenu}
 				data-message-id={message.id}
-				style={{
-					contentVisibility: "auto",
-					containIntrinsicSize: "320px",
-				}}
+				style={
+					disableContentVisibility
+						? undefined
+						: {
+								contentVisibility: "auto",
+								// auto 前缀让浏览器记住真实渲染高度（消除快速滚动时
+								// 滚动条抖动）；后面的长度只是首渲染前的估值，按消息
+								// 类型差异化：用户消息通常一两行，助手回复偏长
+								containIntrinsicSize: isUser ? "auto 96px" : "auto 480px",
+							}
+				}
 			>
 				{isUser ? (
 					/* 用户消息：右侧悬浮布局，group/user 支持 hover 工具栏 */
@@ -385,7 +315,7 @@ function ChatMessageImpl({
 									<button
 										type="button"
 										onClick={() => onDelete(message.id)}
-										className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-red-400 transition-colors"
+										className="flex items-center gap-1.5 text-xs font-medium text-text-light hover:text-error transition-colors"
 									>
 										<Trash2 className="w-3 h-3" />
 										删除
@@ -399,7 +329,7 @@ function ChatMessageImpl({
 							<button
 								type="button"
 								onClick={handleRetry}
-								className="flex items-center gap-1 text-xs text-amber-500 hover:text-amber-600 transition-colors"
+								className="flex items-center gap-1 text-xs text-warning hover:text-warning/80 transition-colors"
 							>
 								<span>⚠</span>
 								<span>发送失败 · 点击重试</span>
@@ -427,7 +357,7 @@ function ChatMessageImpl({
 												key={idx}
 												className="flex items-center gap-1 bg-surface rounded-lg p-1 ring-1 ring-border dark:ring-dark-surface"
 											>
-												<span className="text-[11px] text-text-muted px-1.5 font-mono font-medium uppercase">
+												<span className="text-2xs text-text-muted px-1.5 font-mono font-medium uppercase">
 													{block.language || "code"}
 												</span>
 												<div className="h-3 w-px bg-warm-300" />
@@ -443,9 +373,9 @@ function ChatMessageImpl({
 													<button
 														onClick={() => handleApplyCodeBlock(idx)}
 														disabled={appliedBlocks.has(idx)}
-														className={`p-1.5 rounded transition-colors flex items-center gap-1 text-[11px] font-medium ${
+														className={`p-1.5 rounded transition-colors flex items-center gap-1 text-2xs font-medium ${
 															appliedBlocks.has(idx)
-																? "text-success bg-success/8 dark:bg-emerald-900/20"
+																? "text-success bg-success/8"
 																: "text-text-muted hover:text-text-primary hover:bg-warm-200"
 														}`}
 													>
@@ -531,13 +461,25 @@ function ChatMessageImpl({
 	);
 }
 
-export const ChatMessage = memo(ChatMessageImpl, (prev, next) => {
-	return (
-		prev.message === next.message &&
-		prev.preferBlocks === next.preferBlocks &&
-		prev.onRegenerate === next.onRegenerate &&
-		prev.onEditSubmit === next.onEditSubmit &&
-		prev.onDelete === next.onDelete &&
-		prev.isFailedUserMessage === next.isFailedUserMessage
-	);
+const ChatStandardMessage = memo(ChatStandardMessageImpl);
+
+/**
+ * 单条聊天消息。
+ *
+ * 这是一个**不含任何 Hook** 的分派器：trace 消息交给 `ChatTraceMessage`，
+ * 其余走 `ChatStandardMessage`。两个子组件各自的 Hook 数量恒定，因此流式期间
+ * 往 `metadata.blocks` 追加块导致分支翻转时，React 只会卸载/挂载不同类型的组件，
+ * 不会出现 Hook 数量错位（原实现在 Hook 之间做条件 early return，会抛
+ * "Rendered fewer hooks than expected"）。
+ */
+export const ChatMessage = memo(function ChatMessage(props: ChatMessageProps) {
+	if (shouldRenderAsTrace(props.message)) {
+		return (
+			<ChatTraceMessage
+				message={props.message}
+				disableContentVisibility={props.disableContentVisibility}
+			/>
+		);
+	}
+	return <ChatStandardMessage {...props} />;
 });

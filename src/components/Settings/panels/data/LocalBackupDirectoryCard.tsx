@@ -136,7 +136,7 @@ export function LocalBackupDirectoryCard({
 							<button
 								onClick={handleBackupNow}
 								disabled={isBackingUpToLocal}
-								className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+								className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
 							>
 								{isBackingUpToLocal ? (
 									<RefreshCw className="w-4 h-4 animate-spin" />

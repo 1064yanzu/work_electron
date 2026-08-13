@@ -41,43 +41,6 @@ export default defineConfig({
 				"grammy",
 				"@larksuiteoapi/node-sdk",
 			],
-			output: {
-				manualChunks(id) {
-					if (!id.includes("node_modules")) return;
-
-					if (
-						id.includes("/react/") ||
-						id.includes("/react-dom/") ||
-						id.includes("scheduler")
-					) {
-						return "react-vendor";
-					}
-
-					if (id.includes("/mermaid/")) {
-						return "markdown-mermaid";
-					}
-
-					if (
-						id.includes("/react-pdf/") ||
-						id.includes("/pdfjs-dist/") ||
-						id.includes("/mammoth/")
-					) {
-						return "pdf-docx";
-					}
-
-					if (
-						id.includes("/@xyflow/") ||
-						id.includes("/cytoscape/") ||
-						id.includes("/dagre")
-					) {
-						return "graph";
-					}
-
-					if (id.includes("/lucide-react/")) {
-						return "icons";
-					}
-				},
-			},
 		},
 	},
 	optimizeDeps: {

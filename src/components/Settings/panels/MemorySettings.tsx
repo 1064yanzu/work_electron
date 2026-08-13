@@ -461,12 +461,12 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 				"group flex items-center gap-2 rounded-xl px-3 py-2 text-left transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
 				active
 					? cn("border bg-surface shadow-sm", style.accentBorder)
-					: "border border-transparent hover:bg-cream-50",
+					: "border border-transparent hover:bg-surface",
 			)}
 		>
 			<span
 				className={cn(
-					"inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
+					"inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg",
 					style.accentBg,
 				)}
 			>
@@ -484,7 +484,7 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 				>
 					{style.label}
 				</div>
-				<div className="text-[11px] tabular-nums leading-tight text-text-muted">
+				<div className="text-2xs tabular-nums leading-tight text-text-muted">
 					{file.limit ? (
 						<span className={cn(isWarn && "text-error")}>
 							{file.charCount} / {file.limit}
@@ -503,7 +503,7 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 				/>
 			)}
 			{file.limit ? (
-				<span className="ml-1 h-1 w-8 overflow-hidden rounded-full bg-cream-100">
+				<span className="ml-1 h-1 w-8 overflow-hidden rounded-full bg-background">
 					<span
 						className={cn(
 							"block h-full rounded-full",
@@ -531,7 +531,7 @@ function FileStatusBar({
 }) {
 	const style = MEMORY_FILE_STYLES[file.token as MemoryFileToken];
 	return (
-		<div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-cream-50/60 text-xs">
+		<div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-surface/60 text-xs">
 			<div className="flex items-center gap-1.5 text-text-muted">
 				<span className={cn("font-medium", style.accentText)}>
 					{style.subtitle}
@@ -557,7 +557,7 @@ function FileStatusBar({
 			{file.injectedInActiveSnapshot && (
 				<>
 					<div className="text-text-light">·</div>
-					<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+					<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary">
 						<span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
 						已注入活动会话
 					</span>
@@ -595,7 +595,7 @@ function EmptyProjectFileState({
 	onCreate: () => void;
 }) {
 	return (
-		<div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-cream-50 px-4 py-3">
+		<div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-surface px-4 py-3">
 			<div className="text-xs leading-relaxed text-text-secondary">
 				<span className="font-semibold">{file.displayName}</span>{" "}
 				不存在。点击右侧按钮创建空文件，SDK 在下次 run 启动时会自动加载。
@@ -610,7 +610,7 @@ function EmptyProjectFileState({
 function ProjectUnavailableState() {
 	return (
 		<div className="border-t border-border px-6 py-12 text-center">
-			<div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-cream-50">
+			<div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-surface">
 				<FolderOpen className="h-5 w-5 text-text-light" strokeWidth={1.5} />
 			</div>
 			<p className="mt-3 text-sm font-medium text-text-secondary">

@@ -151,10 +151,10 @@ export function TTSProviderCard({
 							</h3>
 							<span
 								className={cn(
-									"inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-semibold",
+									"inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-semibold",
 									provider.is_enabled
 										? "bg-mint-500/10 text-mint-600"
-										: "bg-cream-200 text-text-muted",
+										: "bg-warm-200 text-text-muted",
 								)}
 							>
 								<span
@@ -177,7 +177,7 @@ export function TTSProviderCard({
 							href={template.helpUrl}
 							target="_blank"
 							rel="noreferrer"
-							className="rounded-md p-1.5 text-text-muted transition hover:bg-cream-200 hover:text-text-primary"
+							className="rounded-lg p-1.5 text-text-muted transition hover:bg-warm-200 hover:text-text-primary"
 							title="查看文档"
 						>
 							<ExternalLink className="h-3.5 w-3.5" strokeWidth={1.6} />
@@ -200,7 +200,7 @@ export function TTSProviderCard({
 										if (confirmed) onDelete();
 									});
 							}}
-							className="rounded-md p-1.5 text-text-muted transition hover:bg-error/10 hover:text-error"
+							className="rounded-lg p-1.5 text-text-muted transition hover:bg-error/10 hover:text-error"
 							title="删除该 provider"
 						>
 							<Trash2 className="h-3.5 w-3.5" strokeWidth={1.6} />
@@ -344,7 +344,7 @@ export function TTSProviderCard({
 			{/* 音色管理（仅非 system） */}
 			{!isSystem && (
 				<div className="border-t border-border">
-					<div className="flex w-full items-center justify-between gap-3 px-5 py-3 transition hover:bg-cream-50">
+					<div className="flex w-full items-center justify-between gap-3 px-5 py-3 transition hover:bg-surface">
 						<button
 							type="button"
 							onClick={() => setVoicesOpen((v) => !v)}
@@ -352,7 +352,7 @@ export function TTSProviderCard({
 							aria-expanded={voicesOpen}
 						>
 							<span
-								className="inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums"
+								className="inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-2xs font-semibold tabular-nums"
 								style={{
 									backgroundColor: `${accent}14`,
 									color: accent,
@@ -364,7 +364,7 @@ export function TTSProviderCard({
 								音色管理
 							</span>
 							{cloneCount > 0 && (
-								<span className="rounded-full bg-violetx-500/10 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-violetx-600">
+								<span className="rounded-full bg-violetx-500/10 px-1.5 py-0.5 text-2xs font-semibold uppercase tracking-wider text-violetx-600">
 									{cloneCount} 克隆
 								</span>
 							)}
@@ -376,7 +376,7 @@ export function TTSProviderCard({
 										type="button"
 										onClick={() => setShowCloneModal(true)}
 										disabled={!provider.is_enabled || !provider.api_key}
-										className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary transition hover:border-cream-500 hover:text-text-primary disabled:opacity-40"
+										className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary transition hover:border-warm-500 hover:text-text-primary disabled:opacity-40"
 									>
 										<Plus className="h-3 w-3" strokeWidth={1.8} />
 										克隆音色
@@ -385,7 +385,7 @@ export function TTSProviderCard({
 							<button
 								type="button"
 								onClick={() => setVoicesOpen((v) => !v)}
-								className="rounded-md p-1 text-text-muted transition hover:text-text-primary"
+								className="rounded-lg p-1 text-text-muted transition hover:text-text-primary"
 								aria-label={voicesOpen ? "收起音色列表" : "展开音色列表"}
 							>
 								<ChevronDown
@@ -398,7 +398,7 @@ export function TTSProviderCard({
 						</div>
 					</div>
 					{voicesOpen && (
-						<div className="border-t border-border bg-cream-50 px-5 py-4">
+						<div className="border-t border-border bg-surface px-5 py-4">
 							<TTSVoiceList
 								providerId={provider.id}
 								state={voicesState}
@@ -442,7 +442,7 @@ function FormField({
 		<div className="space-y-1.5">
 			<div className="flex items-baseline justify-between gap-2">
 				<label className="text-xs font-medium text-text-primary">{label}</label>
-				{hint && <span className="text-[11px] text-text-muted">{hint}</span>}
+				{hint && <span className="text-2xs text-text-muted">{hint}</span>}
 			</div>
 			{children}
 		</div>
@@ -473,7 +473,7 @@ function ApiBasePresetChips({
 	const isCustom = !matched && (current || "").trim().length > 0;
 	return (
 		<div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-			<span className="text-[11px] uppercase tracking-[0.12em] text-text-light">
+			<span className="text-2xs uppercase tracking-[0.12em] text-text-light">
 				常用接入
 			</span>
 			{presets.map((preset) => {
@@ -489,7 +489,7 @@ function ApiBasePresetChips({
 							"inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
 							active
 								? "shadow-[0_0_0_1px_currentColor_inset]"
-								: "border-border bg-surface text-text-secondary hover:border-cream-500 hover:text-text-primary",
+								: "border-border bg-surface text-text-secondary hover:border-warm-500 hover:text-text-primary",
 						)}
 						style={
 							active
@@ -505,8 +505,8 @@ function ApiBasePresetChips({
 						{preset.hint && (
 							<span
 								className={cn(
-									"rounded-full px-1.5 py-px text-[11px] uppercase tracking-wider",
-									active ? "opacity-80" : "bg-cream-200 text-text-muted",
+									"rounded-full px-1.5 py-px text-2xs uppercase tracking-wider",
+									active ? "opacity-80" : "bg-warm-200 text-text-muted",
 								)}
 								style={
 									active
@@ -523,7 +523,7 @@ function ApiBasePresetChips({
 				);
 			})}
 			{isCustom && (
-				<span className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] text-text-muted">
+				<span className="rounded-full border border-dashed border-border px-2 py-0.5 text-2xs text-text-muted">
 					自定义
 				</span>
 			)}

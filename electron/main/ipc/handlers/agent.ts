@@ -5,6 +5,15 @@
 import { randomUUID } from "node:crypto";
 import type { IpcMainInvokeEvent } from "electron";
 import type { DbContext } from "../../db/client";
+import type {
+	AgentArtifact,
+	AgentAuditLog,
+	AgentMessage,
+	AgentNode,
+	AgentSession,
+	AgentTask,
+	AgentToolCall,
+} from "../../../shared/types";
 import { deleteArtifactsBySession } from "./artifacts";
 
 const now = () => Date.now();
@@ -12,88 +21,6 @@ const now = () => Date.now();
 // ==================
 // 类型定义
 // ==================
-
-interface AgentSession {
-	id: string;
-	title?: string;
-	status: "active" | "archived";
-	config_json?: unknown;
-	created_at: number;
-	updated_at: number;
-}
-
-interface AgentTask {
-	id: string;
-	session_id: string;
-	goal: string;
-	status: "queued" | "running" | "succeeded" | "failed" | "canceled" | "paused";
-	error?: string;
-	budget_json?: unknown;
-	result_summary?: string;
-	created_at: number;
-	updated_at: number;
-	started_at?: number;
-	finished_at?: number;
-}
-
-interface AgentNode {
-	id: string;
-	task_id: string;
-	kind: string;
-	name: string;
-	status: string;
-	depends_on_json?: string[];
-	input_json?: unknown;
-	output_json?: unknown;
-	error?: string;
-	created_at: number;
-	updated_at: number;
-}
-
-interface AgentToolCall {
-	id: string;
-	task_id: string;
-	node_id: string;
-	tool_name: string;
-	tool_source: string;
-	mcp_server_id?: string;
-	args_json?: unknown;
-	status: string;
-	result_json?: unknown;
-	error?: string;
-	created_at: number;
-	updated_at: number;
-}
-
-interface AgentMessage {
-	id: string;
-	session_id: string;
-	task_id?: string;
-	role: string;
-	content_json: unknown;
-	agent_session_id?: string;
-	created_at: number;
-	updated_at: number;
-}
-
-interface AgentArtifact {
-	id: string;
-	task_id: string;
-	kind: string;
-	title?: string;
-	payload_json: unknown;
-	created_at: number;
-}
-
-interface AgentAuditLog {
-	id: string;
-	session_id: string;
-	task_id?: string;
-	level: string;
-	event: string;
-	payload_json?: unknown;
-	created_at: number;
-}
 
 interface AgentMemoryStats {
 	soul: { chars: number; limit: number };
@@ -855,6 +782,65 @@ export function createAgentMessageHandlers(db: DbContext) {
 		}));
 	};
 
+	/**
+	 * 就地更新一条已落库的消息。
+	 *
+	 * 流式回答边生成边落库：先 `agent_create_message` 占位，随后每次内容增量
+	 * 都回写同一行。缺了这个 handler，会话消息就只增不改——重开会话看到的是
+	 * 第一帧的残缺内容。
+	 *
+	 * 只更新显式传入的字段：`content_json` 与 `agent_session_id` 都是
+	 * `undefined` 时只刷新 `updated_at`，不会把已有值抹成 null。
+	 */
+	const updateMessage = async (
+		_event: IpcMainInvokeEvent,
+		input: {
+			id: string;
+			content_json?: unknown;
+			agent_session_id?: string;
+		},
+	): Promise<AgentMessage> => {
+		const updates: string[] = [];
+		const args: (string | number | null)[] = [];
+
+		if (input.content_json !== undefined) {
+			updates.push("content_json = ?");
+			args.push(JSON.stringify(input.content_json));
+		}
+		if (input.agent_session_id !== undefined) {
+			updates.push("agent_session_id = ?");
+			args.push(input.agent_session_id);
+		}
+
+		updates.push("updated_at = ?");
+		args.push(now());
+		args.push(input.id);
+
+		await db.client.execute({
+			sql: `UPDATE agent_messages SET ${updates.join(", ")} WHERE id = ?`,
+			args,
+		});
+
+		const rows = await db.client.execute({
+			sql: `SELECT * FROM agent_messages WHERE id = ?`,
+			args: [input.id],
+		});
+		if (rows.rows.length === 0) {
+			throw new Error(`Message not found: ${input.id}`);
+		}
+		const row = rows.rows[0];
+		return {
+			id: row.id as string,
+			session_id: row.session_id as string,
+			task_id: row.task_id as string | undefined,
+			role: row.role as string,
+			content_json: parseJson(row.content_json as string, {}),
+			agent_session_id: row.agent_session_id as string | undefined,
+			created_at: row.created_at as number,
+			updated_at: row.updated_at as number,
+		};
+	};
+
 	const createArtifact = async (
 		_event: IpcMainInvokeEvent,
 		input: {
@@ -973,6 +959,7 @@ export function createAgentMessageHandlers(db: DbContext) {
 	return {
 		agent_create_message: createMessage,
 		agent_list_messages: listMessages,
+		agent_update_message: updateMessage,
 		agent_create_artifact: createArtifact,
 		agent_list_artifacts: listArtifacts,
 		agent_create_audit_log: createAuditLog,

@@ -15,6 +15,7 @@ import {
 	normalizeAnthropicBaseUrl,
 	normalizeOpenAICompatibleBaseUrl,
 } from "../../llm/providerHttp";
+import { decryptSecret, encryptSecret } from "../../storage/secretVault";
 
 type Handler<K extends keyof IPCSchema> = (
 	event: IpcMainInvokeEvent,
@@ -621,7 +622,8 @@ function parseProvider(row: Record<string, unknown>): Provider {
 		name: row.name as string,
 		provider_type: row.provider_type as ProviderType,
 		is_enabled: Boolean(row.is_enabled),
-		api_key: row.api_key as string | undefined,
+		// 落库是 safeStorage 密文；设置面板需要明文来回显/编辑，这里统一解密。
+		api_key: decryptSecret(row.api_key as string | undefined),
 		api_base: row.api_base as string | undefined,
 		models,
 		metadata,
@@ -667,7 +669,7 @@ export function createProviderHandlers(db: DbContext) {
 						input.name,
 						input.provider_type,
 						(input.is_enabled ?? true) ? 1 : 0,
-						input.api_key ?? null,
+						encryptSecret(input.api_key) ?? null,
 						input.api_base ?? null,
 						models,
 						metadata,
@@ -695,7 +697,7 @@ export function createProviderHandlers(db: DbContext) {
 				input.name,
 				input.provider_type,
 				(input.is_enabled ?? true) ? 1 : 0,
-				input.api_key ?? null,
+				encryptSecret(input.api_key) ?? null,
 				input.api_base ?? null,
 				models,
 				metadata,

@@ -68,7 +68,7 @@ function EmotionCell({
 	const src = getMascotAsset(id, slot);
 	return (
 		<div
-			className="group relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-cream-500 hover:shadow-bai-card"
+			className="group relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border border-border bg-surface p-3 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-warm-500 hover:shadow-bai-card"
 			style={{
 				background: `linear-gradient(180deg, ${accentColor}0E 0%, var(--t-bg-surface, #FFFFFF) 60%)`,
 			}}
@@ -90,13 +90,13 @@ function EmotionCell({
 						className="h-full w-full object-contain p-0.5 transition-transform duration-150 group-hover:scale-105"
 					/>
 				) : (
-					<span className="text-[11px] text-text-light">缺位</span>
+					<span className="text-2xs text-text-light">缺位</span>
 				)}
 			</div>
 			<div className="relative flex flex-col items-center gap-0.5">
 				<span className="text-xs font-medium text-text-primary">{label}</span>
 				<span
-					className="text-[11px] uppercase tracking-[0.16em]"
+					className="text-2xs uppercase tracking-[0.16em]"
 					style={{ color: accentColor }}
 				>
 					{group === "emotion" ? "Emotion" : "State"}

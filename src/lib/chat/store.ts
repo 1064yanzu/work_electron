@@ -5,7 +5,8 @@
 //   全部会话元数据 + 活跃会话全文 + 最近 3 个会话的 LRU 全文；
 // - "localstorage"：旧路径原样保留（LZString 压缩整个 ChatState），
 //   迁移失败自动回落，配置 app_config `chat_history_backend` 可手动切换。
-import { useCallback, useRef, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
+import { createUseStoreSelector } from "../stores/createStore";
 import { parseStoredData, serializeForStorage } from "./compression";
 import {
 	CHAT_ACTIVE_SESSION_KEY,
@@ -19,6 +20,7 @@ import {
 	rowToSessionMeta,
 	writeChatHistoryBackend,
 } from "./historyBackend";
+import { ChatPersistScheduler } from "./chatPersistScheduler";
 import { ChatSqlitePersister } from "./sqlitePersistence";
 import {
 	type ChatMessage,
@@ -230,10 +232,12 @@ class ChatStore {
 	private deletedSessionTimers: Map<string, ReturnType<typeof setTimeout>> =
 		new Map();
 
-	private saveScheduled = false;
-	private lastSaveTime = 0;
-	private saveTimeout: ReturnType<typeof setTimeout> | null = null;
-	private idleSaveId: number | null = null;
+	// localStorage 后端的写盘调度（节流 + idle 队列）已抽到 chatPersistScheduler
+	private saveScheduler = new ChatPersistScheduler({
+		save: () => saveToStorage(this.state),
+		throttleMs: SAVE_THROTTLE_MS,
+		streamingThrottleMs: STREAMING_SAVE_THROTTLE_MS,
+	});
 
 	// ===== SQLite 后端（F2）=====
 	/** "pending" = 初始化中（后端未定）；期间脏标记照记，最终定型后统一处理 */
@@ -566,60 +570,8 @@ class ChatStore {
 		}
 	}
 
-	private queueIdleSave() {
-		if (this.saveScheduled) return;
-		this.saveScheduled = true;
-
-		const run = () => {
-			this.saveScheduled = false;
-			saveToStorage(this.state);
-			this.lastSaveTime = Date.now();
-		};
-
-		if (
-			typeof window !== "undefined" &&
-			typeof (window as any).requestIdleCallback === "function"
-		) {
-			// Prefer idle time to avoid blocking typing/scrolling.
-			this.idleSaveId = (window as any).requestIdleCallback(run, {
-				timeout: 1500,
-			});
-			return;
-		}
-
-		// Fallback: synchronous save.
-		run();
-	}
-
 	private scheduleSave(mode: PersistMode) {
-		if (mode === "immediate") {
-			// Save soon (but not synchronously) to avoid jank on user interactions.
-			if (this.saveTimeout !== null) {
-				clearTimeout(this.saveTimeout);
-				this.saveTimeout = null;
-			}
-			this.queueIdleSave();
-			return;
-		}
-
-		const throttleMs =
-			mode === "streaming" ? STREAMING_SAVE_THROTTLE_MS : SAVE_THROTTLE_MS;
-
-		const now = Date.now();
-		if (now - this.lastSaveTime >= throttleMs) {
-			this.queueIdleSave();
-			return;
-		}
-
-		if (this.saveTimeout !== null) return;
-
-		this.saveTimeout = setTimeout(
-			() => {
-				this.saveTimeout = null;
-				this.queueIdleSave();
-			},
-			throttleMs - (now - this.lastSaveTime),
-		);
+		this.saveScheduler.schedule(mode);
 	}
 
 	flush() {
@@ -630,23 +582,7 @@ class ChatStore {
 				return;
 			}
 
-			if (this.saveTimeout !== null) {
-				clearTimeout(this.saveTimeout);
-				this.saveTimeout = null;
-			}
-
-			if (
-				this.idleSaveId !== null &&
-				typeof window !== "undefined" &&
-				typeof (window as any).cancelIdleCallback === "function"
-			) {
-				(window as any).cancelIdleCallback(this.idleSaveId);
-			}
-			this.idleSaveId = null;
-			this.saveScheduled = false;
-
-			saveToStorage(this.state);
-			this.lastSaveTime = Date.now();
+			this.saveScheduler.flush();
 		} catch (e) {
 			console.error("Failed to flush chat sessions:", e);
 		}
@@ -1221,7 +1157,10 @@ const chatActions = {
 	ensureSessionLoaded: chatStore.ensureSessionLoaded.bind(chatStore),
 };
 
-// React Hook
+/**
+ * @deprecated 全量订阅：任何字段变化都会重渲染消费组件，流式期间每 16ms 一次。
+ * 改用 `useChatStoreSelector((s) => ...)` 精确订阅所需字段。
+ */
 export function useChatStore() {
 	const state = useSyncExternalStore(
 		chatStore.subscribe,
@@ -1236,15 +1175,13 @@ export function useChatStore() {
 	};
 }
 
-// Selector Hook - 按需订阅 chat 状态，减少无关重渲染
-export function useChatStoreSelector<T>(selector: (state: ChatState) => T): T {
-	const selectorRef = useRef(selector);
-	selectorRef.current = selector;
-
-	const getSnapshot = useCallback(
-		() => selectorRef.current(chatStore.getState()),
-		[],
-	);
-
-	return useSyncExternalStore(chatStore.subscribe, getSnapshot, getSnapshot);
-}
+/**
+ * Selector Hook - 按需订阅 chat 状态，减少无关重渲染。
+ *
+ * 复用 `createUseStoreSelector` 的两层缓存（state 引用未变则跳过 selector；
+ * 结果 Object.is 相同则保持旧引用让 React 跳过更新）。此前这里是一份没有任何
+ * 缓存的手写实现，每次 emit 都要重跑 selector，且返回新对象的 selector 会
+ * 无条件触发重渲染。
+ */
+export const useChatStoreSelector =
+	createUseStoreSelector<ChatState>(chatStore);

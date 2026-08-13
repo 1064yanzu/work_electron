@@ -19,12 +19,12 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 
 	return (
 		<div
-			className={`group relative px-3 py-2.5 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 hover:bg-warm-50/45 dark:hover:bg-cream-900/35 ${
+			className={`group relative px-3 py-2.5 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 hover:bg-warm-50/45 ${
 				isError
-					? "text-red-600 dark:text-red-300"
+					? "text-error"
 					: isRunning
-						? "text-emerald-600 dark:text-emerald-300"
-						: "text-text-primary dark:text-cream-200"
+						? "text-success"
+						: "text-text-primary"
 			}`}
 		>
 			<div className="flex items-start justify-between gap-4">
@@ -32,14 +32,14 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 					<div
 						className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 ring-1 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 							isError
-								? "bg-red-50 text-red-600 ring-red-100 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900/60"
+								? "bg-error-muted text-error ring-error/20"
 								: isRunning
-									? "bg-emerald-50 text-emerald-600 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-700/70"
-									: "bg-warm-100 text-text-muted ring-border/70 dark:bg-cream-900 dark:text-cream-400 dark:ring-cream-800"
+									? "bg-success-muted text-success ring-success/30"
+									: "bg-warm-100 text-text-muted ring-border/70"
 						}`}
 					>
 						{isRunning && (
-							<span className="absolute inset-0 rounded-md ring-2 ring-emerald-400/40 dark:ring-emerald-500/30 animate-ping" />
+							<span className="absolute inset-0 rounded-md ring-2 ring-success/30 animate-ping" />
 						)}
 						{isCreate ? (
 							<FilePlus className="w-4.5 h-4.5 relative" />
@@ -50,29 +50,28 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 
 					{/* 文本信息 */}
 					<div className="min-w-0 flex-1">
-						<h4 className="font-medium text-text-primary text-sm truncate leading-tight mb-0.5 dark:text-cream-200">
+						<h4 className="font-medium text-text-primary text-sm truncate leading-tight mb-0.5">
 							{update.fileName}
 						</h4>
 						<p
 							className={`text-xs flex items-center gap-1.5 transition-colors ${
-								isRunning
-									? "text-emerald-600 dark:text-emerald-300 font-medium"
-									: "text-text-muted"
+								isRunning ? "text-success font-medium" : "text-text-muted"
 							}`}
 						>
+							{/* 进行中指示用呼吸点（thinking-dot），弹跳动效过于喧闹 */}
 							{isRunning && (
 								<span className="inline-flex gap-0.5">
 									<span
-										className="w-1 h-1 rounded-full bg-current animate-bounce"
+										className="w-1 h-1 rounded-full bg-current animate-thinking-dot"
 										style={{ animationDelay: "0ms" }}
 									/>
 									<span
-										className="w-1 h-1 rounded-full bg-current animate-bounce"
-										style={{ animationDelay: "120ms" }}
+										className="w-1 h-1 rounded-full bg-current animate-thinking-dot"
+										style={{ animationDelay: "150ms" }}
 									/>
 									<span
-										className="w-1 h-1 rounded-full bg-current animate-bounce"
-										style={{ animationDelay: "240ms" }}
+										className="w-1 h-1 rounded-full bg-current animate-thinking-dot"
+										style={{ animationDelay: "300ms" }}
 									/>
 								</span>
 							)}
@@ -93,18 +92,18 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 						</span>
 					)}
 					{isRunning ? (
-						<Loader2 className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-300" />
+						<Loader2 className="w-4 h-4 animate-spin text-success" />
 					) : isError ? (
-						<X className="w-4 h-4 text-red-500 dark:text-red-300" />
+						<X className="w-4 h-4 text-error" />
 					) : (
-						<Check className="w-4 h-4 text-emerald-600 dark:text-emerald-300 animate-in zoom-in-50 duration-150" />
+						<Check className="w-4 h-4 text-success animate-in zoom-in-50 duration-150" />
 					)}
 				</div>
 			</div>
 			{/* 进度条：running 时显示 indeterminate 动画 */}
 			{isRunning && (
-				<div className="absolute left-0 right-0 bottom-0 h-0.5 overflow-hidden bg-emerald-100/40 dark:bg-emerald-900/30">
-					<span className="block h-full w-1/3 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-file-progress" />
+				<div className="absolute left-0 right-0 bottom-0 h-0.5 overflow-hidden bg-success/10">
+					<span className="block h-full w-1/3 bg-success rounded-full animate-file-progress" />
 				</div>
 			)}
 		</div>

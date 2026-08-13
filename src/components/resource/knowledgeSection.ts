@@ -18,7 +18,7 @@ export const KNOWLEDGE_TABS = [
 export type KnowledgeTabId = (typeof KNOWLEDGE_TABS)[number]["id"];
 
 /** 资料库的二级页：从资料库钻进去的，仍算在「知识」区里（rail 保持高亮） */
-const KNOWLEDGE_SUB_VIEWS = ["detail", "research", "websearch", "agent"];
+const KNOWLEDGE_SUB_VIEWS = ["detail", "research"];
 
 const STORAGE_KEY = "left_sidebar_knowledge_tab";
 

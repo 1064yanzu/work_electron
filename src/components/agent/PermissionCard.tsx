@@ -34,6 +34,7 @@ import {
 	type ToolRiskLevel,
 	type ToolType,
 } from "../../lib/agent/types";
+import { hasOpenOverlay } from "../../lib/overlayStack";
 
 // 工具类型到图标的映射
 const TOOL_ICON_MAP: Record<ToolType, LucideIcon> = {
@@ -76,19 +77,19 @@ const RISK_CONFIG: Record<
 	L0: {
 		icon: ShieldCheck,
 		color: "text-success",
-		bgColor: "bg-success/8 dark:bg-emerald-900/20",
+		bgColor: "bg-success/8",
 		label: "低风险",
 	},
 	L1: {
 		icon: Shield,
-		color: "text-peach-500",
-		bgColor: "bg-peach-100 dark:bg-amber-900/20",
+		color: "text-warning",
+		bgColor: "bg-warning-muted",
 		label: "中风险",
 	},
 	L2: {
 		icon: ShieldAlert,
 		color: "text-error",
-		bgColor: "bg-[rgba(181,51,51,0.08)] dark:bg-red-900/20",
+		bgColor: "bg-error-muted",
 		label: "高风险",
 	},
 };
@@ -154,10 +155,16 @@ export function PermissionCard({
 		});
 	};
 
-	// 键盘快捷键：Y/Enter = allow, N/Esc = deny, A = allow + remember
+	// 键盘快捷键：Y = allow, N = deny, A = allow + remember。
+	// 刻意不映射 Enter/Esc：Enter 是聊天里最廉价的按键，习惯性回车不该放行
+	// 一个可能是 L2 风险级的操作；Esc 则与弹层关闭语义冲突（见 overlayStack）。
+	// 批准/拒绝必须是明确的、不与其它高频键复用的按键（对齐 Codex 审批交互）。
 	useEffect(() => {
 		if (!isFocused) return;
 		const handler = (e: KeyboardEvent) => {
+			if (e.defaultPrevented) return;
+			// 任何弹层打开时让位，避免「想关速查表结果拒绝了权限」
+			if (hasOpenOverlay()) return;
 			const target = e.target as HTMLElement | null;
 			if (target) {
 				const tag = target.tagName?.toUpperCase();
@@ -171,12 +178,12 @@ export function PermissionCard({
 			}
 			if (e.metaKey || e.ctrlKey || e.altKey) return;
 			const key = e.key;
-			if (key === "y" || key === "Y" || key === "Enter") {
+			if (key === "y" || key === "Y") {
 				e.preventDefault();
 				handleAllow();
 				return;
 			}
-			if (key === "n" || key === "N" || key === "Escape") {
+			if (key === "n" || key === "N") {
 				e.preventDefault();
 				handleDeny();
 				return;
@@ -195,12 +202,12 @@ export function PermissionCard({
 
 	return (
 		<div
-			className={`rounded-xl border ${riskConfig.bgColor} border-black/5 dark:border-white/10 overflow-hidden border-l-[3px] ${
+			className={`rounded-xl border ${riskConfig.bgColor} overflow-hidden ${
 				request.riskLevel === "L2"
-					? "border-l-error/60"
+					? "border-error/30"
 					: request.riskLevel === "L1"
-						? "border-l-peach-500/70"
-						: "border-l-success/50"
+						? "border-warning/30"
+						: "border-border"
 			}`}
 		>
 			{/* 头部 */}
@@ -214,9 +221,7 @@ export function PermissionCard({
 					{/* 信息 */}
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 mb-1">
-							<span className="font-medium text-text-primary dark:text-cream-200">
-								{toolName}
-							</span>
+							<span className="font-medium text-text-primary">{toolName}</span>
 							<span
 								className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${riskConfig.bgColor} ${riskConfig.color}`}
 							>
@@ -261,8 +266,8 @@ export function PermissionCard({
 					<div
 						className={`mx-4 mb-3 px-3 py-2 rounded-lg flex items-start gap-2 text-xs ${
 							request.scope.destructiveLevel === "dangerous"
-								? "bg-[rgba(181,51,51,0.08)]/80 dark:bg-red-950/30 text-error dark:text-error"
-								: "bg-peach-100/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300"
+								? "bg-error/8 text-error"
+								: "bg-warning-muted text-warning"
 						}`}
 					>
 						<FolderOpen className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
@@ -297,7 +302,7 @@ export function PermissionCard({
 						type="checkbox"
 						checked={rememberForSession}
 						onChange={(e) => setRememberForSession(e.target.checked)}
-						className="rounded border-cream-400 dark:border-cream-500"
+						className="rounded border-border"
 					/>
 					<span className="text-text-secondary">本次会话记住</span>
 				</label>
@@ -306,7 +311,7 @@ export function PermissionCard({
 						type="checkbox"
 						checked={rememberForTool}
 						onChange={(e) => setRememberForTool(e.target.checked)}
-						className="rounded border-cream-400 dark:border-cream-500"
+						className="rounded border-border"
 					/>
 					<span className="text-text-secondary">对此工具记住</span>
 				</label>
@@ -317,7 +322,7 @@ export function PermissionCard({
 				<button
 					onClick={handleDeny}
 					className="flex-1 py-3 text-sm font-medium text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 transition-colors"
-					title="N / Esc"
+					title="N"
 				>
 					拒绝 (N)
 				</button>
@@ -332,8 +337,8 @@ export function PermissionCard({
 				<div className="w-px bg-black/10 dark:bg-white/10" />
 				<button
 					onClick={handleAllow}
-					className="flex-1 py-3 text-sm font-medium text-success hover:bg-success/8 dark:hover:bg-emerald-900/20 transition-colors"
-					title="Y / Enter"
+					className="flex-1 py-3 text-sm font-medium text-success hover:bg-success/8 transition-colors"
+					title="Y"
 				>
 					允许 (Y)
 				</button>

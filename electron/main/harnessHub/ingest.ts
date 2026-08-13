@@ -33,6 +33,7 @@ import type {
 	CanonicalSession,
 	HarnessKind,
 } from "./types";
+import { sendToLiveWebContents } from "../utils/safeWebContentsSend";
 
 const logger = createLogger();
 
@@ -484,10 +485,14 @@ class HarnessIngestWatcher {
 			const r = await ingestFile(db, source, filePath, cursors.get(filePath));
 			if (!r.updated) return;
 			try {
-				this.getMainWindow?.()?.webContents.send("harness-session-updated", {
-					harness: source.harness,
-					origin_path: filePath,
-				});
+				sendToLiveWebContents(
+					this.getMainWindow?.(),
+					"harness-session-updated",
+					{
+						harness: source.harness,
+						origin_path: filePath,
+					},
+				);
 			} catch {
 				// 窗口已销毁：忽略
 			}

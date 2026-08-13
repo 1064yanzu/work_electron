@@ -6,6 +6,7 @@ import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 import type { IPCSchema } from "../../../shared/ipc-schema";
 import { getTerminalService } from "../../services/terminalService";
 import { BatchedSender } from "../../utils/batchedSender";
+import { sendToLiveWebContents } from "../../utils/safeWebContentsSend";
 
 /**
  * 远控 pty 的 terminalId 前缀。
@@ -82,7 +83,7 @@ export function createTerminalHandlers(deps: {
 			terminalDataSender.flush();
 			const win = deps.getMainWindow();
 			if (win && !win.isDestroyed()) {
-				win.webContents.send("terminal-exit", {
+				sendToLiveWebContents(win, "terminal-exit", {
 					id: input.id,
 					exitCode,
 					signal,

@@ -10,6 +10,7 @@
 
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { isTopOverlay, popOverlay, pushOverlay } from "../../lib/overlayStack";
 import { cn } from "../../lib/utils";
 
 export interface ContextMenuItem {
@@ -95,35 +96,40 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 		};
 	}, [x, y]);
 
-	// 点击外部关闭
+	// 点击外部关闭：下一帧再挂监听（跳过打开菜单的那次右键事件），
+	// 替代原先 100ms 定时器 —— 定时器窗口内点击别处菜单关不掉
 	useEffect(() => {
-		const handleClickOutside = (e: MouseEvent) => {
+		const handlePointerDown = (e: PointerEvent) => {
 			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
 				onClose();
 			}
 		};
 
-		// 延迟添加监听,避免右键事件传播导致立即触发
-		const timer = setTimeout(() => {
-			document.addEventListener("mousedown", handleClickOutside);
-		}, 100);
+		const raf = requestAnimationFrame(() => {
+			document.addEventListener("pointerdown", handlePointerDown);
+		});
 
 		return () => {
-			clearTimeout(timer);
-			document.removeEventListener("mousedown", handleClickOutside);
+			cancelAnimationFrame(raf);
+			document.removeEventListener("pointerdown", handlePointerDown);
 		};
 	}, [onClose]);
 
-	// ESC 键关闭
+	// ESC 键关闭 —— 走全局 overlay 栈，只有位于栈顶时才消费
 	useEffect(() => {
+		const overlayId = pushOverlay();
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Escape") {
-				onClose();
-			}
+			if (e.key !== "Escape" || e.defaultPrevented) return;
+			if (!isTopOverlay(overlayId)) return;
+			e.preventDefault();
+			onClose();
 		};
 
 		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
+		return () => {
+			popOverlay(overlayId);
+			document.removeEventListener("keydown", handleKeyDown);
+		};
 	}, [onClose]);
 
 	const handleItemClick = (item: ContextMenuItem) => {
@@ -210,15 +216,10 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 			data-native-overlay="true"
 			className={cn(
 				"fixed z-[9999] min-w-[200px]",
-				// 高级毛玻璃效果
-				"bg-cream-50/90 dark:bg-cream-900/90",
-				"backdrop-blur-md backdrop-saturate-150",
-				// 优雅的边框和阴影
-				"rounded-2xl border border-cream-400 dark:border-cream-500",
+				"bg-surface/95 backdrop-blur-md backdrop-saturate-150",
+				"rounded-2xl border border-border",
 				"shadow-bai-pop",
-				// 内边距
 				"py-1.5",
-				// 动画
 				"animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150",
 			)}
 			style={{ left: x, top: y }}
@@ -230,7 +231,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 					return (
 						<div
 							key={`separator-${index}`}
-							className="h-px bg-warm-300/60 dark:bg-cream-700/60 my-1.5 mx-2"
+							className="h-px bg-border/60 my-1.5 mx-2"
 						/>
 					);
 				}
@@ -259,25 +260,19 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 						data-menu-index={index}
 						tabIndex={index === activeIndex ? 0 : -1}
 						className={cn(
-							"w-full flex items-center gap-3 px-3 py-2 text-sm transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150",
+							// 菜单项保持安静：hover 只换底色，不做缩放/图标放大/侧条指示器
+							"w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-100",
 							"group/item relative",
 							item.disabled
 								? "text-text-light cursor-not-allowed opacity-50"
 								: item.danger
-									? "text-error dark:text-error hover:bg-[rgba(181,51,51,0.08)]/80 dark:hover:bg-red-900/20"
-									: "text-text-secondary dark:text-cream-200 hover:bg-warm-200/80",
-							// 高级 hover 效果
-							!item.disabled && "hover:scale-[1.02] active:scale-[0.98]",
+									? "text-error hover:bg-error-muted"
+									: "text-text-secondary hover:bg-warm-200/80 hover:text-text-primary",
 						)}
 					>
 						{/* 图标 */}
 						{item.icon && (
-							<span
-								className={cn(
-									"w-4 h-4 flex items-center justify-center flex-shrink-0 transition-transform duration-150",
-									!item.disabled && "group-hover/item:scale-110",
-								)}
-							>
+							<span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
 								{item.icon}
 							</span>
 						)}
@@ -290,11 +285,6 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 							<span className="text-xs text-text-light font-mono">
 								{item.shortcut}
 							</span>
-						)}
-
-						{/* Hover 指示器 */}
-						{!item.disabled && !item.danger && (
-							<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-focus rounded-r-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 group-hover/item:h-4" />
 						)}
 					</button>
 				);

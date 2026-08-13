@@ -34,11 +34,11 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 	primary: cn(
 		"bg-primary text-primary-foreground shadow-bai-card",
 		"hover:opacity-90",
-		"disabled:bg-cream-300 disabled:text-text-light disabled:shadow-none",
+		"disabled:bg-warm-200 disabled:text-text-light disabled:shadow-none",
 	),
 	secondary: cn(
 		"border border-border bg-surface text-text-secondary shadow-[0_1px_2px_rgba(0,0,0,0.03)]",
-		"hover:border-cream-500 hover:bg-warm-50 hover:text-text-primary hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
+		"hover:border-warm-500 hover:bg-warm-50 hover:text-text-primary hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
 	),
 	ghost: cn(
 		"border border-transparent text-text-secondary",
@@ -50,7 +50,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 	),
 	"danger-solid": cn("bg-error text-white shadow-bai-card", "hover:opacity-90"),
 	subtle: cn(
-		"border border-border bg-cream-50 text-text-secondary",
+		"border border-border bg-surface text-text-secondary",
 		"hover:bg-warm-50 hover:text-text-primary",
 	),
 };
@@ -126,7 +126,7 @@ interface SettingsBadgeProps {
 }
 
 const TONE_CLASSES: Record<BadgeTone, string> = {
-	neutral: "bg-cream-200 text-text-muted border-cream-400/60",
+	neutral: "bg-warm-200 text-text-muted border-border/60",
 	primary: "bg-primary/10 text-primary border-primary/20",
 	success: "bg-mint-300/30 text-mint-600 border-mint-300/60",
 	warning: "bg-peach-100 text-peach-500 border-peach-200/70",
@@ -157,7 +157,7 @@ export function SettingsBadge({
 		<span
 			className={cn(
 				"inline-flex items-center gap-1 rounded-full border font-semibold",
-				size === "xs" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs",
+				size === "xs" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
 				TONE_CLASSES[tone],
 				className,
 			)}
@@ -191,7 +191,7 @@ interface SettingsHintProps {
 }
 
 const HINT_TONE: Record<HintTone, string> = {
-	info: "border-cream-400 bg-cream-50 text-text-secondary",
+	info: "border-border bg-surface text-text-secondary",
 	warning: "border-peach-200/70 bg-peach-100/60",
 	success: "border-mint-300/60 bg-mint-300/15",
 	error: "border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)]",

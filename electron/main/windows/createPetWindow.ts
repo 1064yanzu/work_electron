@@ -1,6 +1,7 @@
 import path from "node:path";
 import { BrowserWindow, screen } from "electron";
 import { getPetWindowSettings } from "../storage/petWindowSettings";
+import { markWebContentsTrusted } from "../security/webContentsGuard";
 
 export function createPetWindow({
 	preloadPath,
@@ -69,6 +70,9 @@ export function createPetWindow({
 			sandbox: true,
 		},
 	});
+
+	// 桌宠窗口同样挂 preload，导航约束与主窗口一致。
+	markWebContentsTrusted(win.webContents);
 
 	// 跨所有桌面空间可见（含全屏 Space）
 	win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });

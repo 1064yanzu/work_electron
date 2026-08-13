@@ -1,7 +1,14 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
 	"linter": {
-		"enabled": false
+		"enabled": true,
+		"rules": {
+			"recommended": false,
+			"correctness": {
+				"useHookAtTopLevel": "error",
+				"useExhaustiveDependencies": "warn"
+			}
+		}
 	},
 	"assist": {
 		"enabled": false

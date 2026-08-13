@@ -138,7 +138,7 @@ function SystemPromptCard({
 		<div className="rounded-2xl border border-border bg-surface overflow-hidden">
 			<div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
 				<div className="flex items-start gap-3 min-w-0">
-					<span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-cream-100 text-text-muted">
+					<span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-warm-200 text-text-muted">
 						<Icon className="h-4 w-4" strokeWidth={1.6} />
 					</span>
 					<div className="min-w-0">
@@ -147,12 +147,12 @@ function SystemPromptCard({
 								{config.label}
 							</h4>
 							{isModified && (
-								<span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-medium">
+								<span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-2xs font-medium">
 									已自定义
 								</span>
 							)}
 							{isDirty && (
-								<span className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 text-[11px] font-medium">
+								<span className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 text-2xs font-medium">
 									未提交
 								</span>
 							)}
@@ -162,13 +162,13 @@ function SystemPromptCard({
 						</p>
 						{config.variables.length > 0 && (
 							<div className="mt-2 flex items-center gap-1.5 flex-wrap">
-								<span className="text-[11px] uppercase tracking-[0.14em] text-text-muted">
+								<span className="text-2xs uppercase tracking-[0.14em] text-text-muted">
 									变量
 								</span>
 								{config.variables.map((v) => (
 									<code
 										key={v}
-										className="inline-flex items-center rounded-md border border-border bg-cream-100 px-1.5 py-0.5 font-mono text-[11px] text-text-secondary"
+										className="inline-flex items-center rounded-md border border-border bg-warm-200 px-1.5 py-0.5 font-mono text-2xs text-text-secondary"
 									>
 										{`{${v}}`}
 									</code>

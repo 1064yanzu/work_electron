@@ -66,7 +66,7 @@ const Card = ({
 }) => (
 	<div
 		onClick={onClick}
-		className={`bg-surface rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-cream-400/80 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out ${className}`}
+		className={`bg-surface rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-warm-500/80 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out ${className}`}
 	>
 		{children}
 	</div>
@@ -83,7 +83,7 @@ const Badge = ({
 	className?: string;
 }) => (
 	<span
-		className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border ${className}`}
+		className={`inline-flex items-center px-2 py-0.5 rounded-lg text-2xs font-medium border ${className}`}
 	>
 		{children}
 	</span>
@@ -261,7 +261,7 @@ export function AgentModelScenarioSettings() {
 			{/* Global Settings Group */}
 			<div className="space-y-4">
 				{/* Default Model & Smart Switch */}
-				<div className="bg-surface rounded-xl border border-border/60 shadow-sm p-1 grid grid-cols-2 divide-x divide-cream-100">
+				<div className="bg-surface rounded-xl border border-border/60 shadow-sm p-1 grid grid-cols-2 divide-x divide-border">
 					<div className="p-4 flex flex-col justify-between">
 						<div className="mb-2">
 							<div className="flex items-center gap-2 font-medium text-text-primary text-sm">
@@ -314,7 +314,7 @@ export function AgentModelScenarioSettings() {
 							</p>
 						</div>
 						<span
-							className={`text-[11px] font-medium px-2 py-1 rounded inline-block w-fit mt-3 ${settings.enableSmartScenarioSwitch ? "bg-primary/10 text-primary" : "bg-warm-200 text-text-light"}`}
+							className={`text-2xs font-medium px-2 py-1 rounded-lg inline-block w-fit mt-3 ${settings.enableSmartScenarioSwitch ? "bg-primary/10 text-primary" : "bg-warm-200 text-text-light"}`}
 						>
 							{settings.enableSmartScenarioSwitch
 								? "已启用 · 动态优化"
@@ -362,12 +362,12 @@ export function AgentModelScenarioSettings() {
 									<label className="text-xs font-medium text-text-muted">
 										压缩阈值
 									</label>
-									<span className="text-xs font-mono font-medium text-text-primary bg-warm-200 px-1.5 py-0.5 rounded">
+									<span className="text-xs font-mono font-medium text-text-primary bg-warm-200 px-1.5 py-0.5 rounded-lg">
 										{(settings.contextCompression.threshold / 1000).toFixed(0)}k
 									</span>
 								</div>
 								<div className="flex items-center gap-2">
-									<span className="text-[11px] text-text-light">4k</span>
+									<span className="text-2xs text-text-light">4k</span>
 									<input
 										type="range"
 										min="4000"
@@ -381,7 +381,7 @@ export function AgentModelScenarioSettings() {
 										}
 										className="flex-1 h-1.5 bg-warm-200 rounded-lg appearance-none cursor-pointer accent-primary"
 									/>
-									<span className="text-[11px] text-text-light">100k</span>
+									<span className="text-2xs text-text-light">100k</span>
 								</div>
 							</div>
 							{/* Strategy */}
@@ -394,7 +394,7 @@ export function AgentModelScenarioSettings() {
 										onClick={() =>
 											store.updateContextCompression({ strategy: "summary" })
 										}
-										className={`flex-1 py-1.5 text-[11px] font-medium rounded transition-[color,background-color,border-color,box-shadow] ${settings.contextCompression.strategy === "summary" ? "bg-surface shadow-sm text-text-primary" : "text-text-muted hover:text-text-secondary"}`}
+										className={`flex-1 py-1.5 text-2xs font-medium rounded-lg transition-[color,background-color,border-color,box-shadow] ${settings.contextCompression.strategy === "summary" ? "bg-surface shadow-sm text-text-primary" : "text-text-muted hover:text-text-secondary"}`}
 									>
 										智能摘要
 									</button>
@@ -402,7 +402,7 @@ export function AgentModelScenarioSettings() {
 										onClick={() =>
 											store.updateContextCompression({ strategy: "selection" })
 										}
-										className={`flex-1 py-1.5 text-[11px] font-medium rounded transition-[color,background-color,border-color,box-shadow] ${settings.contextCompression.strategy === "selection" ? "bg-surface shadow-sm text-text-primary" : "text-text-muted hover:text-text-secondary"}`}
+										className={`flex-1 py-1.5 text-2xs font-medium rounded-lg transition-[color,background-color,border-color,box-shadow] ${settings.contextCompression.strategy === "selection" ? "bg-surface shadow-sm text-text-primary" : "text-text-muted hover:text-text-secondary"}`}
 									>
 										关键筛选
 									</button>
@@ -422,7 +422,7 @@ export function AgentModelScenarioSettings() {
 							setIsAddModalOpen(true);
 							resetForm();
 						}}
-						className="group flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-dark-muted rounded-lg hover:bg-dark-surface transition-colors shadow-sm hover:shadow"
+						className="group flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary-hover transition-colors shadow-sm hover:shadow"
 					>
 						<Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
 						添加场景
@@ -473,7 +473,7 @@ export function AgentModelScenarioSettings() {
 														: SCENARIO_LABELS[config.scenario]}
 												</span>
 												{config.scenario === "custom" && (
-													<Badge className="bg-warm-200 text-text-muted border-border text-[11px] shrink-0">
+													<Badge className="bg-warm-200 text-text-muted border-border text-2xs shrink-0">
 														自定义
 													</Badge>
 												)}
@@ -573,7 +573,7 @@ export function AgentModelScenarioSettings() {
 										value={customScenarioName}
 										onChange={(e) => setCustomScenarioName(e.target.value)}
 										placeholder="例如: 创意写作 creative_writing"
-										className="w-full px-4 py-2.5 bg-warm-50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cream-900/5 transition-[color,background-color,border-color,box-shadow]"
+										className="w-full px-4 py-2.5 bg-warm-50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/5 transition-[color,background-color,border-color,box-shadow]"
 									/>
 									<p className="text-xs text-text-light px-1">
 										输入唯一的场景标识符（推荐英文），Agent
@@ -622,7 +622,7 @@ export function AgentModelScenarioSettings() {
 								!selectedModelId ||
 								(activeTab === "custom" && !customScenarioName)
 							}
-							className="px-6 py-2 text-xs font-medium bg-dark-muted text-white rounded-lg hover:bg-dark-surface disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+							className="px-6 py-2 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
 						>
 							确认添加
 						</button>

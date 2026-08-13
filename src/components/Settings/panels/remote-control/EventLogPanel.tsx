@@ -94,7 +94,7 @@ export function EventLogPanel() {
 			>
 				<ScrollText className="h-4 w-4" />
 				<span>活动日志</span>
-				<span className="ml-auto inline-flex items-center rounded-full bg-warm-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+				<span className="ml-auto inline-flex items-center rounded-full bg-warm-300 px-2 py-0.5 text-2xs font-semibold tabular-nums">
 					{logs.length}
 				</span>
 				<ChevronDown
@@ -125,7 +125,7 @@ export function EventLogPanel() {
 											{formatTime(log.timestamp)}
 										</span>
 										<span
-											className={`shrink-0 inline-flex items-center justify-center w-9 rounded px-1 py-0.5 text-[11px] font-bold uppercase ${style.badge}`}
+											className={`shrink-0 inline-flex items-center justify-center w-9 rounded-lg px-1 py-0.5 text-2xs font-bold uppercase ${style.badge}`}
 										>
 											{LEVEL_LABELS[log.level] ?? log.level}
 										</span>

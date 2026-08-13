@@ -10,7 +10,10 @@ import {
 	normalizeOpenAICompatibleBaseUrl,
 } from "./providerHttp";
 import { parseLlmError, formatLlmErrorForStream } from "./llmErrors";
+import { formatUpstreamErrorDetail } from "./protocol/errors";
+import { createSseParser, readTextStream } from "./protocol/sse";
 import { BatchedSender } from "../utils/batchedSender";
+import { decryptSecret } from "../storage/secretVault";
 import { combineAbortSignals, llmStreamRegistry } from "./streamRegistry";
 
 const DEFAULT_MODEL = "gpt-4o";
@@ -151,75 +154,6 @@ function withJitter(baseMs: number): number {
 	return Math.round(baseMs * (0.85 + Math.random() * 0.3));
 }
 
-async function readTextStream(
-	body: ReadableStream<Uint8Array>,
-	onText: (text: string) => void,
-): Promise<void> {
-	const reader = body.getReader();
-	const decoder = new TextDecoder();
-	let buffer = "";
-	while (true) {
-		const { value, done } = await reader.read();
-		if (done) break;
-		buffer += decoder.decode(value, { stream: true });
-		// Flush by lines to keep latency low while keeping parsers simple.
-		let idx: number;
-		while ((idx = buffer.indexOf("\n")) !== -1) {
-			const line = buffer.slice(0, idx + 1);
-			buffer = buffer.slice(idx + 1);
-			onText(line);
-		}
-	}
-	if (buffer) onText(buffer);
-}
-
-function createSseParser(
-	onEvent: (data: string) => void,
-): (text: string) => void {
-	let buf = "";
-	return (text: string) => {
-		buf += text;
-		while (true) {
-			const sep = buf.indexOf("\n\n");
-			if (sep === -1) break;
-			const block = buf.slice(0, sep);
-			buf = buf.slice(sep + 2);
-
-			// 单次扫描切分行，避免每个 SSE block 都生成 split/map/filter 三层临时数组
-			let cursor = 0;
-			while (cursor < block.length) {
-				const nl = block.indexOf("\n", cursor);
-				const end = nl === -1 ? block.length : nl;
-				let lineEnd = end;
-				while (
-					lineEnd > cursor &&
-					(block.charCodeAt(lineEnd - 1) === 13 /* \r */ ||
-						block.charCodeAt(lineEnd - 1) === 32 /* space */ ||
-						block.charCodeAt(lineEnd - 1) === 9) /* \t */
-				) {
-					lineEnd--;
-				}
-				if (lineEnd > cursor && block.charCodeAt(cursor) === 100 /* d */) {
-					if (block.startsWith("data:", cursor)) {
-						let dataStart = cursor + 5; /* "data:".length */
-						while (
-							dataStart < lineEnd &&
-							(block.charCodeAt(dataStart) === 32 ||
-								block.charCodeAt(dataStart) === 9)
-						) {
-							dataStart++;
-						}
-						if (dataStart < lineEnd) {
-							onEvent(block.slice(dataStart, lineEnd));
-						}
-					}
-				}
-				cursor = nl === -1 ? block.length : nl + 1;
-			}
-		}
-	};
-}
-
 function tryParseJson(raw: string): any | null {
 	try {
 		return JSON.parse(raw);
@@ -309,61 +243,64 @@ function parseOpenAIStyleResult(raw: string): LlmCallResult {
 
 	let content = "";
 	let usage: LlmCallResult["usage"];
-	const parse = createSseParser((data) => {
-		if (data === "[DONE]") return;
-		const chunk = tryParseJson(data);
-		if (!chunk) return;
+	const parse = createSseParser(
+		(data) => {
+			if (data === "[DONE]") return;
+			const chunk = tryParseJson(data);
+			if (!chunk) return;
 
-		if (chunk?.type === "response.output_text.delta") {
-			if (typeof chunk.delta === "string") content += chunk.delta;
-		}
+			if (chunk?.type === "response.output_text.delta") {
+				if (typeof chunk.delta === "string") content += chunk.delta;
+			}
 
-		if (chunk?.type === "response.done") {
-			const responseUsage = chunk?.response?.usage;
-			if (responseUsage && typeof responseUsage === "object") {
-				const inputTokens = Number(responseUsage.input_tokens ?? 0);
-				const outputTokens = Number(responseUsage.output_tokens ?? 0);
+			if (chunk?.type === "response.done") {
+				const responseUsage = chunk?.response?.usage;
+				if (responseUsage && typeof responseUsage === "object") {
+					const inputTokens = Number(responseUsage.input_tokens ?? 0);
+					const outputTokens = Number(responseUsage.output_tokens ?? 0);
+					usage = {
+						prompt_tokens: inputTokens,
+						completion_tokens: outputTokens,
+						total_tokens: Number(
+							responseUsage.total_tokens ?? inputTokens + outputTokens,
+						),
+					};
+				}
+			}
+
+			if (Array.isArray(chunk?.choices)) {
+				for (const choice of chunk.choices) {
+					const deltaContent = choice?.delta?.content;
+					if (typeof deltaContent === "string") {
+						content += deltaContent;
+					}
+					const messageContent = choice?.message?.content;
+					if (typeof messageContent === "string") {
+						content += messageContent;
+					} else {
+						content += extractTextPartsFromContent(messageContent).join("");
+					}
+				}
+			}
+
+			if (chunk?.usage && typeof chunk.usage === "object") {
+				const promptTokens = Number(
+					chunk.usage.prompt_tokens ?? chunk.usage.input_tokens ?? 0,
+				);
+				const completionTokens = Number(
+					chunk.usage.completion_tokens ?? chunk.usage.output_tokens ?? 0,
+				);
 				usage = {
-					prompt_tokens: inputTokens,
-					completion_tokens: outputTokens,
+					prompt_tokens: promptTokens,
+					completion_tokens: completionTokens,
 					total_tokens: Number(
-						responseUsage.total_tokens ?? inputTokens + outputTokens,
+						chunk.usage.total_tokens ?? promptTokens + completionTokens,
 					),
 				};
 			}
-		}
-
-		if (Array.isArray(chunk?.choices)) {
-			for (const choice of chunk.choices) {
-				const deltaContent = choice?.delta?.content;
-				if (typeof deltaContent === "string") {
-					content += deltaContent;
-				}
-				const messageContent = choice?.message?.content;
-				if (typeof messageContent === "string") {
-					content += messageContent;
-				} else {
-					content += extractTextPartsFromContent(messageContent).join("");
-				}
-			}
-		}
-
-		if (chunk?.usage && typeof chunk.usage === "object") {
-			const promptTokens = Number(
-				chunk.usage.prompt_tokens ?? chunk.usage.input_tokens ?? 0,
-			);
-			const completionTokens = Number(
-				chunk.usage.completion_tokens ?? chunk.usage.output_tokens ?? 0,
-			);
-			usage = {
-				prompt_tokens: promptTokens,
-				completion_tokens: completionTokens,
-				total_tokens: Number(
-					chunk.usage.total_tokens ?? promptTokens + completionTokens,
-				),
-			};
-		}
-	});
+		},
+		{ joinMultilineData: false },
+	);
 
 	parse(raw.endsWith("\n\n") ? raw : `${raw}\n\n`);
 	return { content, usage };
@@ -485,7 +422,7 @@ async function getEnabledProviders(db: DbContext): Promise<Provider[]> {
 					name: row.name as string,
 					provider_type: row.provider_type as ProviderType,
 					is_enabled: true,
-					api_key: row.api_key as string | undefined,
+					api_key: decryptSecret(row.api_key as string | undefined),
 					api_base: row.api_base as string | undefined,
 					models,
 					metadata,
@@ -542,12 +479,19 @@ function normalizeApiKeys(raw?: string): string[] {
 		.filter(Boolean);
 }
 
+/**
+ * 解析 provider 实际要用的 API key —— 全应用的**统一解密出口**。
+ *
+ * 落库的 `api_key` 是 safeStorage 密文（见 `storage/secretVault.ts`），也可能是
+ * 加密迁移之前留下的明文；`decryptSecret` 对两者都幂等。多 key 轮询（用换行/逗号
+ * 分隔）在解密之后再拆分。
+ */
 export async function resolveProviderApiKey(
 	db: DbContext,
 	providerId: string,
 	raw?: string,
 ): Promise<string | undefined> {
-	const keys = normalizeApiKeys(raw);
+	const keys = normalizeApiKeys(decryptSecret(raw) || undefined);
 	if (keys.length === 0) return undefined;
 	if (keys.length === 1) return keys[0];
 
@@ -658,7 +602,9 @@ async function callOpenAIResponses(
 			await sleep(delay);
 			continue;
 		}
-		throw new Error(`LLM call failed: ${response.status} - ${lastErrorText}`);
+		throw new Error(
+			`LLM call failed: ${formatUpstreamErrorDetail(response.status, lastErrorText)}`,
+		);
 	}
 
 	if (!response || !response.ok) {
@@ -707,7 +653,7 @@ async function callOpenAIResponsesStreamingFallback(opts: {
 	if (!response.ok) {
 		const errorText = await response.text();
 		throw new Error(
-			`LLM call failed (stream fallback): ${response.status} - ${errorText}`,
+			`LLM call failed (stream fallback): ${formatUpstreamErrorDetail(response.status, errorText)}`,
 		);
 	}
 
@@ -716,32 +662,35 @@ async function callOpenAIResponsesStreamingFallback(opts: {
 
 	let content = "";
 	let usage: StreamChunk["usage"] | undefined;
-	const parse = createSseParser((data) => {
-		if (data === "[DONE]") return;
-		try {
-			const json = JSON.parse(data) as any;
-			const eventType = json?.type as string | undefined;
-			if (eventType === "response.output_text.delta") {
-				const delta = typeof json.delta === "string" ? json.delta : "";
-				if (delta) content += delta;
-			} else if (eventType === "response.done") {
-				const u = json?.response?.usage;
-				if (u && typeof u === "object") {
-					const inputT = Number(u.input_tokens ?? 0);
-					const outputT = Number(u.output_tokens ?? 0);
-					usage = {
-						prompt_tokens: inputT,
-						completion_tokens: outputT,
-						total_tokens: u.total_tokens
-							? Number(u.total_tokens)
-							: inputT + outputT,
-					};
+	const parse = createSseParser(
+		(data) => {
+			if (data === "[DONE]") return;
+			try {
+				const json = JSON.parse(data) as any;
+				const eventType = json?.type as string | undefined;
+				if (eventType === "response.output_text.delta") {
+					const delta = typeof json.delta === "string" ? json.delta : "";
+					if (delta) content += delta;
+				} else if (eventType === "response.done") {
+					const u = json?.response?.usage;
+					if (u && typeof u === "object") {
+						const inputT = Number(u.input_tokens ?? 0);
+						const outputT = Number(u.output_tokens ?? 0);
+						usage = {
+							prompt_tokens: inputT,
+							completion_tokens: outputT,
+							total_tokens: u.total_tokens
+								? Number(u.total_tokens)
+								: inputT + outputT,
+						};
+					}
 				}
+			} catch {
+				// ignore malformed lines
 			}
-		} catch {
-			// ignore malformed lines
-		}
-	});
+		},
+		{ joinMultilineData: false },
+	);
 
 	await readTextStream(response.body, parse);
 	return { content, usage };
@@ -801,7 +750,7 @@ async function callOpenAIResponsesStream(opts: {
 				continue;
 			}
 			throw new Error(
-				`LLM call failed (stream): ${response.status} - ${lastErrorText}`,
+				`LLM call failed (stream): ${formatUpstreamErrorDetail(response.status, lastErrorText)}`,
 			);
 		}
 
@@ -809,35 +758,38 @@ async function callOpenAIResponsesStream(opts: {
 
 		let usage: StreamChunk["usage"] | undefined;
 
-		const parse = createSseParser((data) => {
-			if (data === "[DONE]") return;
-			try {
-				const json = JSON.parse(data) as any;
-				const eventType = json?.type as string | undefined;
+		const parse = createSseParser(
+			(data) => {
+				if (data === "[DONE]") return;
+				try {
+					const json = JSON.parse(data) as any;
+					const eventType = json?.type as string | undefined;
 
-				if (eventType === "response.output_text.delta") {
-					// delta 字段即文本片段
-					const delta = typeof json.delta === "string" ? json.delta : "";
-					if (delta) opts.onChunk(delta, "text");
-				} else if (eventType === "response.done") {
-					// 从 response.done 事件提取 usage
-					const u = json?.response?.usage;
-					if (u && typeof u === "object") {
-						const inputT = Number(u.input_tokens ?? 0);
-						const outputT = Number(u.output_tokens ?? 0);
-						usage = {
-							prompt_tokens: inputT,
-							completion_tokens: outputT,
-							total_tokens: u.total_tokens
-								? Number(u.total_tokens)
-								: inputT + outputT,
-						};
+					if (eventType === "response.output_text.delta") {
+						// delta 字段即文本片段
+						const delta = typeof json.delta === "string" ? json.delta : "";
+						if (delta) opts.onChunk(delta, "text");
+					} else if (eventType === "response.done") {
+						// 从 response.done 事件提取 usage
+						const u = json?.response?.usage;
+						if (u && typeof u === "object") {
+							const inputT = Number(u.input_tokens ?? 0);
+							const outputT = Number(u.output_tokens ?? 0);
+							usage = {
+								prompt_tokens: inputT,
+								completion_tokens: outputT,
+								total_tokens: u.total_tokens
+									? Number(u.total_tokens)
+									: inputT + outputT,
+							};
+						}
 					}
+				} catch {
+					// ignore malformed lines
 				}
-			} catch {
-				// ignore malformed lines
-			}
-		});
+			},
+			{ joinMultilineData: false },
+		);
 
 		await readTextStream(response.body, parse);
 		return { usage };
@@ -903,7 +855,9 @@ async function callOpenAICompatible(
 			await sleep(delay);
 			continue;
 		}
-		throw new Error(`LLM call failed: ${response.status} - ${lastErrorText}`);
+		throw new Error(
+			`LLM call failed: ${formatUpstreamErrorDetail(response.status, lastErrorText)}`,
+		);
 	}
 
 	if (!response || !response.ok) {
@@ -968,35 +922,38 @@ async function callOpenAICompatibleStream(opts: {
 				continue;
 			}
 			throw new Error(
-				`LLM call failed (stream): ${response.status} - ${lastErrorText}`,
+				`LLM call failed (stream): ${formatUpstreamErrorDetail(response.status, lastErrorText)}`,
 			);
 		}
 
 		if (!response.body) throw new Error("No response body for streaming");
 
 		let usage: StreamChunk["usage"] | undefined;
-		const parse = createSseParser((data) => {
-			if (data === "[DONE]") return;
-			try {
-				const json = JSON.parse(data) as any;
-				const delta = json?.choices?.[0]?.delta;
-				const text = typeof delta?.content === "string" ? delta.content : "";
-				if (text) opts.onChunk(text, "text");
-				const thought = extractThoughtDeltaFromOpenAIChunk(json);
-				if (thought) {
-					opts.onChunk(thought, "thought", {
-						title: "Reasoning",
-						source: "reasoning_content",
-						model: opts.model,
-					});
+		const parse = createSseParser(
+			(data) => {
+				if (data === "[DONE]") return;
+				try {
+					const json = JSON.parse(data) as any;
+					const delta = json?.choices?.[0]?.delta;
+					const text = typeof delta?.content === "string" ? delta.content : "";
+					if (text) opts.onChunk(text, "text");
+					const thought = extractThoughtDeltaFromOpenAIChunk(json);
+					if (thought) {
+						opts.onChunk(thought, "thought", {
+							title: "Reasoning",
+							source: "reasoning_content",
+							model: opts.model,
+						});
+					}
+					if (json?.usage && typeof json.usage === "object") {
+						usage = json.usage as any;
+					}
+				} catch {
+					// ignore malformed lines
 				}
-				if (json?.usage && typeof json.usage === "object") {
-					usage = json.usage as any;
-				}
-			} catch {
-				// ignore malformed lines
-			}
-		});
+			},
+			{ joinMultilineData: false },
+		);
 
 		await readTextStream(response.body, parse);
 		return { usage };
@@ -1060,7 +1017,7 @@ async function callAnthropic(
 			continue;
 		}
 		throw new Error(
-			`Anthropic call failed: ${response.status} - ${lastErrorText}`,
+			`Anthropic call failed: ${formatUpstreamErrorDetail(response.status, lastErrorText)}`,
 		);
 	}
 
@@ -1163,73 +1120,76 @@ async function callAnthropicStream(opts: {
 	let startCacheReadTokens = 0;
 	let startCacheCreationTokens = 0;
 	const blockKindByIndex = new Map<number, string>();
-	const parse = createSseParser((data) => {
-		try {
-			const json = JSON.parse(data) as any;
-			// message_start 包含 input_tokens 和 cache 相关 token
-			if (json?.type === "message_start" && json?.message?.usage) {
-				const u = json.message.usage;
-				startInputTokens = Number(u.input_tokens ?? 0);
-				startCacheReadTokens = Number(u.cache_read_input_tokens ?? 0);
-				startCacheCreationTokens = Number(u.cache_creation_input_tokens ?? 0);
-			}
-			if (json?.type === "content_block_start") {
-				const idx = typeof json?.index === "number" ? json.index : -1;
-				if (idx >= 0) {
-					const blockType =
-						typeof json?.content_block?.type === "string"
-							? json.content_block.type
-							: "";
-					blockKindByIndex.set(idx, blockType);
+	const parse = createSseParser(
+		(data) => {
+			try {
+				const json = JSON.parse(data) as any;
+				// message_start 包含 input_tokens 和 cache 相关 token
+				if (json?.type === "message_start" && json?.message?.usage) {
+					const u = json.message.usage;
+					startInputTokens = Number(u.input_tokens ?? 0);
+					startCacheReadTokens = Number(u.cache_read_input_tokens ?? 0);
+					startCacheCreationTokens = Number(u.cache_creation_input_tokens ?? 0);
 				}
-			}
-			if (json?.type === "content_block_delta") {
-				const delta = json?.delta;
-				const idx = typeof json?.index === "number" ? json.index : -1;
-				const blockKind = idx >= 0 ? blockKindByIndex.get(idx) : "";
-				if (
-					delta?.type === "thinking_delta" &&
-					typeof delta?.thinking === "string"
-				) {
-					opts.onChunk(delta.thinking, "thought", {
-						title: "Thinking",
-						source: "thinking",
-						model: opts.model,
-					});
-				}
-				if (delta?.type === "text_delta" && typeof delta?.text === "string") {
-					if (blockKind === "thinking" || blockKind === "reasoning") {
-						opts.onChunk(delta.text, "thought", {
-							title: blockKind === "reasoning" ? "Reasoning" : "Thinking",
-							source: blockKind,
-							model: opts.model,
-						});
-					} else {
-						opts.onChunk(delta.text, "text");
+				if (json?.type === "content_block_start") {
+					const idx = typeof json?.index === "number" ? json.index : -1;
+					if (idx >= 0) {
+						const blockType =
+							typeof json?.content_block?.type === "string"
+								? json.content_block.type
+								: "";
+						blockKindByIndex.set(idx, blockType);
 					}
 				}
+				if (json?.type === "content_block_delta") {
+					const delta = json?.delta;
+					const idx = typeof json?.index === "number" ? json.index : -1;
+					const blockKind = idx >= 0 ? blockKindByIndex.get(idx) : "";
+					if (
+						delta?.type === "thinking_delta" &&
+						typeof delta?.thinking === "string"
+					) {
+						opts.onChunk(delta.thinking, "thought", {
+							title: "Thinking",
+							source: "thinking",
+							model: opts.model,
+						});
+					}
+					if (delta?.type === "text_delta" && typeof delta?.text === "string") {
+						if (blockKind === "thinking" || blockKind === "reasoning") {
+							opts.onChunk(delta.text, "thought", {
+								title: blockKind === "reasoning" ? "Reasoning" : "Thinking",
+								source: blockKind,
+								model: opts.model,
+							});
+						} else {
+							opts.onChunk(delta.text, "text");
+						}
+					}
+				}
+				if (
+					json?.type === "content_block_stop" &&
+					typeof json?.index === "number"
+				) {
+					blockKindByIndex.delete(json.index);
+				}
+				// message_delta 只包含 output_tokens，需要合并 message_start 的 input_tokens
+				if (json?.type === "message_delta" && json?.usage) {
+					const outputTokens = Number(json.usage.output_tokens ?? 0);
+					usage = {
+						prompt_tokens: startInputTokens,
+						completion_tokens: outputTokens,
+						total_tokens: startInputTokens + outputTokens,
+						cache_read_input_tokens: startCacheReadTokens || undefined,
+						cache_creation_input_tokens: startCacheCreationTokens || undefined,
+					};
+				}
+			} catch {
+				// ignore
 			}
-			if (
-				json?.type === "content_block_stop" &&
-				typeof json?.index === "number"
-			) {
-				blockKindByIndex.delete(json.index);
-			}
-			// message_delta 只包含 output_tokens，需要合并 message_start 的 input_tokens
-			if (json?.type === "message_delta" && json?.usage) {
-				const outputTokens = Number(json.usage.output_tokens ?? 0);
-				usage = {
-					prompt_tokens: startInputTokens,
-					completion_tokens: outputTokens,
-					total_tokens: startInputTokens + outputTokens,
-					cache_read_input_tokens: startCacheReadTokens || undefined,
-					cache_creation_input_tokens: startCacheCreationTokens || undefined,
-				};
-			}
-		} catch {
-			// ignore
-		}
-	});
+		},
+		{ joinMultilineData: false },
+	);
 
 	await readTextStream(response.body, parse);
 	return { usage };

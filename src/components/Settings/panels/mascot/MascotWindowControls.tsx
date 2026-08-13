@@ -182,9 +182,9 @@ function ControlCard({
 	return (
 		<div
 			className={[
-				"group flex gap-3 rounded-2xl border border-border bg-cream-50 p-4 transition-colors",
+				"group flex gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors",
 				stack ? "flex-col" : "flex-row items-center justify-between",
-				disabled ? "opacity-60" : "hover:border-cream-500 hover:bg-surface",
+				disabled ? "opacity-60" : "hover:border-warm-500 hover:bg-surface",
 				className ?? "",
 			].join(" ")}
 		>
@@ -222,7 +222,7 @@ interface DndTimePairProps {
 
 function DndTimePair({ start, end, onChange, disabled }: DndTimePairProps) {
 	const inputClass =
-		"h-8 w-[100px] rounded-lg border border-border bg-surface px-2.5 text-xs tabular-nums text-text-primary outline-none transition focus:border-cream-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)] disabled:opacity-50";
+		"h-8 w-[100px] rounded-lg border border-border bg-surface px-2.5 text-xs tabular-nums text-text-primary outline-none transition focus:border-warm-500 focus:shadow-[0_0_0_3px_var(--t-primary-muted)] disabled:opacity-50";
 	return (
 		<div className="flex items-center gap-2">
 			<input
@@ -246,7 +246,7 @@ function DndTimePair({ start, end, onChange, disabled }: DndTimePairProps) {
 				<button
 					type="button"
 					onClick={() => onChange("", "")}
-					className="ml-1 rounded-md px-2 py-1 text-xs text-text-muted transition hover:bg-cream-200 hover:text-text-secondary"
+					className="ml-1 rounded-lg px-2 py-1 text-xs text-text-muted transition hover:bg-warm-200 hover:text-text-secondary"
 				>
 					清除
 				</button>

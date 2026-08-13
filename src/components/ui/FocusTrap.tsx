@@ -1,5 +1,6 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { isTopOverlay, popOverlay, pushOverlay } from "../../lib/overlayStack";
 
 const FOCUSABLE_SELECTOR = [
 	"a[href]",
@@ -71,6 +72,9 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
 		previousActiveElementRef.current =
 			document.activeElement as HTMLElement | null;
 
+		// 注册进全局 overlay 栈：Esc 只关栈顶，多层弹窗不再同时关闭
+		const overlayId = pushOverlay();
+
 		// 初始焦点：优先指定元素 → 第一个可交互元素 → 容器自身
 		const preferred = initialFocusRef?.current;
 		if (preferred) {
@@ -82,6 +86,9 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === "Escape") {
+				if (event.defaultPrevented) return;
+				if (!isTopOverlay(overlayId)) return;
+				event.preventDefault();
 				onEscape?.();
 				return;
 			}
@@ -109,6 +116,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
 
 		document.addEventListener("keydown", handleKeyDown);
 		return () => {
+			popOverlay(overlayId);
 			document.removeEventListener("keydown", handleKeyDown);
 			if (!restoreFocus) return;
 			const previous = previousActiveElementRef.current;
@@ -130,6 +138,8 @@ export function FocusTrap({
 }: FocusTrapProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const previousActiveElementRef = useRef<HTMLElement | null>(null);
+	// 当前实例在全局 overlay 栈中的 id（active 期间有效）
+	const overlayIdRef = useRef<number | null>(null);
 
 	const focusFirst = useCallback(() => {
 		const container = containerRef.current;
@@ -155,6 +165,10 @@ export function FocusTrap({
 			if (!containerRef.current) return;
 
 			if (event.key === "Escape") {
+				if (event.defaultPrevented) return;
+				const overlayId = overlayIdRef.current;
+				if (overlayId !== null && !isTopOverlay(overlayId)) return;
+				event.preventDefault();
 				onEscape?.();
 				return;
 			}
@@ -201,10 +215,15 @@ export function FocusTrap({
 
 		previousActiveElementRef.current =
 			document.activeElement as HTMLElement | null;
+		overlayIdRef.current = pushOverlay();
 		focusFirst();
 		document.addEventListener("keydown", handleKeyDown);
 
 		return () => {
+			if (overlayIdRef.current !== null) {
+				popOverlay(overlayIdRef.current);
+				overlayIdRef.current = null;
+			}
 			document.removeEventListener("keydown", handleKeyDown);
 			if (!restoreFocus) return;
 			const previous = previousActiveElementRef.current;

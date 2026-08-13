@@ -79,12 +79,12 @@ export function TerminalTabBar() {
 						)}
 						<span className="max-w-[140px] truncate">{t.name}</span>
 						{t.isRemote && channelLabel && (
-							<span className="px-1 py-px text-[11px] font-semibold rounded bg-accent/10 text-accent uppercase tracking-wide">
+							<span className="px-1 py-px text-2xs font-semibold rounded bg-accent/10 text-accent uppercase tracking-wide">
 								{channelLabel}
 							</span>
 						)}
 						{t.isHarness && (
-							<span className="px-1 py-px text-[11px] font-semibold rounded bg-terracotta/10 text-terracotta uppercase tracking-wide">
+							<span className="px-1 py-px text-2xs font-semibold rounded bg-terracotta/10 text-terracotta uppercase tracking-wide">
 								迁移
 							</span>
 						)}

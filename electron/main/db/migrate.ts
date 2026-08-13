@@ -1,3 +1,4 @@
+import { createLogger } from "../logging/logger";
 import type { DbContext } from "./client";
 import { initSql } from "./migrations/initSql";
 import { runV2Migrations } from "./migrations/v2Migrations";
@@ -7,6 +8,7 @@ import { runV5Migrations } from "./migrations/v5Migrations";
 import { runV6Migrations } from "./migrations/v6Migrations";
 import { runV7Migrations } from "./migrations/v7Migrations";
 import { runV8Migrations } from "./migrations/v8Migrations";
+import { runV9Migrations } from "./migrations/v9Migrations";
 
 /**
  * 当前数据库 schema 版本号（B12：版本化迁移）。
@@ -24,7 +26,19 @@ import { runV8Migrations } from "./migrations/v8Migrations";
  * CURRENT_SCHEMA_VERSION，并在下面的判断链里追加 `if (currentVersion < N)`。
  * 不要修改已发布版本对应的迁移函数内容（迁移历史应保持可追溯、不可变）。
  */
-const CURRENT_SCHEMA_VERSION = 8;
+const CURRENT_SCHEMA_VERSION = 9;
+
+const logger = createLogger();
+
+/** 索引创建失败时留痕。索引只影响性能，因此不中断迁移，但不能静默。 */
+function logIndexFailure(tables: string[], error: unknown): void {
+	logger.warn({
+		msg: "迁移期间创建索引失败（不影响正确性，但相关查询可能退化为全表扫描）",
+		scope: "db-migrate",
+		tables,
+		error: error instanceof Error ? error.message : String(error),
+	});
+}
 
 /**
  * 安全添加列 - 如果列已存在则忽略错误
@@ -68,6 +82,41 @@ async function writeSchemaVersion(
 ): Promise<void> {
 	// PRAGMA 不支持绑定参数，version 是内部常量，非用户输入，可安全内联
 	await ctx.client.execute(`PRAGMA user_version = ${version}`);
+}
+
+/**
+ * 在**单个事务**里跑完一版迁移并盖章。
+ *
+ * 为什么必须事务化：迁移函数里往往是十几条 DDL，中途崩溃（断电、强杀、
+ * 磁盘写满）会留下"建了一半"的 schema。原来的实现是逐条自动提交 + 末尾单独
+ * 写 user_version，恢复策略只能靠"所有语句都幂等"这个约定 —— 一旦某版迁移
+ * 里出现了不幂等的语句（数据回填、列重命名），就会静默产生脏库。
+ *
+ * `PRAGMA user_version` 写在同一个事务里：版本号和 schema 要么一起生效，
+ * 要么一起回滚，不存在"版本号超前于实际 schema"的不可恢复状态。
+ *
+ * 这里用显式 BEGIN/COMMIT 而不是 `db/batch.ts` 的 `client.batch()`：迁移函数
+ * 内部会读 `PRAGMA table_info` / `sqlite_version()` 做条件分支，还会用
+ * `executeMultiple` 建带 BEGIN...END 体的触发器，都不是 batch 能表达的形态。
+ */
+async function runVersionStep(
+	ctx: DbContext,
+	version: number,
+	run: (ctx: DbContext) => Promise<void>,
+): Promise<void> {
+	await ctx.client.execute("BEGIN");
+	try {
+		await run(ctx);
+		await writeSchemaVersion(ctx, version);
+		await ctx.client.execute("COMMIT");
+	} catch (error) {
+		try {
+			await ctx.client.execute("ROLLBACK");
+		} catch {
+			// 事务可能已被 SQLite 自动回滚，此时 ROLLBACK 本身会报错，忽略
+		}
+		throw error;
+	}
 }
 
 /**
@@ -233,8 +282,20 @@ async function runLegacyMigrations(ctx: DbContext): Promise<void> {
 			sql: `CREATE INDEX IF NOT EXISTS idx_file_themes_theme ON file_themes(theme_id)`,
 			args: [],
 		});
-	} catch {
-		// 忽略索引创建错误
+	} catch (error) {
+		// 索引创建失败不阻塞迁移（索引只影响性能不影响正确性），但必须留痕：
+		// 静默吞掉会让"某个查询突然全表扫"变成一个查无对证的性能问题。
+		logIndexFailure(
+			[
+				"agent_sessions",
+				"artifacts",
+				"backup_history",
+				"sources",
+				"output_assets",
+				"file_themes",
+			],
+			error,
+		);
 	}
 
 	// 注：历史上这里曾创建 Wiki DB 表（wiki_pages / wiki_page_sources /
@@ -250,8 +311,8 @@ async function runLegacyMigrations(ctx: DbContext): Promise<void> {
 			sql: `CREATE UNIQUE INDEX IF NOT EXISTS idx_reader_books_source_path ON reader_books(source_path) WHERE source_path IS NOT NULL`,
 			args: [],
 		});
-	} catch {
-		// 忽略索引创建错误
+	} catch (error) {
+		logIndexFailure(["reader_books"], error);
 	}
 
 	// Migration: TTS 桌宠 AI 个性化字段（为后续 LLM 生成台词预留）
@@ -315,8 +376,8 @@ async function runLegacyMigrations(ctx: DbContext): Promise<void> {
 			sql: `CREATE INDEX IF NOT EXISTS idx_reader_cards_gen_session ON reader_cards(generation_session_id)`,
 			args: [],
 		});
-	} catch {
-		// 忽略索引创建错误
+	} catch (error) {
+		logIndexFailure(["reader_cards"], error);
 	}
 
 	// Migration: 语言风格包混搭配方表
@@ -438,9 +499,12 @@ async function tableExists(ctx: DbContext, table: string): Promise<boolean> {
 async function repairMissingMigrations(ctx: DbContext): Promise<void> {
 	for (const sentinel of VERSION_SENTINELS) {
 		if (await tableExists(ctx, sentinel.table)) continue;
-		console.warn(
-			`[migrate] user_version 已标记为已迁移，但 v${sentinel.version} 的 ${sentinel.table} 不存在，正在补跑该版本迁移`,
-		);
+		logger.warn({
+			msg: "user_version 已标记为已迁移，但哨兵表不存在，正在补跑该版本迁移",
+			scope: "db-migrate",
+			version: sentinel.version,
+			table: sentinel.table,
+		});
 		await sentinel.run(ctx);
 	}
 }
@@ -455,40 +519,24 @@ export async function runMigrations(ctx: DbContext): Promise<void> {
 		return;
 	}
 
-	// 每完成一步就立刻盖章，而不是全部跑完在末尾一次性写。
-	// 这样任何中途退出留下的版本号都只会**落后于**实际状态，绝不会超前——
+	// 每一版都是「跑迁移 + 盖章」的原子操作（见 runVersionStep）。
+	// 中途退出留下的版本号只会**落后于**实际状态，绝不会超前——
 	// 超前是不可恢复的（快速路径会永久跳过那一版），落后只是下次多跑一遍幂等语句。
-	if (currentVersion < 1) {
-		await runLegacyMigrations(ctx);
-		await writeSchemaVersion(ctx, 1);
-	}
-	if (currentVersion < 2) {
-		await runV2Migrations(ctx);
-		await writeSchemaVersion(ctx, 2);
-	}
-	if (currentVersion < 3) {
-		await runV3Migrations(ctx);
-		await writeSchemaVersion(ctx, 3);
-	}
-	if (currentVersion < 4) {
-		await runV4Migrations(ctx);
-		await writeSchemaVersion(ctx, 4);
-	}
-	if (currentVersion < 5) {
-		await runV5Migrations(ctx);
-		await writeSchemaVersion(ctx, 5);
-	}
-	if (currentVersion < 6) {
-		await runV6Migrations(ctx);
-		await writeSchemaVersion(ctx, 6);
-	}
-	if (currentVersion < 7) {
-		await runV7Migrations(ctx);
-		await writeSchemaVersion(ctx, 7);
-	}
-	if (currentVersion < 8) {
-		await runV8Migrations(ctx);
-		await writeSchemaVersion(ctx, 8);
+	const steps: [number, (ctx: DbContext) => Promise<void>][] = [
+		[1, runLegacyMigrations],
+		[2, runV2Migrations],
+		[3, runV3Migrations],
+		[4, runV4Migrations],
+		[5, runV5Migrations],
+		[6, runV6Migrations],
+		[7, runV7Migrations],
+		[8, runV8Migrations],
+		[9, runV9Migrations],
+	];
+
+	for (const [version, run] of steps) {
+		if (currentVersion >= version) continue;
+		await runVersionStep(ctx, version, run);
 	}
 
 	await writeSchemaVersion(ctx, CURRENT_SCHEMA_VERSION);

@@ -48,7 +48,7 @@ export function TTSSceneSection({
 		<SettingsSectionCard
 			className={cn(
 				"transition-colors",
-				enabled ? "border-border" : "border-border bg-cream-50",
+				enabled ? "border-border" : "border-border bg-surface",
 			)}
 		>
 			<div className="flex items-start justify-between gap-3 px-5 py-4">
@@ -71,7 +71,7 @@ export function TTSSceneSection({
 							</h3>
 							{enabled && (
 								<span
-									className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+									className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold"
 									style={{
 										backgroundColor: `${accentColor}1F`,
 										color: accentColor,
@@ -95,12 +95,12 @@ export function TTSSceneSection({
 
 			{enabled && (
 				<div className="space-y-3 border-t border-border px-5 py-4">
-					<div className="rounded-2xl border border-border bg-cream-50 p-4">
+					<div className="rounded-2xl border border-border bg-surface p-4">
 						<div className="mb-2 flex items-baseline justify-between">
 							<span className="text-xs font-medium text-text-primary">
 								场景音色
 							</span>
-							<span className="text-[11px] text-text-muted">
+							<span className="text-2xs text-text-muted">
 								不选则跟随全局默认
 							</span>
 						</div>

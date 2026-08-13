@@ -17,14 +17,14 @@ export function FileUpdatesGroup({ updates }: { updates: FileUpdate[] }) {
 	}, [updates]);
 
 	return (
-		<div className="my-2 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:bg-cream-900/70 dark:ring-cream-800">
+		<div className="my-2 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
 			<button
 				type="button"
 				onClick={() => setExpanded((v) => !v)}
-				className="w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-warm-50/45 dark:hover:bg-cream-900/35 transition-colors"
+				className="w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-warm-50/45 transition-colors"
 			>
 				<div className="min-w-0 flex items-center gap-2">
-					<span className="text-sm font-medium text-text-primary dark:text-cream-200">
+					<span className="text-sm font-medium text-text-primary">
 						{stats.failed
 							? "文件写入失败"
 							: stats.running

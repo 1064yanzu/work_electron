@@ -154,7 +154,7 @@ export const PetInputBubble = forwardRef<
 				<div className="mt-1.5 flex items-center justify-between">
 					{/* 左下：键盘提示 / 字数提示 */}
 					<span
-						className="text-[11px] tracking-wide text-[color:var(--t-text-light,#9d9d98)] transition-opacity duration-150"
+						className="text-2xs tracking-wide text-[color:var(--t-text-light,#9d9d98)] transition-opacity duration-150"
 						style={{
 							opacity: showCount ? 1 : focused && !canSend ? 0.7 : 0,
 						}}

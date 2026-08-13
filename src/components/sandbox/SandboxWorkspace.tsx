@@ -16,7 +16,6 @@ import {
 } from "../../lib/managedModeStore";
 import { sandboxEditorStore } from "../../lib/sandboxEditorStore";
 import type { GraphFilter } from "./graph/types";
-import { ManagedCenterHeader } from "./workspace/ManagedCenterHeader";
 import { ManagedArtifactPreviewPanel } from "./workspace/ManagedArtifactPreviewPanel";
 import { useAutoImageArtifactPreview } from "./workspace/useAutoImageArtifactPreview";
 import { useSandboxFilesBinding } from "./workspace/useSandboxFilesBinding";
@@ -73,16 +72,8 @@ export default function SandboxWorkspace({
 		[files, selectedFileId],
 	);
 
-	const totalFiles = files.filter((f) => f.type === "file").length;
 	/** 本实例实际渲染的视图：标签显式指定优先，否则跟随全局状态。 */
 	const centerView = view ?? ui.centerView;
-	const headerTitle = centerView === "graph" ? "运行图" : "预览";
-	const headerMeta =
-		centerView === "graph"
-			? graphSource
-				? `工具 ${graphSource.toolCalls.length} · 产物 ${graphSource.artifacts.length}`
-				: `文件 ${totalFiles}`
-			: `${totalFiles} 个文件`;
 
 	const openArtifactInPreview = useCallback(
 		async (filePath: string) => {
@@ -294,21 +285,16 @@ export default function SandboxWorkspace({
 			onSetTerminalDockCollapsed={(collapsed) =>
 				managedModeStore.setTerminalDockCollapsed(collapsed)
 			}
+			onRefreshFiles={refreshFiles}
+			isRefreshingFiles={isRefreshing}
 			devLogs={[]}
 		/>
 	);
 
 	return (
+		// 中栏内容头（ManagedCenterHeader）已裁撤：标题与 CenterTabBar 的标签重复，
+		// 属于双层 chrome；刷新入口移入预览面板 Tab 栏右端
 		<div className="flex flex-col h-full bg-warm-50">
-			<ManagedCenterHeader
-				centerView={centerView}
-				headerTitle={headerTitle}
-				headerMeta={headerMeta}
-				density={ui.centerDensity || "comfortable"}
-				isRefreshing={isRefreshing}
-				onRefresh={refreshFiles}
-			/>
-
 			<ViewTransition
 				viewKey={centerView === "graph" ? "graph" : "preview"}
 				className="min-h-0 flex-1 flex flex-col"
@@ -316,7 +302,7 @@ export default function SandboxWorkspace({
 				{centerView === "graph" ? (
 					<Suspense
 						fallback={
-							<div className="flex-1 flex items-center justify-center text-sm text-text-muted bg-surface/70">
+							<div className="flex-1 flex items-center justify-center bg-warm-50 text-xs text-text-muted">
 								正在加载运行图...
 							</div>
 						}

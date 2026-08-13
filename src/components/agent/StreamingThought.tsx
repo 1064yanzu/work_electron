@@ -3,7 +3,7 @@
 
 import { Activity, ChevronDown, ChevronUp, Loader } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import { useAgentStore } from "../../lib/agent/store";
+import { useAgentStoreSelector } from "../../lib/agent/store";
 import {
 	type AgentThinkingStep,
 	THINKING_PHASE_CONFIG,
@@ -27,11 +27,8 @@ function PhaseIndicator({
 		<div
 			className={cn(
 				"flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
-				isActive &&
-					"bg-focus/16 dark:bg-blue-900/30 text-focus dark:text-focus scale-105",
-				isCompleted &&
-					!isActive &&
-					"bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400",
+				isActive && "bg-focus/16 text-focus scale-105",
+				isCompleted && !isActive && "bg-success-muted text-success",
 				!isActive && !isCompleted && "bg-warm-200 text-text-light",
 			)}
 		>
@@ -145,13 +142,12 @@ function ThinkingStepCard({
 
 // 主组件
 export default function StreamingThought() {
-	const {
-		thinkingPhase,
-		thinkingSteps,
-		partialThinking,
-		isExecuting,
-		taskProgress,
-	} = useAgentStore();
+	// 逐字段订阅，避免 agentStore 任意字段变化都重渲染整个思考流
+	const thinkingPhase = useAgentStoreSelector((s) => s.thinkingPhase);
+	const thinkingSteps = useAgentStoreSelector((s) => s.thinkingSteps);
+	const partialThinking = useAgentStoreSelector((s) => s.partialThinking);
+	const isExecuting = useAgentStoreSelector((s) => s.isExecuting);
+	const taskProgress = useAgentStoreSelector((s) => s.taskProgress);
 
 	const [isExpanded, setIsExpanded] = useState(true);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -173,7 +169,7 @@ export default function StreamingThought() {
 		<div
 			className={cn(
 				"rounded-xl overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
-				"bg-gradient-to-br from-cream-50 to-cream-100/50 dark:from-cream-900 dark:to-cream-800/50",
+				"bg-gradient-to-br from-surface to-background/50",
 				"ring-1 ring-black/5 dark:ring-white/10",
 			)}
 		>
@@ -196,7 +192,7 @@ export default function StreamingThought() {
 
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2">
-						<span className="text-sm font-medium text-text-secondary dark:text-cream-200">
+						<span className="text-sm font-medium text-text-secondary">
 							思考过程
 						</span>
 						{isExecuting && (
@@ -224,8 +220,8 @@ export default function StreamingThought() {
 										className={cn(
 											"w-3 h-0.5 rounded-full transition-colors",
 											phases.indexOf(thinkingPhase) > idx
-												? "bg-green-300 dark:bg-green-700"
-												: "bg-warm-300 dark:bg-cream-700",
+												? "bg-success/40"
+												: "bg-warm-300",
 										)}
 									/>
 								)}
@@ -257,7 +253,7 @@ export default function StreamingThought() {
 
 					{/* 当前正在流式输出的内容 */}
 					{partialThinking && (
-						<div className="p-3 rounded-lg bg-surface/80 shadow-sm ring-1 ring-blue-100 dark:ring-blue-900/50">
+						<div className="p-3 rounded-lg bg-surface/80 shadow-sm ring-1 ring-focus/20">
 							<div className="flex items-center gap-2 mb-2">
 								<span className="text-base">
 									{THINKING_PHASE_CONFIG[thinkingPhase].emoji}

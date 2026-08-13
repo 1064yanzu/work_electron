@@ -71,7 +71,7 @@ export function TTSGlobalSection({ settings, patch }: TTSGlobalSectionProps) {
 					type="button"
 					onClick={() => void handleTest()}
 					disabled={!defaultProvider || testing}
-					className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-cream-500 hover:text-text-primary disabled:opacity-40"
+					className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-warm-500 hover:text-text-primary disabled:opacity-40"
 				>
 					{testing ? (
 						<Loader2 className="h-3 w-3 animate-spin" />
@@ -128,14 +128,14 @@ export function TTSGlobalSection({ settings, patch }: TTSGlobalSectionProps) {
 							onChange={(id) => patch({ default_voice_id: id })}
 						/>
 					) : (
-						<div className="rounded-lg border border-dashed border-border bg-cream-100 px-3 py-2 text-xs text-text-muted">
+						<div className="rounded-lg border border-dashed border-border bg-background px-3 py-2 text-xs text-text-muted">
 							请先选择全局默认 Provider
 						</div>
 					)}
 				</FieldCard>
 			</div>
 
-			<div className="grid grid-cols-1 gap-5 rounded-2xl border border-border bg-cream-50 p-5 lg:grid-cols-3">
+			<div className="grid grid-cols-1 gap-5 rounded-2xl border border-border bg-surface p-5 lg:grid-cols-3">
 				<SettingsSlider
 					label="语速"
 					value={settings.rate}
@@ -172,7 +172,7 @@ export function TTSGlobalSection({ settings, patch }: TTSGlobalSectionProps) {
 				/>
 			</div>
 
-			<div className="flex items-center gap-2 rounded-xl border border-dashed border-cream-500/60 bg-cream-50 px-3 py-2 text-xs text-text-muted">
+			<div className="flex items-center gap-2 rounded-xl border border-dashed border-warm-500/60 bg-surface px-3 py-2 text-xs text-text-muted">
 				<Sparkles className="h-3 w-3 shrink-0" strokeWidth={1.6} />
 				<span>场景级覆盖（阅读器 / 对话 / 桌宠）会优先于这里的默认值。</span>
 			</div>
@@ -190,11 +190,11 @@ function FieldCard({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="space-y-2 rounded-2xl border border-border bg-cream-50 p-4">
+		<div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
 			<div className="flex items-baseline justify-between gap-3">
 				<div className="text-xs font-medium text-text-primary">{label}</div>
 				{hint && (
-					<div className="text-[11px] tabular-nums text-text-muted">{hint}</div>
+					<div className="text-2xs tabular-nums text-text-muted">{hint}</div>
 				)}
 			</div>
 			{children}

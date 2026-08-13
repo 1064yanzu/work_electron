@@ -32,6 +32,26 @@ const PREVIEW_LOADING_FALLBACK = (
 	</div>
 );
 
+/**
+ * Plan 卡片挂载点：把 planModeStore 的订阅限制在「确实含 ```plan 代码块」的
+ * 消息上，避免整条会话的助手消息集体订阅同一个 store。
+ */
+function PlanCardSlot() {
+	const currentPlan = usePlanModeSelector((s) => s.currentPlan);
+	if (!currentPlan) return null;
+
+	return (
+		<div className="mb-3">
+			<PlanCard
+				plan={currentPlan}
+				onConfirm={() => confirmPlan()}
+				onReject={() => rejectPlan()}
+				onModify={(feedback) => emitPlanModifyFeedback(feedback)}
+			/>
+		</div>
+	);
+}
+
 function ChatMessageAssistantContentImpl({
 	message,
 	canRenderAssistantByBlocks,
@@ -73,24 +93,14 @@ function ChatMessageAssistantContentImpl({
 		message.metadata?.fileUpdates,
 	]);
 
-	// Plan Mode：检测消息中是否包含 plan 代码块，并从 store 获取当前计划
+	// Plan Mode：只有真的含 ```plan 代码块的消息才挂载 PlanCardSlot。
+	// 订阅收在 slot 内部——原先这里直接调 usePlanModeSelector，等于会话里**每一条**
+	// 助手消息都订阅了 planModeStore，currentPlan 一变全部重渲染（memo 拦不住 Hook 订阅）。
 	const hasPlanBlock = message.content.includes("```plan");
-	const currentPlan = usePlanModeSelector((s) => s.currentPlan);
-	const showPlanCard = hasPlanBlock && currentPlan !== null;
 
 	return (
 		<div className="w-full pr-2">
-			{/* Plan Card - 当消息包含 plan 代码块且 store 中有计划时显示 */}
-			{showPlanCard && currentPlan && (
-				<div className="mb-3">
-					<PlanCard
-						plan={currentPlan}
-						onConfirm={() => confirmPlan()}
-						onReject={() => rejectPlan()}
-						onModify={(feedback) => emitPlanModifyFeedback(feedback)}
-					/>
-				</div>
-			)}
+			{hasPlanBlock ? <PlanCardSlot /> : null}
 
 			{streamingWebPreview ? (
 				<Suspense fallback={PREVIEW_LOADING_FALLBACK}>
@@ -120,7 +130,7 @@ function ChatMessageAssistantContentImpl({
 				</Suspense>
 			) : null}
 
-			<div className="text-sm text-text-primary dark:text-cream-200 leading-7 w-full overflow-hidden select-text">
+			<div className="text-sm text-text-primary leading-7 w-full overflow-hidden select-text">
 				{canRenderAssistantByBlocks ? (
 					<AgentBlocksInline
 						blocks={message.metadata?.blocks ?? []}
@@ -149,7 +159,7 @@ function ChatMessageAssistantContentImpl({
 							return (
 								<div
 									key={`markdown-${index}`}
-									className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-indigo-500 hover:prose-a:text-indigo-600 transition-colors my-1.5"
+									className="markdown-prose prose-sm dark:prose-invert max-w-none prose-p:leading-7 prose-headings:font-semibold prose-headings:tracking-tight prose-strong:font-medium prose-a:text-primary hover:prose-a:text-primary-hover transition-colors my-1.5"
 								>
 									<MarkdownRenderer
 										content={segment.content}
@@ -172,18 +182,14 @@ function ChatMessageAssistantContentImpl({
 					: null}
 
 				{isStreaming && !message.content.includes("<<<<") ? (
-					<span className="inline-block w-1.5 h-4 ml-1 bg-cream-500 animate-pulse rounded-full align-middle" />
+					<span className="inline-block w-1.5 h-4 ml-1 bg-text-muted animate-pulse rounded-full align-middle" />
 				) : null}
 			</div>
 		</div>
 	);
 }
 
+// 逐字段 `===` 与 memo 默认浅比较等价，去掉这份易腐化的清单。
 export const ChatMessageAssistantContent = memo(
 	ChatMessageAssistantContentImpl,
-	(prev, next) =>
-		prev.message === next.message &&
-		prev.canRenderAssistantByBlocks === next.canRenderAssistantByBlocks &&
-		prev.isStreaming === next.isStreaming &&
-		prev.streamingWebPreview === next.streamingWebPreview,
 );

@@ -24,7 +24,7 @@ import {
 import { StatusDot } from "../StatusDot";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-warm-500";
 
 type CloudBindForm = {
 	relay_url: string;
@@ -143,7 +143,7 @@ export function AdvancedSection({
 					<div className="inline-flex items-center gap-2 text-text-secondary">
 						<Shield className="h-4 w-4 text-text-muted" />
 						默认 scopes：
-						<span className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs">
+						<span className="rounded-lg bg-surface px-1.5 py-0.5 font-mono text-xs">
 							{config.security.defaultScopes.join(", ") || "—"}
 						</span>
 					</div>

@@ -47,6 +47,35 @@ body.reader-overlay-open {
 	text-rendering: optimizeLegibility;
 }
 
+/* ---- UI 外壳统一无衬线字体 ----
+   .reader-shell 根字体是 serif 阅读排版；以下 UI 容器整体切换为 Inter，
+   子元素一次继承，各自选择器不再重复声明 font-family。 */
+.reader-topbar,
+.reader-toc,
+.reader-main__loading-overlay,
+.reader-engine-error,
+.reader-engine__pdf-toolbar,
+.reader-engine__mobi-card,
+.reader-copilot,
+.reader-progressbar,
+.reader-tts-bar,
+.reader-selection-menu,
+.reader-search-panel,
+.reader-card-review,
+.reader-card-edit,
+.reader-card-draft-review,
+.reader-card-gen-indicator {
+	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
+}
+
+/* 表单控件默认不继承字体，这里统一跟随所在容器 */
+.reader-shell button,
+.reader-shell input,
+.reader-shell textarea,
+.reader-shell select {
+	font-family: inherit;
+}
+
 .reader-shell.theme-dark,
 .reader-shell.theme-warm {
 	color-scheme: dark;
@@ -165,14 +194,12 @@ body.reader-overlay-open {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	letter-spacing: -0.01em;
 }
 
 .reader-topbar__title-sub {
 	font-size: 11.5px;
 	color: var(--reader-fg-light);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -202,7 +229,6 @@ body.reader-overlay-open {
 	color: var(--reader-fg-muted);
 	font-size: 12px;
 	font-weight: 500;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	border: none;
 	cursor: pointer;
 	transition:
@@ -302,7 +328,6 @@ body.reader-overlay-open {
 	border-radius: 8px;
 	background: var(--reader-bg-soft);
 	border: 1px solid var(--reader-border);
-	font-family: "Inter", system-ui, sans-serif;
 }
 
 .reader-fontsize__icon {
@@ -405,7 +430,6 @@ body.reader-overlay-open {
 	font-size: 12px;
 	font-weight: 600;
 	color: var(--reader-fg-muted);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	letter-spacing: 0.02em;
 	text-transform: uppercase;
 }
@@ -444,7 +468,6 @@ body.reader-overlay-open {
 	font-size: 12px;
 	color: var(--reader-fg-light);
 	line-height: 1.6;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-toc__item {
@@ -463,7 +486,6 @@ body.reader-overlay-open {
 	transition:
 		background-color 140ms ease,
 		color 140ms ease;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-toc__item:hover {
@@ -611,7 +633,6 @@ body.reader-overlay-open {
 	cursor: pointer;
 	text-align: left;
 	color: var(--reader-fg-muted);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	font-size: 12.5px;
 	transition:
 		background-color 140ms ease,
@@ -680,7 +701,6 @@ body.reader-overlay-open {
 	background: var(--reader-bg-soft);
 	color: var(--reader-fg-muted);
 	font-size: 12px;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	border: 1px solid var(--reader-border);
 }
 
@@ -742,7 +762,6 @@ body.reader-overlay-open {
 	border: 1px solid var(--reader-border);
 	text-align: center;
 	color: var(--reader-fg-muted);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-engine-error__action {
@@ -1158,7 +1177,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	padding: 10px 14px;
 	background: var(--reader-bg-soft);
 	border-bottom: 1px solid var(--reader-border);
-	font-family: "Inter", system-ui, sans-serif;
 	font-size: 12px;
 	color: var(--reader-fg-muted);
 }
@@ -1222,7 +1240,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	text-align: center;
 	color: var(--reader-fg-muted);
 	line-height: 1.7;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 /* ===========================================================
@@ -1266,7 +1283,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	font-size: 12px;
 	font-weight: 600;
 	color: var(--reader-fg);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	letter-spacing: 0.02em;
 	text-transform: uppercase;
 }
@@ -1325,7 +1341,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	font-size: 13px;
 	line-height: 1.6;
 	color: var(--reader-fg);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	background: var(--reader-bg);
 	border: 1px solid var(--reader-border);
 	white-space: pre-wrap;
@@ -1382,7 +1397,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	color: var(--reader-fg-light);
 	font-size: 12.5px;
 	line-height: 1.7;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-copilot__composer {
@@ -1401,7 +1415,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	border-radius: 8px;
 	background: var(--reader-bg-soft);
 	color: var(--reader-fg);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	font-size: 13px;
 	line-height: 1.5;
 	padding: 8px 10px;
@@ -1434,7 +1447,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	color: white;
 	font-size: 12px;
 	font-weight: 500;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	border: none;
 	cursor: pointer;
 	transition:
@@ -1530,7 +1542,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	height: 100%;
 	background: var(--reader-accent);
 	border-radius: 999px;
-	transition: width 240ms ease;
 }
 
 .reader-progressbar__range {
@@ -1589,7 +1600,6 @@ mark[data-reader-highlight][data-color="orange"] {
 .reader-progressbar__chapter {
 	font-size: 11.5px;
 	color: var(--reader-fg-light);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	max-width: 200px;
 	white-space: nowrap;
 	overflow: hidden;
@@ -1601,7 +1611,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	font-size: 12px;
 	font-weight: 500;
 	color: var(--reader-fg-muted);
-	font-family: "Inter", system-ui, sans-serif;
 	min-width: 44px;
 	text-align: right;
 }
@@ -1623,7 +1632,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	border: 1px solid var(--reader-border);
 	box-shadow: var(--reader-shadow);
 	z-index: 20;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	font-size: 12px;
 	color: var(--reader-fg-muted);
 	animation: reader-tts-fade 200ms ease;
@@ -1759,7 +1767,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	background: transparent;
 	color: var(--reader-fg);
 	font-size: 12px;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	border: none;
 	cursor: pointer;
 	transition:
@@ -1845,7 +1852,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	outline: none;
 	background: transparent;
 	color: var(--reader-fg);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	font-size: 14px;
 }
 
@@ -1878,7 +1884,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	text-align: center;
 	color: var(--reader-fg-light);
 	font-size: 12.5px;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-search-panel__list {
@@ -1912,7 +1917,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	font-size: 13px;
 	color: var(--reader-fg);
 	line-height: 1.55;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-search-panel__snippet mark {
@@ -2108,7 +2112,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	background: var(--reader-bg, #faf9f5);
 	color: var(--reader-fg, #1a1a1a);
 	font-size: 12px;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	cursor: pointer;
 	transition:
 		background-color 140ms ease,
@@ -2141,7 +2144,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	font-size: 11px;
 	color: var(--reader-fg-light, rgba(0, 0, 0, 0.4));
 	text-align: center;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	border-top: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
 }
 
@@ -2186,6 +2188,8 @@ mark[data-reader-highlight][data-color="orange"] {
 .reader-card-row__question {
 	font-size: 13px;
 	line-height: 1.5;
+	/* 列表内的卡片问题预览与卡面一致，刻意保持阅读 serif 排版 */
+	font-family: var(--reader-font-family, "Source Han Serif", Georgia, serif);
 	display: -webkit-box;
 	-webkit-line-clamp: 2;
 	-webkit-box-orient: vertical;
@@ -2196,7 +2200,6 @@ mark[data-reader-highlight][data-color="orange"] {
 .reader-card-row__meta {
 	font-size: 11px;
 	color: var(--reader-fg-light, rgba(0, 0, 0, 0.4));
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-card-row__actions {
@@ -2261,7 +2264,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	font-size: 13px;
 	font-weight: 500;
 	color: var(--reader-fg-muted, rgba(0, 0, 0, 0.45));
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	font-variant-numeric: tabular-nums;
 }
 
@@ -2306,23 +2308,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	overflow-x: hidden;
 }
 
-.reader-card-face::before {
-	content: "";
-	position: absolute;
-	left: 0;
-	top: 0;
-	bottom: 0;
-	width: 4px;
-	border-top-left-radius: 20px;
-	border-bottom-left-radius: 20px;
-	background: var(--reader-accent, #d96c46);
-	opacity: 0.55;
-}
-
-.reader-card-face--front::before {
-	background: color-mix(in oklab, var(--reader-accent, #d96c46) 70%, #ffffff);
-}
-
 .reader-card-face--back {
 	transform: rotateY(180deg);
 	background: color-mix(
@@ -2333,10 +2318,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	box-shadow:
 		0 6px 28px rgba(217, 108, 70, 0.12),
 		0 1px 4px rgba(0, 0, 0, 0.05);
-}
-
-.reader-card-face--back::before {
-	background: var(--reader-accent, #d96c46);
 }
 
 .reader-card-face__badge {
@@ -2354,7 +2335,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	color: var(--reader-accent, #d96c46);
 	font-size: 13px;
 	font-weight: 700;
-	font-family: "Inter", system-ui, sans-serif;
 	margin-bottom: 20px;
 }
 
@@ -2363,13 +2343,14 @@ mark[data-reader-highlight][data-color="orange"] {
 	line-height: 1.75;
 	color: var(--reader-fg, #1a1a1a);
 	max-width: 42ch;
+	/* 卡片正文刻意保持阅读 serif 排版 */
+	font-family: var(--reader-font-family, "Source Han Serif", Georgia, serif);
 }
 
 .reader-card-face__hint {
 	margin-top: 28px;
 	font-size: 12px;
 	color: var(--reader-fg-light, rgba(0, 0, 0, 0.4));
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	opacity: 0.7;
 }
 
@@ -2391,7 +2372,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	background: var(--reader-bg, #faf9f5);
 	color: var(--reader-fg, #1a1a1a);
 	font-size: 13px;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	cursor: pointer;
 	transition:
 		background-color 140ms ease,
@@ -2456,7 +2436,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	font-size: 14px;
 	font-weight: 600;
 	color: var(--reader-fg, #1a1a1a);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-card-edit__body {
@@ -2473,7 +2452,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	font-size: 12px;
 	font-weight: 500;
 	color: var(--reader-fg-muted, rgba(0, 0, 0, 0.45));
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-card-edit__textarea {
@@ -2509,7 +2487,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	background: var(--reader-bg, #faf9f5);
 	color: var(--reader-fg, #1a1a1a);
 	font-size: 13px;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	cursor: pointer;
 	transition: background-color 140ms ease;
 }
@@ -2579,7 +2556,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	height: 100%;
 	background: var(--reader-accent, #d96c46);
 	border-radius: inherit;
-	transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reader-card-face__tags {
@@ -2637,7 +2613,6 @@ mark[data-reader-highlight][data-color="orange"] {
 		background-color 140ms ease,
 		border-color 140ms ease,
 		box-shadow 140ms ease;
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 .reader-card-quality-btn:hover {
@@ -2806,7 +2781,6 @@ mark[data-reader-highlight][data-color="orange"] {
 		0 4px 12px rgba(0, 0, 0, 0.06);
 	overflow: hidden;
 	animation: reader-card-draft-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 }
 
 @keyframes reader-card-draft-in {
@@ -3016,7 +2990,6 @@ mark[data-reader-highlight][data-color="orange"] {
 	border: 1px solid var(--reader-border, rgba(0, 0, 0, 0.08));
 	background: var(--reader-bg, #faf9f5);
 	box-shadow: 0 6px 22px rgba(0, 0, 0, 0.1);
-	font-family: "Inter", "PingFang SC", system-ui, sans-serif;
 	animation: reader-card-draft-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 

@@ -150,7 +150,7 @@ function ThemeCard({
 			>
 				{/* 左侧栏 */}
 				<div
-					className="w-[30%] rounded-md"
+					className="w-[30%] rounded-lg"
 					style={{
 						backgroundColor: colors["--t-bg-panel"],
 						border: `1px solid ${colors["--t-border"]}`,
@@ -183,7 +183,7 @@ function ThemeCard({
 				</div>
 				{/* 中间区域 */}
 				<div
-					className="flex-1 rounded-md"
+					className="flex-1 rounded-lg"
 					style={{
 						backgroundColor: colors["--t-bg-panel-strong"],
 						border: `1px solid ${colors["--t-border"]}`,
@@ -212,7 +212,7 @@ function ThemeCard({
 				</div>
 				{/* 右侧栏 */}
 				<div
-					className="w-[25%] rounded-md"
+					className="w-[25%] rounded-lg"
 					style={{
 						backgroundColor: colors["--t-bg-panel"],
 						border: `1px solid ${colors["--t-border"]}`,
@@ -220,7 +220,7 @@ function ThemeCard({
 				>
 					<div className="p-1.5 space-y-1">
 						<div
-							className="h-2 rounded w-full"
+							className="h-2 rounded-lg w-full"
 							style={{ backgroundColor: colors["--t-primary"], opacity: 0.15 }}
 						/>
 						<div

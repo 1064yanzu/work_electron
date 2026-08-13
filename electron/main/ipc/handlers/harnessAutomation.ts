@@ -43,6 +43,7 @@ import {
 	type RuntimeEntry,
 } from "../../harnessHub/automation/runtimeMonitor";
 import { createLogger } from "../../logging/logger";
+import { sendToLiveWebContents } from "../../utils/safeWebContentsSend";
 
 const logger = createLogger();
 
@@ -164,7 +165,7 @@ export function createHarnessAutomationHandlers(
 	// 事件转发：监测层与执行器只管产出变化，往哪推是这一层的事
 	harnessRuntimeMonitor.onChange((entries) => {
 		try {
-			getMainWindow()?.webContents.send("harness-runtime-changed", {
+			sendToLiveWebContents(getMainWindow(), "harness-runtime-changed", {
 				runtimes: entries.map(toRuntimeRow),
 			});
 		} catch {
@@ -173,7 +174,7 @@ export function createHarnessAutomationHandlers(
 	});
 	automationRunner.onRunChange((run) => {
 		try {
-			getMainWindow()?.webContents.send("harness-job-run-changed", {
+			sendToLiveWebContents(getMainWindow(), "harness-job-run-changed", {
 				run: toRunRow(run),
 			});
 		} catch {

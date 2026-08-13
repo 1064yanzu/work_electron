@@ -44,7 +44,7 @@ export function ModelBadge({ type }: ModelBadgeProps) {
 	return (
 		<span
 			title={config.title}
-			className={`inline-flex items-center px-1.5 py-0.5 rounded-md border ${config.bg} ${config.text} ${config.border}`}
+			className={`inline-flex items-center px-1.5 py-0.5 rounded-lg border ${config.bg} ${config.text} ${config.border}`}
 		>
 			<Icon className="w-3 h-3" />
 		</span>

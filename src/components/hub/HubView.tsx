@@ -233,6 +233,15 @@ export function HubView() {
 		[detections, sites, quotas, extraCounts],
 	);
 
+	/**
+	 * 可接收接力的入口 —— 与 HarnessRail 里 `canReceive` 的判定口径保持一致，
+	 * 供时间线的「移交到…」菜单（拖拽的键盘可达等价路径）列出候选。
+	 */
+	const handoffTargets = useMemo(
+		() => entries.filter((entry) => entry.available && !entry.blocked),
+		[entries],
+	);
+
 	const labelOf = useCallback(
 		(harness: string): string => {
 			if (harness === APP_HARNESS) return "本应用";
@@ -395,7 +404,7 @@ export function HubView() {
 			<div className="px-5 pt-5 pb-3 shrink-0">
 				<div className="flex items-start justify-between gap-3">
 					<div className="min-w-0">
-						<div className="text-[11px] font-semibold tracking-[0.22em] text-text-light uppercase">
+						<div className="text-2xs font-semibold tracking-[0.22em] text-text-light uppercase">
 							AI Harness Hub
 						</div>
 						<h2 className="font-serif text-2xl leading-tight text-text-primary mt-1 tracking-tight">
@@ -469,7 +478,7 @@ export function HubView() {
 							)}
 						</div>
 						{searchSessions && (
-							<p className="text-[11px] text-text-light mt-1.5">
+							<p className="text-2xs text-text-light mt-1.5">
 								命中 {searchSessions.length} 段会话
 								{hits && hits.length > searchSessions.length && (
 									<>（部分命中的会话不在当前筛选范围内）</>
@@ -485,6 +494,7 @@ export function HubView() {
 							labelOf={labelOf}
 							activeSessionId={selected?.id ?? null}
 							resumableIds={resumableIds}
+							handoffTargets={handoffTargets}
 							onSelect={(session) => {
 								setSelected(session);
 								setPanel("detail");
@@ -492,6 +502,7 @@ export function HubView() {
 							onResume={(session) => void handleResume(session)}
 							onExport={(session) => void handleExport(session)}
 							onDelete={(session) => void handleDelete(session)}
+							onHandoff={(session, target) => setHandoff({ session, target })}
 							onDragStart={(session) => {
 								draggingRef.current = session;
 							}}
@@ -531,7 +542,7 @@ export function HubView() {
 							运行
 							{/* 有执行体在跑时给个活体标记，不用切过去也知道有事在发生 */}
 							{runningCount > 0 && (
-								<span className="ml-1 text-[11px] text-success">
+								<span className="ml-1 text-2xs text-success">
 									{runningCount}
 								</span>
 							)}
@@ -544,7 +555,7 @@ export function HubView() {
 						</PanelTab>
 						{activeCwd && panel !== "detail" && (
 							<span
-								className="ml-auto text-[11px] text-text-light truncate max-w-[45%]"
+								className="ml-auto text-2xs text-text-light truncate max-w-[45%]"
 								title={activeCwd}
 							>
 								作用域 {activeCwd}
@@ -615,6 +626,8 @@ function HeaderButton({
 			onClick={onClick}
 			disabled={disabled}
 			title={title}
+			// 内容是纯图标，title 只是 tooltip；读屏要靠 aria-label
+			aria-label={title}
 			className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
 		>
 			{children}

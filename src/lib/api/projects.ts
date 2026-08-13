@@ -46,7 +46,7 @@ export async function getRecentProjects(limit?: number): Promise<Project[]> {
 }
 
 export async function recordProjectVisit(projectId: Uuid): Promise<void> {
-	return await safeInvoke("record_project_visit", { projectId });
+	return await safeInvoke("record_project_visit", { project_id: projectId });
 }
 
 export async function revealProjectDirectory(projectId: string): Promise<{

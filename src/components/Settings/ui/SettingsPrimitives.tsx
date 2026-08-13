@@ -180,7 +180,7 @@ export function SettingsSwitch({
 					"inline-block h-[16px] w-[16px] transform rounded-full shadow-sm transition-transform duration-150",
 					checked
 						? "translate-x-[20px] bg-primary-foreground"
-						: "translate-x-[3px] bg-white dark:bg-cream-100",
+						: "translate-x-[3px] bg-white",
 				)}
 			/>
 		</button>
@@ -417,7 +417,7 @@ export function SettingsSlider({
 						)}
 					</div>
 					<span
-						className="shrink-0 inline-flex items-center rounded-full border border-border bg-cream-100 px-2.5 py-0.5 text-xs font-mono tabular-nums text-text-primary"
+						className="shrink-0 inline-flex items-center rounded-full border border-border bg-background px-2.5 py-0.5 text-xs font-mono tabular-nums text-text-primary"
 						style={{ backgroundColor: accentSoft, color: accent }}
 					>
 						{display}
@@ -459,7 +459,7 @@ export function SettingsSlider({
 				/>
 			</div>
 			{(minLabel || maxLabel) && (
-				<div className="flex justify-between text-[11px] tabular-nums text-text-light">
+				<div className="flex justify-between text-2xs tabular-nums text-text-light">
 					<span>{minLabel}</span>
 					<span>{maxLabel}</span>
 				</div>
@@ -545,7 +545,7 @@ export function SettingsChipGroup<T extends string = string>({
 						{opt.hint && (
 							<span
 								className={cn(
-									"text-[11px] tabular-nums",
+									"text-2xs tabular-nums",
 									active ? "opacity-70" : "text-text-light",
 								)}
 							>
@@ -560,10 +560,11 @@ export function SettingsChipGroup<T extends string = string>({
 }
 
 /**
- * SettingsStat — 单个数字 + 描述的小展示块
+ * SettingsStat — 紧凑键值行（label 左、数值+提示右）
  *
- * 用于在 panel header 旁边展示统计（"3 个内置 / 2 个自定义"），
- * 或在卡片内部做指标块（"语速 1x / 音量 80% / 音调 1"）。
+ * 用于概览统计（"3 个内置 / 2 个自定义"）。多行并列时外层用
+ * `rounded-2xl border border-border bg-surface px-4 divide-y divide-border/60`
+ * 包成一张列表卡，替代旧版的大数字统计卡网格。
  */
 interface SettingsStatProps {
 	label: string;
@@ -581,21 +582,21 @@ export function SettingsStat({
 	return (
 		<div
 			className={cn(
-				"flex flex-col gap-0.5 rounded-xl border border-border bg-cream-50 px-3 py-2",
+				"flex items-baseline justify-between gap-3 py-2.5",
 				className,
 			)}
 		>
-			<div className="text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted">
+			<span className="shrink-0 text-xs font-medium text-text-secondary">
 				{label}
-			</div>
-			<div className="text-base font-semibold leading-tight tabular-nums text-text-primary">
-				{value}
-			</div>
-			{hint && (
-				<div className="text-[11px] leading-relaxed text-text-light">
-					{hint}
-				</div>
-			)}
+			</span>
+			<span className="flex min-w-0 items-baseline justify-end gap-2 text-right">
+				<span className="tabular-nums text-sm font-medium text-text-primary">
+					{value}
+				</span>
+				{hint && (
+					<span className="truncate text-2xs text-text-light">{hint}</span>
+				)}
+			</span>
 		</div>
 	);
 }

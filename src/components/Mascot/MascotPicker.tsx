@@ -187,8 +187,8 @@ export function MascotPicker({
 							"mt-3 rounded-lg px-3 py-2 text-xs leading-relaxed",
 							importMessage.startsWith("导入失败") ||
 								importMessage.startsWith("删除失败")
-								? "bg-red-50 text-red-700"
-								: "bg-emerald-50 text-emerald-700",
+								? "bg-error-muted text-error"
+								: "bg-success/10 text-success",
 						)}
 					>
 						{importMessage}
@@ -322,7 +322,7 @@ function CustomMascotCard({
 					{/* badge：是否带 atlas / loading */}
 					{(mascot.hasAtlas || mascot.hasLoading) && (
 						<span
-							className="absolute -bottom-1 right-1 inline-flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-[11px] font-semibold shadow-sm"
+							className="absolute -bottom-1 right-1 inline-flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-2xs font-semibold shadow-sm"
 							style={{ color: accentColor }}
 						>
 							{mascot.hasAtlas && "atlas"}
@@ -381,8 +381,8 @@ function IconButton({ onClick, ariaLabel, danger, children }: IconButtonProps) {
 			className={cn(
 				"inline-flex h-6 w-6 items-center justify-center rounded-full transition",
 				danger
-					? "bg-white text-red-500 hover:bg-red-50 shadow-sm"
-					: "bg-white text-text-secondary hover:bg-warm-100 shadow-sm",
+					? "bg-surface text-error hover:bg-error-muted shadow-sm"
+					: "bg-surface text-text-secondary hover:bg-warm-100 shadow-sm",
 			)}
 		>
 			{children}
@@ -487,7 +487,7 @@ function AddMascotCard({
 							? "松开即可导入"
 							: "添加自定义桌宠"}
 				</div>
-				<div className="text-[11px] leading-snug text-text-light px-2">
+				<div className="text-2xs leading-snug text-text-light px-2">
 					{dragOver
 						? "支持 .zip 包或目录"
 						: "可拖入 zip / 目录，也兼容 codex hatch-pet"}

@@ -24,59 +24,23 @@ interface SlashCommandChipProps {
 
 // ... styles definition remains same ...
 
-// 类型对应的颜色配置 - 高级质感配色（仿 Notion/Claude 标签）
-const CHIP_STYLES: Record<
-	SelectedChip["type"],
-	{
-		bg: string;
-		bgExpanded: string;
-		border: string;
-		text: string;
-		icon: string;
-		ring: string;
-	}
-> = {
-	agent_skill: {
-		bg: "bg-violet-50 dark:bg-violet-500/10",
-		bgExpanded: "bg-violet-50/50 dark:bg-violet-500/10",
-		border: "border-violet-200 dark:border-violet-500/20",
-		text: "text-violet-700 dark:text-violet-300",
-		icon: "text-violet-600 dark:text-violet-400",
-		ring: "ring-violet-200/50 dark:ring-violet-500/20",
-	},
-	skill: {
-		bg: "bg-indigo-50 dark:bg-indigo-500/10",
-		bgExpanded: "bg-indigo-50/50 dark:bg-indigo-500/10",
-		border: "border-indigo-200 dark:border-indigo-500/20",
-		text: "text-indigo-700 dark:text-indigo-300",
-		icon: "text-indigo-600 dark:text-indigo-400",
-		ring: "ring-indigo-200/50 dark:ring-indigo-500/20",
-	},
-	prompt: {
-		// 使用更柔和的黄色/橙色
-		bg: "bg-orange-50 dark:bg-orange-500/10",
-		bgExpanded: "bg-orange-50/50 dark:bg-orange-500/10",
-		border: "border-orange-200 dark:border-orange-500/20",
-		text: "text-orange-700 dark:text-orange-300",
-		icon: "text-orange-600 dark:text-orange-400",
-		ring: "ring-orange-200/50 dark:ring-orange-500/20",
-	},
-	data: {
-		bg: "bg-success/8 dark:bg-success/10",
-		bgExpanded: "bg-success/8 dark:bg-success/10",
-		border: "border-success/30 dark:border-success/20",
-		text: "text-success dark:text-success",
-		icon: "text-success dark:text-success",
-		ring: "ring-emerald-200/50 dark:ring-emerald-500/20",
-	},
-	context: {
-		bg: "bg-sky-50 dark:bg-sky-500/10",
-		bgExpanded: "bg-sky-50/50 dark:bg-sky-500/10",
-		border: "border-sky-200 dark:border-sky-500/20",
-		text: "text-sky-700 dark:text-sky-300",
-		icon: "text-sky-600 dark:text-sky-400",
-		ring: "ring-sky-200/50 dark:ring-sky-500/20",
-	},
+// 类型样式统一为中性 pill —— Claude/Codex 式克制：类型区分交给图标形状与名称，
+// 不给每类功能各配一个色相（五色 chip 是视觉噪音，也和签名色抢注意力）
+const NEUTRAL_CHIP_STYLE = {
+	bg: "bg-warm-200/70",
+	bgExpanded: "bg-warm-200/40",
+	border: "border-border",
+	text: "text-text-secondary",
+	icon: "text-text-secondary",
+	ring: "ring-border/60",
+} as const;
+
+const CHIP_STYLES: Record<SelectedChip["type"], typeof NEUTRAL_CHIP_STYLE> = {
+	agent_skill: NEUTRAL_CHIP_STYLE,
+	skill: NEUTRAL_CHIP_STYLE,
+	prompt: NEUTRAL_CHIP_STYLE,
+	data: NEUTRAL_CHIP_STYLE,
+	context: NEUTRAL_CHIP_STYLE,
 };
 
 export function SlashCommandChip({
@@ -167,14 +131,13 @@ export function SlashCommandChip({
 						onChange={(e) => onUpdate?.(chip.id, e.target.value)}
 						className={`
                             w-full min-h-[150px] max-h-[500px] resize-y bg-transparent 
-                            focus:outline-none placeholder-cream-400 p-1
-                            scrollbar-thin scrollbar-thumb-cream-300 dark:scrollbar-thumb-cream-600
+                            focus:outline-none placeholder-text-muted p-1
                             font-sans
                         `}
 						placeholder="在此编辑提示词内容..."
 						onClick={(e) => e.stopPropagation()}
 					/>
-					<div className="text-[11px] opacity-50 mt-1 text-right">
+					<div className="text-2xs opacity-50 mt-1 text-right">
 						支持编辑 • 发送时将包含修改后的内容
 					</div>
 				</div>

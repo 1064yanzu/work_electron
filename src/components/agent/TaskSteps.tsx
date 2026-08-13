@@ -20,7 +20,7 @@ function StatusIcon({ status }: { status: AgentTaskStep["status"] }) {
 	if (status === "running")
 		return <Loader2 className="w-4 h-4 text-focus animate-spin" />;
 	if (status === "completed")
-		return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+		return <CheckCircle2 className="w-4 h-4 text-success" />;
 	if (status === "error") return <XCircle className="w-4 h-4 text-error" />;
 	if (status === "cancelled")
 		return <PauseCircle className="w-4 h-4 text-text-light" />;
@@ -33,7 +33,7 @@ export function TaskSteps({ steps }: { steps?: AgentTaskStep[] }) {
 	return (
 		<div className="rounded-xl bg-surface/60 ring-1 ring-black/5 dark:ring-white/10">
 			<div className="px-3 py-2.5 border-b border-black/5 dark:border-white/5">
-				<div className="text-xs font-semibold text-text-secondary dark:text-cream-200">
+				<div className="text-xs font-semibold text-text-secondary">
 					任务清单
 				</div>
 				<div className="text-xs text-text-light">
@@ -47,9 +47,9 @@ export function TaskSteps({ steps }: { steps?: AgentTaskStep[] }) {
 							className={cn(
 								"w-6 h-6 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0",
 								step.status === "completed"
-									? "bg-green-50 text-green-600 dark:bg-green-900/20"
+									? "bg-success-muted text-success"
 									: step.status === "running"
-										? "bg-focus/8 text-focus dark:bg-blue-900/30"
+										? "bg-focus/8 text-focus"
 										: "bg-warm-200 text-text-muted/70",
 							)}
 						>

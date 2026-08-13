@@ -47,7 +47,12 @@ interface ChatInputProps {
 	models?: Model[];
 	onModelSelect?: (modelId: string) => void;
 	onOpenPromptLibrary?: () => void;
-	isAgentExecuting?: boolean;
+	/**
+	 * AI 正在响应（流式 / Agent 执行中）。此时文本框保持可编辑（先起草，
+	 * 完成后再发），发送被拦截，发送键原位变成停止键。
+	 */
+	isResponding?: boolean;
+	onStop?: () => void;
 	/** 运行模式（执行 / 规划）；未传 onTogglePlanMode 时不渲染该胶囊 */
 	planMode?: boolean;
 	onTogglePlanMode?: (enabled: boolean) => void;
@@ -62,6 +67,8 @@ export function ChatInput({
 	models = [],
 	onModelSelect,
 	onOpenPromptLibrary,
+	isResponding = false,
+	onStop,
 	planMode = false,
 	onTogglePlanMode,
 }: ChatInputProps) {
@@ -182,6 +189,8 @@ export function ChatInput({
 			if (isComposing) {
 				return; // 输入法组合中，不发送消息
 			}
+			// 响应期间 Enter 不拦截 —— 落成换行，草稿不丢也不误发
+			if (disabled) return;
 			e.preventDefault();
 			handleSubmit();
 		}
@@ -360,8 +369,7 @@ export function ChatInput({
 				<div
 					className={cn(
 						"relative bg-surface border rounded-2xl overflow-hidden",
-						"transition-colors duration-150 ease-out",
-						"shadow-[0_1px_2px_0_rgb(26_26_25/0.03)]",
+						"transition-colors duration-150 ease-out shadow-node",
 						isActive
 							? "border-warm-400 dark:border-cream-500/60"
 							: "border-border hover:border-warm-400/70",
@@ -391,11 +399,13 @@ export function ChatInput({
 								? (compactPlaceholder ?? placeholder)
 								: placeholder
 						}
-						disabled={disabled}
+						// 响应期间不禁用 —— 用户可以先起草下一条（Enter 落成换行，
+						// 发送键此时是停止键）；非响应的禁用场景仍然锁死
+						disabled={disabled && !isResponding}
 						rows={1}
 						className={cn(
 							"block w-full bg-transparent text-base leading-[1.5] text-text-primary",
-							"placeholder-cream-600 dark:placeholder-text-muted/40",
+							"placeholder:text-text-muted",
 							"resize-none focus:outline-none focus:ring-0 focus:shadow-none",
 							"disabled:opacity-50 px-4 pt-3.5 pb-2 min-h-[60px]",
 						)}
@@ -417,6 +427,8 @@ export function ChatInput({
 						onSubmit={handleSubmit}
 						planMode={planMode}
 						onTogglePlanMode={onTogglePlanMode}
+						isResponding={isResponding}
+						onStop={onStop}
 					/>
 				</div>
 			</div>

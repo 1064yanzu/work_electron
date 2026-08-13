@@ -41,7 +41,7 @@ type ChannelId =
 type QuickSetupChannelId = Exclude<ChannelId, "wechat">;
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-warm-500";
 
 /** 支持快速设置的通道，以及按钮的副标题提示。 */
 const QUICK_SETUP_HINT: Record<QuickSetupChannelId, string> = {
@@ -83,7 +83,7 @@ export function ChannelsSection({
 			description: "企业主力通道 · WebSocket",
 			icon: MessageSquareMore,
 			accent: "text-text-secondary",
-			iconBg: "from-warm-200 to-warm-200",
+			iconBg: "bg-warm-200",
 			enabled: config.channels.feishu.enabled,
 			running: feishuRt?.running,
 			connected: feishuRt?.connected,
@@ -97,7 +97,7 @@ export function ChannelsSection({
 				description: "Bot API 长轮询",
 				icon: Smartphone,
 				accent: "text-text-secondary",
-				iconBg: "from-warm-200 to-warm-200",
+				iconBg: "bg-warm-200",
 				enabled: config.channels.telegram.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -112,7 +112,7 @@ export function ChannelsSection({
 				description: "Socket Mode",
 				icon: Activity,
 				accent: "text-text-secondary",
-				iconBg: "from-warm-200 to-warm-200",
+				iconBg: "bg-warm-200",
 				enabled: config.channels.slack.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -127,7 +127,7 @@ export function ChannelsSection({
 				description: "Gateway WebSocket",
 				icon: Wifi,
 				accent: "text-text-secondary",
-				iconBg: "from-warm-200 to-warm-200",
+				iconBg: "bg-warm-200",
 				enabled: config.channels.discord.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -142,7 +142,7 @@ export function ChannelsSection({
 				description: "官方开放平台",
 				icon: Bot,
 				accent: "text-text-secondary",
-				iconBg: "from-warm-200 to-warm-200",
+				iconBg: "bg-warm-200",
 				enabled: config.channels.qqbot.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -158,7 +158,7 @@ export function ChannelsSection({
 				description: "Wechaty · 实验特性",
 				icon: MessageCircle,
 				accent: "text-peach-500",
-				iconBg: "from-peach-500/15 to-peach-500/5",
+				iconBg: "bg-peach-500/10",
 				enabled: config.channels.wechat.enabled,
 				running: rt?.running,
 				connected: rt?.connected,
@@ -233,8 +233,7 @@ export function ChannelsSection({
 								strokeWidth={1.5}
 							/>
 						}
-						accentGradient="from-warm-300 to-warm-300"
-						iconBg="from-warm-200 to-warm-200"
+						iconBg="bg-warm-200"
 						runtimeChannel={findRuntime("telegram")}
 						channelConfig={config.channels.telegram}
 						saving={saving}
@@ -274,8 +273,7 @@ export function ChannelsSection({
 								strokeWidth={1.5}
 							/>
 						}
-						accentGradient="from-warm-300 to-warm-300"
-						iconBg="from-warm-200 to-warm-200"
+						iconBg="bg-warm-200"
 						runtimeChannel={findRuntime("slack")}
 						channelConfig={config.channels.slack}
 						saving={saving}
@@ -330,8 +328,7 @@ export function ChannelsSection({
 						icon={
 							<Wifi className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />
 						}
-						accentGradient="from-warm-300 to-warm-300"
-						iconBg="from-warm-200 to-warm-200"
+						iconBg="bg-warm-200"
 						runtimeChannel={findRuntime("discord")}
 						channelConfig={config.channels.discord}
 						saving={saving}
@@ -425,7 +422,7 @@ function QuickSetupBanner({
 	onOpen: () => void;
 }) {
 	return (
-		<div className="group relative overflow-hidden rounded-2xl border border-border bg-warm-200/50 p-4 transition-colors duration-150 hover:border-cream-500">
+		<div className="group relative overflow-hidden rounded-2xl border border-border bg-warm-200/50 p-4 transition-colors duration-150 hover:border-warm-500">
 			<div className="flex items-center justify-between gap-4">
 				<div className="flex items-start gap-3">
 					<div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-warm-200 border border-border">

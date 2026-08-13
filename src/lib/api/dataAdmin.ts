@@ -5,10 +5,6 @@ export async function getDatabasePath(): Promise<string> {
 	return await safeInvoke("get_database_path");
 }
 
-export async function setDatabasePath(newPath: string): Promise<void> {
-	return await safeInvoke("set_database_path", { newPath });
-}
-
 export async function importDataFromJson(
 	jsonData: string,
 	options?: { overwrite?: boolean; clear_all_first?: boolean },

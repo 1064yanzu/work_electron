@@ -19,6 +19,7 @@ import type {
 } from "./types";
 import type { PairingService } from "./pairingService";
 import { RemoteSessionStore } from "../store/sessionStore";
+import { sendToLiveWebContents } from "../../utils/safeWebContentsSend";
 
 export type RemoteCommandRouterDeps = {
 	logger: Logger;
@@ -478,7 +479,7 @@ export class RemoteCommandRouter {
 					// 将远程消息注入前端 UI，让用户可以在界面中看到远程对话
 					const win = this.deps.getMainWindow();
 					if (win && !win.isDestroyed()) {
-						win.webContents.send("remote-chat-inject", {
+						sendToLiveWebContents(win, "remote-chat-inject", {
 							runId,
 							prompt,
 							channelId: message.channel_id,

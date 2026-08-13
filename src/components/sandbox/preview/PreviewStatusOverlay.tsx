@@ -57,7 +57,7 @@ export function PreviewStatusOverlay({
 						{[0, 1, 2].map((i) => (
 							<div
 								key={`sk-card-${i}`}
-								className="rounded-2xl border border-border/60 p-4 space-y-3 bg-cream-50/40"
+								className="rounded-2xl border border-border/60 p-4 space-y-3 bg-warm-100/40"
 							>
 								<div className="h-20 rounded-lg skeleton" />
 								<div className="h-3 w-2/3 rounded skeleton" />

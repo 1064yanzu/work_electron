@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useIpcListen } from "../../../hooks/useIpcListen";
 import { invoke } from "../../../lib/tauriCompat";
-import { listen } from "../../../lib/tauriEventCompat";
 import type { ReaderBook, ReaderChapter } from "../../../lib/api/reader";
 
 export type CopilotMessage = {
@@ -100,82 +100,54 @@ export function useReaderCopilot({
 	}, [book?.id]);
 
 	// 监听 llm-stream-chunk（主进程统一通道，按 streamId 过滤本会话）
-	useEffect(() => {
-		let cancelled = false;
-		let off: (() => void) | null = null;
-		(async () => {
-			try {
-				const unlisten = await listen<StreamChunk>(
-					"llm-stream-chunk",
-					(event) => {
-						const chunk = event?.payload;
-						if (!chunk || !streamIdRef.current) return;
-						// 严格按 streamId 过滤，避免别的并发流串扰
-						if (chunk.streamId && chunk.streamId !== streamIdRef.current) {
-							return;
-						}
+	// useIpcListen 统一处理订阅竞态与卸载清理
+	useIpcListen<StreamChunk>("llm-stream-chunk", (chunk) => {
+		if (!chunk || !streamIdRef.current) return;
+		// 严格按 streamId 过滤，避免别的并发流串扰
+		if (chunk.streamId && chunk.streamId !== streamIdRef.current) {
+			return;
+		}
 
-						const assistantId = assistantIdRef.current;
-						if (!assistantId) return;
+		const assistantId = assistantIdRef.current;
+		if (!assistantId) return;
 
-						if (chunk.done) {
-							// 检查结构化错误（主进程错误信息会编码为 chunk.content）
-							const errorDetail = tryParseLlmError(chunk.content);
-							if (errorDetail) {
-								setMessages((prev) => [
-									...prev.map((m) =>
-										m.id === assistantId ? { ...m, streaming: false } : m,
-									),
-									{
-										id: `err-${Date.now()}`,
-										role: "system",
-										content: `⚠️ ${errorDetail.title}\n\n${errorDetail.message}\n\n💡 ${errorDetail.suggestion}`,
-									},
-								]);
-							} else {
-								setMessages((prev) =>
-									prev.map((m) =>
-										m.id === assistantId ? { ...m, streaming: false } : m,
-									),
-								);
-							}
-							streamIdRef.current = null;
-							assistantIdRef.current = null;
-							setStreaming(false);
-							return;
-						}
-
-						// 仅追加正文 chunk；thought 通道暂不渲染（保留扩展空间）
-						if (chunk.channel && chunk.channel !== "text") return;
-						const delta = chunk.content || "";
-						if (!delta) return;
-						setMessages((prev) =>
-							prev.map((m) =>
-								m.id === assistantId
-									? { ...m, content: (m.content || "") + delta }
-									: m,
-							),
-						);
+		if (chunk.done) {
+			// 检查结构化错误（主进程错误信息会编码为 chunk.content）
+			const errorDetail = tryParseLlmError(chunk.content);
+			if (errorDetail) {
+				setMessages((prev) => [
+					...prev.map((m) =>
+						m.id === assistantId ? { ...m, streaming: false } : m,
+					),
+					{
+						id: `err-${Date.now()}`,
+						role: "system",
+						content: `⚠️ ${errorDetail.title}\n\n${errorDetail.message}\n\n💡 ${errorDetail.suggestion}`,
 					},
+				]);
+			} else {
+				setMessages((prev) =>
+					prev.map((m) =>
+						m.id === assistantId ? { ...m, streaming: false } : m,
+					),
 				);
-				if (cancelled) {
-					try {
-						unlisten();
-					} catch {}
-					return;
-				}
-				off = unlisten as () => void;
-			} catch {}
-		})();
-		return () => {
-			cancelled = true;
-			if (off) {
-				try {
-					off();
-				} catch {}
 			}
-		};
-	}, []);
+			streamIdRef.current = null;
+			assistantIdRef.current = null;
+			setStreaming(false);
+			return;
+		}
+
+		// 仅追加正文 chunk；thought 通道暂不渲染（保留扩展空间）
+		if (chunk.channel && chunk.channel !== "text") return;
+		const delta = chunk.content || "";
+		if (!delta) return;
+		setMessages((prev) =>
+			prev.map((m) =>
+				m.id === assistantId ? { ...m, content: (m.content || "") + delta } : m,
+			),
+		);
+	});
 
 	const send = useCallback(
 		async (intent: CopilotIntent) => {

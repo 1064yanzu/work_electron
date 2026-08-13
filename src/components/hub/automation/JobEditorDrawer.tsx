@@ -230,7 +230,7 @@ export function JobEditorDrawer({
 								))}
 							</select>
 						) : (
-							<p className="text-[11px] text-warning leading-relaxed">
+							<p className="text-2xs text-warning leading-relaxed">
 								本机没有检测到可用的 CLI 入口。自动化只支持 CLI （Web 站点靠 DOM
 								注入驱动，无人值守时一次页面改版就会静默失败）。
 							</p>
@@ -255,7 +255,7 @@ export function JobEditorDrawer({
 								</button>
 							))}
 						</div>
-						<p className="text-[11px] text-text-light mt-1.5 leading-relaxed">
+						<p className="text-2xs text-text-light mt-1.5 leading-relaxed">
 							{execMode === "headless"
 								? "后台子进程运行，安静、可并发，输出直接落库。"
 								: "起一个终端标签页跑 TUI，全过程可见，随时可以接管交互。"}
@@ -268,7 +268,7 @@ export function JobEditorDrawer({
 								value={cwd}
 								onChange={(e) => setCwd(e.target.value)}
 								placeholder="/path/to/project"
-								className={cn(inputCls, "flex-1 font-mono text-[11px]")}
+								className={cn(inputCls, "flex-1 font-mono text-2xs")}
 							/>
 							<button
 								type="button"
@@ -303,7 +303,7 @@ export function JobEditorDrawer({
 							<span className="block text-xs text-text-secondary">
 								允许修改文件
 							</span>
-							<span className="block text-[11px] text-text-light leading-relaxed mt-0.5">
+							<span className="block text-2xs text-text-light leading-relaxed mt-0.5">
 								关闭时只能读取和分析。开启后目标 AI
 								会直接改这个目录里的文件，且无人值守、没有逐条审阅的机会——
 								建议先确保工作区已提交。
@@ -430,7 +430,7 @@ export function JobEditorDrawer({
 									/>
 								</div>
 							)}
-							<p className="text-[11px] text-text-light mt-1.5 leading-relaxed">
+							<p className="text-2xs text-text-light mt-1.5 leading-relaxed">
 								到点但不在窗口内时推迟到窗口开启。可以跨零点（如 22:00 至
 								06:00）。
 							</p>
@@ -456,7 +456,7 @@ export function JobEditorDrawer({
 
 						{showAdvanced && (
 							<div className="mt-3 space-y-4 pl-4 border-l border-border/60">
-								<p className="text-[11px] text-text-light leading-relaxed">
+								<p className="text-2xs text-text-light leading-relaxed">
 									自动化只判定<b className="font-medium">错误信号</b>
 									（429、5xx、连接中断、卡死等），不判定任务本身有没有做完。
 									跑完这一轮没有出现可识别的错误就算这轮结束——
@@ -472,7 +472,7 @@ export function JobEditorDrawer({
 										onChange={(e) => setMaxAttempts(Number(e.target.value))}
 										className={inputCls}
 									/>
-									<p className="text-[11px] text-text-light mt-1 leading-relaxed">
+									<p className="text-2xs text-text-light mt-1 leading-relaxed">
 										重试会尽量<b className="font-medium">接着上次的进度续跑</b>
 										（用原生会话续接），而不是从头重来。鉴权失败、余额耗尽这类
 										重试解决不了的问题会直接停下等你处理，不消耗重试次数。
@@ -500,7 +500,7 @@ export function JobEditorDrawer({
 										<span className="block text-xs text-text-secondary">
 											连续失败后换一个入口继续
 										</span>
-										<span className="block text-[11px] text-text-light leading-relaxed mt-0.5">
+										<span className="block text-2xs text-text-light leading-relaxed mt-0.5">
 											按设置里「代码改写」能力的路由顺序，挑一个已安装且未被限额的
 											CLI 接手。换入口后会重新发起，不能续接原会话。
 										</span>
@@ -571,7 +571,7 @@ function Field({
 }) {
 	return (
 		<div>
-			<span className="block text-[11px] text-text-light mb-1.5">{label}</span>
+			<span className="block text-2xs text-text-light mb-1.5">{label}</span>
 			{children}
 		</div>
 	);

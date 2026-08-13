@@ -425,11 +425,11 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 					<span className="text-xs font-medium text-text-secondary truncate">
 						{file.name}
 					</span>
-					<span className="text-[11px] text-text-muted bg-warm-200 px-1 py-0.5 rounded">
+					<span className="text-2xs text-text-muted bg-warm-200 px-1 py-0.5 rounded">
 						{fileExtensionLabel}
 					</span>
 					{sourceDirty ? (
-						<span className="inline-flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-md">
+						<span className="inline-flex items-center gap-1 text-2xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-md">
 							<span className="w-1 h-1 rounded-full bg-amber-500" />
 							未保存
 						</span>
@@ -438,14 +438,14 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 				<div className="flex items-center gap-0.5 flex-wrap justify-end">
 					{copiedLabel ? (
 						<span
-							className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-success/8 text-success dark:bg-emerald-900/20 dark:text-success"
+							className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-2xs bg-success/8 text-success dark:bg-emerald-900/20 dark:text-success"
 							aria-live="polite"
 						>
 							{copiedLabel}
 						</span>
 					) : null}
 					{isFallbackToSource ? (
-						<span className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-peach-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+						<span className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-2xs bg-peach-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
 							预览不可用，已降级源码
 						</span>
 					) : null}

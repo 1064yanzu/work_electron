@@ -34,7 +34,7 @@ import {
 } from "./ChannelFeatureToggles";
 
 const INPUT_CLASS =
-	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-cream-400 dark:hover:border-cream-500";
+	"w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out focus:border-primary/60 focus:ring-2 focus:ring-primary/20 hover:border-warm-500";
 
 type WechatChannelConfig = NonNullable<
 	RemoteControlConfig["channels"]["wechat"]
@@ -191,7 +191,7 @@ export function WechatChannelCard({
 								});
 							}}
 							disabled={saving}
-							className="mt-0.5 h-3.5 w-3.5 rounded border-error/40"
+							className="mt-0.5 h-3.5 w-3.5 rounded-lg border-error/40"
 						/>
 						<span>
 							我已了解上述风险；启用本渠道造成的账号限制或封禁由我自行承担。
@@ -425,7 +425,7 @@ export function WechatChannelCard({
 							className={`h-1.5 w-1.5 rounded-full ${
 								runtimeChannel?.running
 									? "bg-mint-500 animate-pulse"
-									: "bg-cream-500"
+									: "bg-warm-500"
 							}`}
 						/>
 						{runtimeChannel?.running ? "运行中" : "未运行"}

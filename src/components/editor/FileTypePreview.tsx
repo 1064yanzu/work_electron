@@ -128,9 +128,9 @@ const AudioPreview = memo(function AudioPreview({
 	const src = convertFileSrc(filePath);
 	return (
 		<div className="flex flex-col items-center gap-4 p-10">
-			<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 dark:from-purple-500/30 dark:to-pink-500/30 flex items-center justify-center">
+			<div className="w-16 h-16 rounded-2xl bg-primary-muted flex items-center justify-center">
 				<svg
-					className="w-8 h-8 bai-icon-violet dark:bai-icon-violet"
+					className="w-8 h-8 text-text-secondary"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -270,9 +270,9 @@ const ExcelPlaceholder = memo(function ExcelPlaceholder({
 }) {
 	return (
 		<div className="flex flex-col items-center gap-4 p-10 text-center">
-			<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 dark:from-emerald-500/30 dark:to-teal-500/30 flex items-center justify-center">
+			<div className="w-16 h-16 rounded-2xl bg-primary-muted flex items-center justify-center">
 				<svg
-					className="w-8 h-8 text-success dark:text-success"
+					className="w-8 h-8 text-text-secondary"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"

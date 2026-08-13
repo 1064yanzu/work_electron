@@ -1,6 +1,7 @@
 import type { IPCSchema } from "../../shared/ipc-schema";
 import { createFileClipStore } from "../clip/fileClipStore";
 import type { DbContext } from "../db/client";
+import { createLogger } from "../logging/logger";
 import { getActiveFtsVersion } from "./ftsRebuild";
 
 type SearchInput = IPCSchema["kb_search_chunks"]["input"];
@@ -229,14 +230,37 @@ export async function searchChunksFromDb(
 	});
 }
 
+/**
+ * 知识库检索：优先走数据库 FTS，必要时回落到剪藏收件箱的内存扫描。
+ *
+ * 这里必须区分两种"数据库没给出结果"：
+ *
+ * - **正常无结果**：FTS 跑通了，只是没匹配到。回落去扫剪藏收件箱是合理的补充，
+ *   不算异常，不需要告警。
+ * - **查询抛错**：FTS 表缺失、语法错误、库损坏。原实现用空 catch 吞掉，
+ *   现象是"搜索结果莫名其妙变少"，而日志里一个字都没有 —— 这类问题极难定位。
+ *   现在会记 warn，并给回落结果打上 `degraded` 标记让上层能提示用户。
+ */
 export async function searchChunks(
 	db: DbContext,
 	input: SearchInput,
 ): Promise<SearchOutput> {
+	let degraded = false;
 	try {
 		const fromDb = await searchChunksFromDb(db, input);
 		if (fromDb.length > 0) return fromDb;
-	} catch {}
+	} catch (error) {
+		degraded = true;
+		createLogger().warn({
+			msg: "知识库 FTS 查询失败，已降级到剪藏收件箱扫描（结果不完整）",
+			scope: "kb",
+			query: input.query.slice(0, 100),
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
 
-	return searchChunksFromClipInbox(input);
+	const fallback = await searchChunksFromClipInbox(input);
+	return degraded
+		? fallback.map((item) => ({ ...item, degraded: true }))
+		: fallback;
 }

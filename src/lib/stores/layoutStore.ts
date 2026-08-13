@@ -9,6 +9,33 @@ import type { LayoutState } from "./types";
 
 const CARDS_ACTIVE_TAB_STORAGE_KEY = "layout.cardsActiveTab";
 const LEFT_SIDEBAR_COLLAPSED_STORAGE_KEY = "layout.leftSidebarCollapsed";
+const LEFT_SIDEBAR_VIEW_STORAGE_KEY = "layout.leftSidebarView";
+
+/** 左栏可选视图。与 LayoutState["leftSidebarView"] 保持一致，用于校验持久化值。 */
+const LEFT_SIDEBAR_VIEWS: readonly LayoutState["leftSidebarView"][] = [
+	"sources",
+	"research",
+	"detail",
+	"cards",
+	"threads",
+	"files",
+	"skills",
+	"wiki",
+];
+
+function readPersistedLeftSidebarView(): LayoutState["leftSidebarView"] {
+	if (typeof window === "undefined") return "sources";
+	try {
+		const raw = window.localStorage.getItem(LEFT_SIDEBAR_VIEW_STORAGE_KEY);
+		// "detail" 依赖 previewSource，冷启动时没有选中资料，恢复它会得到空面板
+		if (raw === "detail") return "sources";
+		const match = LEFT_SIDEBAR_VIEWS.find((view) => view === raw);
+		if (match) return match;
+	} catch {
+		// localStorage 不可用时静默
+	}
+	return "sources";
+}
 
 function readPersistedCardsActiveTab(): LayoutState["cardsActiveTab"] {
 	if (typeof window === "undefined") return "shared";
@@ -33,7 +60,7 @@ function readPersistedLeftSidebarCollapsed(): boolean {
 
 const initialLayoutState: LayoutState = {
 	activeMainView: "editor",
-	leftSidebarView: "sources",
+	leftSidebarView: readPersistedLeftSidebarView(),
 	rightSidebarVisible: true,
 	leftSidebarCollapsed: readPersistedLeftSidebarCollapsed(),
 	cardsActiveTab: readPersistedCardsActiveTab(),
@@ -50,11 +77,23 @@ function setMainView(view: LayoutState["activeMainView"]) {
 }
 
 function setLeftSidebarView(view: LayoutState["leftSidebarView"]) {
+	const prev = store.getState().leftSidebarView;
 	store.setState((state) =>
 		state.leftSidebarView === view
 			? state
 			: { ...state, leftSidebarView: view },
 	);
+	if (prev === view) return;
+	// "detail" 是「预览某条资料」的临时态，依赖 previewSource，不持久化，
+	// 否则下次冷启动会停在一个没有数据的空面板上
+	if (view === "detail") return;
+	if (typeof window !== "undefined") {
+		try {
+			window.localStorage.setItem(LEFT_SIDEBAR_VIEW_STORAGE_KEY, view);
+		} catch {
+			// localStorage 写入失败时静默
+		}
+	}
 }
 
 function toggleRightSidebar() {

@@ -186,9 +186,7 @@ export function ScenarioSelect({
 					"group relative w-full bg-warm-50 hover:bg-surface",
 					"border border-border transition-colors duration-150 rounded-xl px-3 py-2.5",
 					"cursor-pointer flex items-center justify-between focus-ring",
-					isOpen
-						? "ring-2 ring-cream-900/5 border-cream-400 bg-surface dark:border-cream-500"
-						: "",
+					isOpen ? "ring-2 ring-primary/5 border-border bg-surface" : "",
 				)}
 			>
 				<div className="flex items-center gap-2 min-w-0">
@@ -197,7 +195,7 @@ export function ScenarioSelect({
 					)}
 					<div className="flex flex-col items-start truncate">
 						{label && (
-							<span className="text-[11px] text-text-light font-medium uppercase tracking-wider mb-0.5">
+							<span className="text-2xs text-text-light font-medium uppercase tracking-wider mb-0.5">
 								{label}
 							</span>
 						)}
@@ -233,7 +231,7 @@ export function ScenarioSelect({
 							width: position.width,
 							zIndex: 9999,
 						}}
-						className="bg-cream-50 dark:bg-cream-900 rounded-2xl border border-cream-400 dark:border-cream-500 shadow-bai-pop max-h-[300px] overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col"
+						className="bg-surface rounded-2xl border border-border shadow-bai-pop max-h-[300px] overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col"
 					>
 						<div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
 							{groups ? (

@@ -38,38 +38,33 @@ const LAYER_CONFIGS = [
 		label: "灵魂层",
 		description: "世界观与根本姿态",
 		icon: Sparkles,
-		color: "violet",
 	},
 	{
 		key: "thinking" as const,
 		label: "骨干层·思维运作",
 		description: "思维如何运动",
 		icon: GitBranch,
-		color: "blue",
 	},
 	{
 		key: "articulation" as const,
 		label: "骨干层·篇章外化",
 		description: "思维如何落到篇章",
 		icon: Layers,
-		color: "cyan",
 	},
 	{
 		key: "texture" as const,
 		label: "血肉层",
 		description: "语言质感与指纹",
 		icon: Sparkles,
-		color: "amber",
 	},
 ] as const;
 
 function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 	const intensityColors = {
-		high: "text-mint-600 dark:text-mint-400 bg-mint-50 dark:bg-mint-900/20",
-		medium: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20",
-		low: "text-cream-600 dark:text-cream-400 bg-cream-50 dark:bg-cream-900/20",
-		insufficient_evidence:
-			"text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20",
+		high: "text-mint-600 bg-mint-500/10",
+		medium: "text-info bg-info-muted",
+		low: "text-text-muted bg-surface",
+		insufficient_evidence: "text-warning bg-warning-muted",
 	};
 
 	const constancyLabel = {
@@ -80,7 +75,7 @@ function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 	return (
 		<div className="flex gap-2 items-start text-xs">
 			<span
-				className={`shrink-0 rounded px-1.5 py-0.5 font-medium ${intensityColors[axis.intensity]}`}
+				className={`shrink-0 rounded-lg px-1.5 py-0.5 font-medium ${intensityColors[axis.intensity]}`}
 			>
 				{axis.intensity === "insufficient_evidence"
 					? "证据不足"
@@ -90,7 +85,7 @@ function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 				<div className="font-medium text-text-primary mb-0.5 flex items-center gap-1.5">
 					{axis.name}
 					{axis.constancy && (
-						<span className="text-[11px] px-1 py-0.5 rounded bg-cream-200 dark:bg-cream-700 text-text-muted">
+						<span className="text-2xs px-1 py-0.5 rounded-lg bg-warm-200 text-text-muted">
 							{constancyLabel[axis.constancy]}
 						</span>
 					)}
@@ -99,12 +94,12 @@ function AxisItem({ axis }: { axis: StyleAxisAnalysis }) {
 					{axis.description}
 				</div>
 				{axis.conditions && (
-					<div className="mt-1 text-[11px] text-text-muted italic">
+					<div className="mt-1 text-2xs text-text-muted italic">
 						条件：{axis.conditions}
 					</div>
 				)}
 				{axis.variance_note && axis.constancy === "variable" && (
-					<div className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
+					<div className="mt-1 text-2xs text-warning">
 						浮动：{axis.variance_note}
 					</div>
 				)}
@@ -124,7 +119,7 @@ function DimensionGroup({
 
 	return (
 		<div className="space-y-2">
-			<div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+			<div className="text-2xs font-semibold uppercase tracking-wider text-text-muted">
 				{title}
 			</div>
 			<div className="space-y-2.5">
@@ -155,22 +150,22 @@ function LayerSection({
 	if (totalAxes === 0) return null;
 
 	return (
-		<div className="rounded-xl border border-cream-200/80 dark:border-cream-600/40 overflow-hidden">
+		<div className="rounded-xl border border-border/80 overflow-hidden">
 			<button
 				type="button"
 				onClick={onToggle}
-				className="w-full flex items-center gap-3 px-4 py-3 text-left bg-cream-50/50 dark:bg-cream-800/30 hover:bg-cream-100/50 dark:hover:bg-cream-800/50 transition-colors duration-150"
+				className="w-full flex items-center gap-3 px-4 py-3 text-left bg-surface/50 hover:bg-background/50 transition-colors duration-150"
 			>
-				<Icon size={14} className={`shrink-0 text-${config.color}-500`} />
+				<Icon size={14} className="shrink-0 text-text-secondary" />
 				<div className="flex-1 min-w-0">
 					<div className="text-xs font-semibold text-text-primary">
 						{config.label}
 					</div>
-					<div className="text-[11px] text-text-muted mt-0.5">
+					<div className="text-2xs text-text-muted mt-0.5">
 						{config.description}
 					</div>
 				</div>
-				<span className="text-[11px] text-text-muted shrink-0">
+				<span className="text-2xs text-text-muted shrink-0">
 					{totalAxes} 个维度
 				</span>
 				<ChevronDown
@@ -180,7 +175,7 @@ function LayerSection({
 			</button>
 
 			{isExpanded && (
-				<div className="px-4 py-4 space-y-4 bg-white/30 dark:bg-cream-900/10">
+				<div className="px-4 py-4 space-y-4 bg-surface/30">
 					{Object.entries(data).map(([key, axes]) => (
 						<DimensionGroup key={key} title={key} axes={axes} />
 					))}
@@ -208,20 +203,18 @@ function CrossCuttingSection({
 	if (!hasContent) return null;
 
 	return (
-		<div className="rounded-xl border border-cream-200/80 dark:border-cream-600/40 overflow-hidden">
+		<div className="rounded-xl border border-border/80 overflow-hidden">
 			<button
 				type="button"
 				onClick={onToggle}
-				className="w-full flex items-center gap-3 px-4 py-3 text-left bg-cream-50/50 dark:bg-cream-800/30 hover:bg-cream-100/50 dark:hover:bg-cream-800/50 transition-colors duration-150"
+				className="w-full flex items-center gap-3 px-4 py-3 text-left bg-surface/50 hover:bg-background/50 transition-colors duration-150"
 			>
-				<Layers size={14} className="shrink-0 text-purple-500" />
+				<Layers size={14} className="shrink-0 text-text-secondary" />
 				<div className="flex-1 min-w-0">
 					<div className="text-xs font-semibold text-text-primary">
 						横切话题
 					</div>
-					<div className="text-[11px] text-text-muted mt-0.5">
-						贯穿三层的主题
-					</div>
+					<div className="text-2xs text-text-muted mt-0.5">贯穿三层的主题</div>
 				</div>
 				<ChevronDown
 					size={13}
@@ -230,7 +223,7 @@ function CrossCuttingSection({
 			</button>
 
 			{isExpanded && (
-				<div className="px-4 py-4 space-y-3 bg-white/30 dark:bg-cream-900/10 text-xs">
+				<div className="px-4 py-4 space-y-3 bg-surface/30 text-xs">
 					{crossCutting.recurring_imagery && (
 						<div>
 							<div className="font-semibold text-text-primary mb-1">
@@ -332,18 +325,18 @@ function RelationalSection({
 	if (!hasRelational) return null;
 
 	return (
-		<div className="rounded-xl border border-cream-200/80 dark:border-cream-600/40 overflow-hidden">
+		<div className="rounded-xl border border-border/80 overflow-hidden">
 			<button
 				type="button"
 				onClick={onToggle}
-				className="w-full flex items-center gap-3 px-4 py-3 text-left bg-cream-50/50 dark:bg-cream-800/30 hover:bg-cream-100/50 dark:hover:bg-cream-800/50 transition-colors duration-150"
+				className="w-full flex items-center gap-3 px-4 py-3 text-left bg-surface/50 hover:bg-background/50 transition-colors duration-150"
 			>
-				<GitBranch size={14} className="shrink-0 text-emerald-500" />
+				<GitBranch size={14} className="shrink-0 text-text-secondary" />
 				<div className="flex-1 min-w-0">
 					<div className="text-xs font-semibold text-text-primary">
 						关系性维度
 					</div>
-					<div className="text-[11px] text-text-muted mt-0.5">
+					<div className="text-2xs text-text-muted mt-0.5">
 						气韵、全息、经变
 					</div>
 				</div>
@@ -354,7 +347,7 @@ function RelationalSection({
 			</button>
 
 			{isExpanded && (
-				<div className="px-4 py-4 space-y-3 bg-white/30 dark:bg-cream-900/10 text-xs">
+				<div className="px-4 py-4 space-y-3 bg-surface/30 text-xs">
 					{anchors.layer_harmony && (
 						<div>
 							<div className="font-semibold text-text-primary mb-1">
@@ -373,17 +366,14 @@ function RelationalSection({
 								</div>
 								<div className="space-y-2">
 									{anchors.holographic_patterns.map((pattern, i) => (
-										<div
-											key={i}
-											className="rounded-lg bg-cream-50/50 dark:bg-cream-800/30 p-2.5"
-										>
+										<div key={i} className="rounded-lg bg-surface/50 p-2.5">
 											<div className="font-medium text-text-primary mb-1">
 												{pattern.name}
 											</div>
 											<div className="text-text-secondary mb-1.5">
 												{pattern.description}
 											</div>
-											<div className="space-y-1 text-[11px] text-text-muted">
+											<div className="space-y-1 text-2xs text-text-muted">
 												{pattern.sentence_level && (
 													<div>句子级：{pattern.sentence_level}</div>
 												)}
@@ -407,9 +397,9 @@ function RelationalSection({
 							<div className="text-text-secondary leading-relaxed mb-2">
 								{anchors.constancy_variance.summary}
 							</div>
-							<div className="grid grid-cols-2 gap-2 text-[11px]">
-								<div className="rounded-lg bg-mint-50 dark:bg-mint-900/20 p-2">
-									<div className="font-medium text-mint-700 dark:text-mint-300 mb-1">
+							<div className="grid grid-cols-2 gap-2 text-2xs">
+								<div className="rounded-lg bg-mint-500/10 p-2">
+									<div className="font-medium text-mint-600 mb-1">
 										经（不变）
 									</div>
 									<div className="space-y-0.5 text-text-muted">
@@ -418,15 +408,15 @@ function RelationalSection({
 										))}
 									</div>
 								</div>
-								<div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 p-2">
-									<div className="font-medium text-amber-700 dark:text-amber-300 mb-1">
+								<div className="rounded-lg bg-warning-muted p-2">
+									<div className="font-medium text-warning mb-1">
 										变（摆动）
 									</div>
 									<div className="space-y-0.5 text-text-muted">
 										{anchors.constancy_variance.variables.map((v, i) => (
 											<div key={i}>
 												<div className="font-medium">{v.dimension}</div>
-												<div className="text-[11px] pl-2">{v.range}</div>
+												<div className="text-2xs pl-2">{v.range}</div>
 											</div>
 										))}
 									</div>

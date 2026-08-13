@@ -2,7 +2,7 @@
 // 主要职责：
 //   - 聚合各 Store 订阅与本地 UI 状态
 //   - 通过 useCopilotSession / useCopilotMessage 等 hook 分离逻辑
-//   - 通过 memo 化的子组件（CopilotInputArea / CopilotStatusBar）隔离重渲染
+//   - 通过 memo 化的子组件（CopilotInputArea 等）隔离重渲染
 
 import { Plus } from "lucide-react";
 import {
@@ -43,7 +43,6 @@ import { CopilotMessagePane } from "./chat/CopilotMessagePane";
 import { CopilotHeader } from "./copilot/CopilotHeader";
 import { CopilotInputArea } from "./copilot/CopilotInputArea";
 import { CopilotStatusArea } from "./copilot/CopilotStatusArea";
-import { CopilotStatusBar } from "./copilot/CopilotStatusBar";
 import {
 	LazyPromptLibraryModal,
 	MESSAGE_WINDOW_SIZE,
@@ -216,17 +215,8 @@ export default function CopilotSidebar() {
 		messagesDep: chatStore.activeSession?.messages,
 	});
 
-	// 权限/AskUser 出现时滚到顶部
-	useEffect(() => {
-		if (pendingRequests.size > 0) {
-			scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-		}
-	}, [pendingRequests.size, scrollContainerRef]);
-	useEffect(() => {
-		if (pendingAskUserQuestions.size > 0) {
-			scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-		}
-	}, [pendingAskUserQuestions.size, scrollContainerRef]);
+	// 权限/AskUser 请求到达时不再滚动消息区：状态区常驻可见，滚到顶部
+	// 既丢失用户阅读位置，又会让 shouldAutoScroll 失效（批准后对话不再跟随流式）。
 
 	// === ADD_TO_CONTEXT 事件 ===
 	useEffect(() => {
@@ -268,15 +258,15 @@ export default function CopilotSidebar() {
 
 			el.scrollIntoView({ behavior: "smooth", block: "center" });
 
-			const prevShadow = el.style.boxShadow;
-			const prevRadius = el.style.borderRadius;
-			el.style.borderRadius = prevRadius || "16px";
-			el.style.boxShadow =
-				"0 0 0 2px rgba(99,102,241,0.45), 0 18px 60px -35px rgba(99,102,241,0.45)";
+			// 定位高亮走 CSS class（index.css .tool-call-highlight）：
+			// 用主题 token 的 ring 色 + 淡出过渡，替代原先硬编码 indigo 的瞬闪
+			el.classList.remove("tool-call-highlight");
+			// 强制 reflow 以便连续两次定位同一元素时动画能重放
+			void el.offsetWidth;
+			el.classList.add("tool-call-highlight");
 			window.setTimeout(() => {
-				el.style.boxShadow = prevShadow;
-				el.style.borderRadius = prevRadius;
-			}, 1200);
+				el.classList.remove("tool-call-highlight");
+			}, 1400);
 		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -401,7 +391,7 @@ export default function CopilotSidebar() {
 			{/* 拖拽资料到 AI 对话的视觉提示 */}
 			{showDropIndicator && (
 				<div
-					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-warm-500/5 border-cream-400"}`}
+					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-warm-500/5 border-border"}`}
 				>
 					<div className="bg-surface px-4 py-3 rounded-xl shadow-bai-pop border border-border flex items-center gap-3">
 						<div className="w-10 h-10 rounded-lg bg-warm-200 border border-border flex items-center justify-center">
@@ -461,12 +451,9 @@ export default function CopilotSidebar() {
 				onDenyAskUserQuestion={handleDenyAskUserQuestion}
 			/>
 
-			<div className="px-3 pb-3 pt-1.5 relative">
-				<CopilotStatusBar
-					isStreaming={isStreaming}
-					isAgentExecuting={isAgentExecuting}
-					onStop={stop}
-				/>
+			{/* px-4 与消息区左缘对齐（原 px-3 差半档）；max-w 与消息中心列同宽。
+			    停止响应不再是悬浮胶囊 —— 收进输入框工具栏（发送键原位变停止键） */}
+			<div className="px-4 pb-3 pt-1.5 relative mx-auto w-full max-w-[46rem]">
 				<CopilotInputArea
 					isStreaming={isStreaming}
 					isAgentExecuting={isAgentExecuting}
@@ -479,6 +466,7 @@ export default function CopilotSidebar() {
 					onSendMessage={handleSendMessage}
 					onSelectModel={handleSelectModel}
 					onOpenPromptLibrary={handleOpenPromptLibrary}
+					onStop={stop}
 				/>
 			</div>
 

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { useAgentStore } from "../../lib/agent/store";
+import { useAgentStoreSelector } from "../../lib/agent/store";
 import type { AgentTask } from "../../lib/agent/types";
 
 function findTaskById(
@@ -56,7 +56,9 @@ function statusToUi(status: TodoItem["status"] | "error" | "cancelled") {
 
 export function TaskListInline({ taskId }: { taskId: string }) {
 	const [expanded, setExpanded] = useState(true);
-	const { currentTask, taskHistory } = useAgentStore();
+	// 逐字段订阅：整个 agentStore 全量订阅会让本组件跟着流式事件每帧重渲染
+	const currentTask = useAgentStoreSelector((s) => s.currentTask);
+	const taskHistory = useAgentStoreSelector((s) => s.taskHistory);
 
 	const task = useMemo(
 		() => findTaskById(taskId, currentTask, taskHistory),
@@ -90,15 +92,15 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 
 	return (
 		<div className="my-3">
-			<div className="rounded-xl bg-warm-50 ring-1 ring-cream-200/80 dark:ring-cream-800 shadow-sm overflow-hidden">
+			<div className="rounded-xl bg-warm-50 ring-1 ring-border/80 shadow-sm overflow-hidden">
 				<button
 					type="button"
 					onClick={() => setExpanded((v) => !v)}
 					className="w-full flex items-center justify-between px-4 py-2.5 text-left"
 				>
 					<div className="flex items-center gap-2 min-w-0">
-						<ListTodo className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-						<div className="text-sm font-medium text-text-secondary dark:text-cream-200 truncate">
+						<ListTodo className="w-4 h-4 text-text-secondary flex-shrink-0" />
+						<div className="text-sm font-medium text-text-secondary truncate">
 							<span className="tabular-nums">
 								{completedCount}/{totalCount}
 							</span>{" "}

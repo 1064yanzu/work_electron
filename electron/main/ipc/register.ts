@@ -9,6 +9,21 @@ import type { IPCSchema } from "../../shared/ipc-schema";
 import { pickPetLineFromPool } from "../../shared/petPersonality";
 import type { DbContext } from "../db/client";
 import type { HttpStatus } from "../http/start";
+import {
+	IPC_CHANNELS,
+	IPC_CHANNEL_SET,
+} from "../../shared/ipcChannels.generated";
+import {
+	IPC_INPUT_VALIDATORS,
+	type IpcInputValidator,
+	validateIpcInput,
+} from "./validators";
+import {
+	ANTHROPIC_PROXY_TOKEN_KEY,
+	CLIP_SERVICE_TOKEN_KEY,
+	getActiveServiceToken,
+	rotateServiceToken,
+} from "../http/localServiceAuth";
 import { searchChunks } from "../kb/searchChunks";
 import { recordPerfEventsBatch } from "../services/perfEvents";
 import {
@@ -215,19 +230,38 @@ function startSlowIpcFlush(db: DbContext, logger: Logger): void {
 	slowIpcFlushTimer.unref?.();
 }
 
+/** 本进程已注册的 channel，供注册结束后与 schema 对账。 */
+const registeredChannels = new Set<string>();
+
 /**
  * 替代直接调用 `ipcMain.handle()` 的包装函数（机械替换了全部 375 处调用点）。
  * 为保持与原 375 个调用点完全兼容（它们中有的传 `satisfies IpcHandler<K>` 表达式，
  * 有的直接传 handler 对象的方法引用），这里故意保持与 `ipcMain.handle` 自己的类型声明
  * 一样宽松（event + 任意参数），避免引入新的类型错误。
+ *
+ * @param validator 运行时入参校验器。默认按 channel 名从 `ipc/validators/` 自动
+ *   查表，因此**不需要在调用点传**——只要往那张表里加一条，对应命令就自动生效。
+ *
+ *   IPC 的入参类型只在编译期成立：渲染端一个 `as any`、一次远控注入、
+ *   一个版本错配的前端，都会让 handler 拿到形态完全不同的对象。副作用型命令
+ *   （写文件、起终端、动 git worktree）必须在执行前把这层假设变成真检查。
  */
 function handle(
 	channel: string,
 	fn: (event: IpcMainInvokeEvent, ...args: any[]) => Promise<any> | any,
+	validator: IpcInputValidator | undefined = (
+		IPC_INPUT_VALIDATORS as Record<string, IpcInputValidator | undefined>
+	)[channel],
 ): void {
+	registeredChannels.add(channel);
 	ipcMain.handle(channel, async (event: IpcMainInvokeEvent, ...args: any[]) => {
 		const startedAt = performance.now();
 		try {
+			// 只校验、不替换 args[0]：zod 的 object 默认会剥掉未声明的字段，
+			// 拿解析结果去覆盖入参会静默丢掉 handler 依赖的历史字段。
+			if (validator) {
+				validateIpcInput(channel, validator, args[0]);
+			}
 			return await fn(event, ...args);
 		} catch (err) {
 			registeredLogger?.error({
@@ -242,6 +276,67 @@ function handle(
 			}
 		}
 	});
+}
+
+/**
+ * 注册完成后与 schema 对账。
+ *
+ * 两类问题都只在运行时才会暴露，而且症状具有误导性：
+ * - **注册了 schema 里没有的 channel**：多半是拼写错误。渲染端按 schema 的正确
+ *   拼法调用会得到 "No handler registered"，而这里明明"注册过了"，极难联想到拼写。
+ * - **schema 里有但没注册**：功能整块失效，报错却发生在调用点。
+ *
+ * 只记日志不抛异常：启动链路不应该因为一个命令没接上就整个起不来。
+ */
+function auditRegisteredChannels(logger: Logger): void {
+	const unknown = [...registeredChannels].filter(
+		(channel) => !IPC_CHANNEL_SET.has(channel),
+	);
+	const missing = IPC_CHANNELS.filter(
+		(channel) => !registeredChannels.has(channel),
+	);
+
+	if (unknown.length > 0) {
+		logger.warn({
+			msg: "注册了 schema 中不存在的 IPC channel（多半是拼写错误）",
+			scope: "ipc",
+			channels: unknown,
+		});
+	}
+	if (missing.length > 0) {
+		logger.warn({
+			msg: "schema 中声明但未注册的 IPC channel（对应功能不可用）",
+			scope: "ipc",
+			count: missing.length,
+			channels: missing,
+		});
+	}
+	logger.info({
+		msg: "IPC 注册完成",
+		scope: "ipc",
+		registered: registeredChannels.size,
+		declared: IPC_CHANNELS.length,
+	});
+}
+
+/**
+ * 声明式装配：把 `{ [channel]: handler }` 形态的 handler 工厂一次性注册。
+ *
+ * 大多数域的 handler 工厂返回的对象，键名就是 channel 名。原来每个键都要在这里
+ * 手写一行 `handle("x", h.x)`，一个域几十行，加命令时漏一行就是静默失效。
+ * 键名与 channel 不一致的域（少数）仍然显式注册，不强行套进来。
+ */
+function registerHandlerMap(
+	handlers: Record<string, (...args: any[]) => any>,
+	options?: { skip?: string[] },
+): void {
+	const skip = new Set(options?.skip ?? []);
+	for (const [channel, fn] of Object.entries(handlers)) {
+		if (skip.has(channel)) continue;
+		if (typeof fn !== "function") continue;
+		if (registeredChannels.has(channel)) continue;
+		handle(channel, fn as never);
+	}
 }
 
 // handle() 在模块顶层定义（被 375 个调用点引用），但需要 logger 实例；
@@ -305,6 +400,12 @@ export function registerIpcHandlers({
 		getAnthropicBaseUrl: async () => {
 			const httpStatus = await getHttpStatus();
 			return httpStatus.anthropicProxy.baseUrl || "http://127.0.0.1:8765";
+		},
+		// 代理现在要求鉴权，SDK 子进程必须拿着 token 才能调进来。
+		// 这里读活跃副本而不是 httpStatus 快照，轮换后新起的 run 会自动用新 token。
+		getAnthropicProxyToken: async () => {
+			await getHttpStatus();
+			return getActiveServiceToken(ANTHROPIC_PROXY_TOKEN_KEY);
 		},
 		logger,
 		db,
@@ -540,9 +641,43 @@ export function registerIpcHandlers({
 		}
 	}) satisfies IpcHandler<"open_external_url">);
 
+	// token 从进程内的活跃副本读，保证轮换后立刻反映到设置面板，
+	// 而不是返回 startHttpServers() 那次 memoized 的旧值。
 	handle("http_get_status", (async () => {
-		return getHttpStatus();
+		const status = await getHttpStatus();
+		return {
+			clip: {
+				...status.clip,
+				token: getActiveServiceToken(CLIP_SERVICE_TOKEN_KEY),
+			},
+			anthropicProxy: {
+				...status.anthropicProxy,
+				token: getActiveServiceToken(ANTHROPIC_PROXY_TOKEN_KEY),
+			},
+		};
 	}) satisfies IpcHandler<"http_get_status">);
+
+	handle("http_rotate_service_token", (async (_event, input) => {
+		const configKey =
+			input.service === "clip"
+				? CLIP_SERVICE_TOKEN_KEY
+				: input.service === "anthropic_proxy"
+					? ANTHROPIC_PROXY_TOKEN_KEY
+					: null;
+		if (!configKey) {
+			return { success: false, error: `UNKNOWN_SERVICE:${input.service}` };
+		}
+		try {
+			const token = await rotateServiceToken(db, configKey);
+			logger.info({ msg: "本地服务 token 已轮换", service: input.service });
+			return { success: true, token };
+		} catch (error) {
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : String(error),
+			};
+		}
+	}) satisfies IpcHandler<"http_rotate_service_token">);
 
 	handle("open_browser_window", webContentHandlers.open_browser_window);
 	handle("fetch_page_content", webContentHandlers.fetch_page_content);
@@ -1122,6 +1257,7 @@ export function registerIpcHandlers({
 	// ==================
 	handle("agent_create_message", agentMessageHandlers.agent_create_message);
 	handle("agent_list_messages", agentMessageHandlers.agent_list_messages);
+	handle("agent_update_message", agentMessageHandlers.agent_update_message);
 	handle("agent_create_artifact", agentMessageHandlers.agent_create_artifact);
 	handle("agent_list_artifacts", agentMessageHandlers.agent_list_artifacts);
 	handle("agent_create_audit_log", agentMessageHandlers.agent_create_audit_log);
@@ -1397,7 +1533,7 @@ export function registerIpcHandlers({
 		const win = getPetWindow();
 		if (!win || win.isDestroyed()) return { success: false };
 		try {
-			win.webContents.send("pet-trigger-reminder", payload);
+			sendToLiveWebContents(win, "pet-trigger-reminder", payload);
 			return { success: true };
 		} catch {
 			return { success: false };
@@ -1407,7 +1543,7 @@ export function registerIpcHandlers({
 		const win = getPetWindow();
 		if (!win || win.isDestroyed()) return;
 		try {
-			win.webContents.send("pet-trigger-reminder", payload);
+			sendToLiveWebContents(win, "pet-trigger-reminder", payload);
 		} catch {
 			// noop
 		}
@@ -1420,7 +1556,7 @@ export function registerIpcHandlers({
 		const win = getPetWindow();
 		if (!win || win.isDestroyed()) return { success: false };
 		try {
-			win.webContents.send("pet-speak", payload ?? {});
+			sendToLiveWebContents(win, "pet-speak", payload ?? {});
 			return { success: true };
 		} catch {
 			return { success: false };
@@ -1563,5 +1699,12 @@ export function registerIpcHandlers({
 	handle("style_recipe_update", styleRecipeCrudHandlers.style_recipe_update);
 	handle("style_recipe_delete", styleRecipeCrudHandlers.style_recipe_delete);
 
-	logger.info({ msg: "IPC handlers registered", count: 100 });
+	// 声明式兜底：把上面显式注册时漏掉的、键名恰好等于 channel 名的 handler
+	// 补齐。`registerHandlerMap` 会跳过已注册的键，所以这里是纯增量，
+	// 不会覆盖任何一处刻意做了适配的显式注册。
+	registerHandlerMap(styleRecipeCrudHandlers);
+	registerHandlerMap(styleFeedbackHandlers);
+	registerHandlerMap(styleRendererHandlers);
+
+	auditRegisteredChannels(logger);
 }

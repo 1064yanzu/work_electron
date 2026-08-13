@@ -253,7 +253,7 @@ export function ModelDiscoveryModal({
 												)}
 												<h3 className="text-sm font-semibold text-text-secondary flex items-center gap-2 uppercase tracking-tight">
 													{groupName}
-													<span className="bg-warm-300/60 text-text-muted px-1.5 py-0.5 rounded text-[11px] font-bold">
+													<span className="bg-warm-300/60 text-text-muted px-1.5 py-0.5 rounded-lg text-2xs font-bold">
 														{models.length}
 													</span>
 												</h3>
@@ -264,7 +264,7 @@ export function ModelDiscoveryModal({
 											>
 												<button
 													onClick={() => toggleGroupSelection(models)}
-													className="text-xs font-medium text-text-light hover:text-text-secondary transition-colors px-2 py-1 hover:bg-warm-200 rounded-md"
+													className="text-xs font-medium text-text-light hover:text-text-secondary transition-colors px-2 py-1 hover:bg-warm-200 rounded-lg"
 												>
 													{allSelected ? "取消全选" : "全选"}
 												</button>
@@ -273,7 +273,7 @@ export function ModelDiscoveryModal({
 
 										{/* Group Content */}
 										{!isCollapsed && (
-											<div className="divide-y divide-cream-50">
+											<div className="divide-y divide-border">
 												{models.map((model) => {
 													const isSelected = selectedModels.has(model.id);
 													const isExisting = existingModelSet.has(model.id);
@@ -294,13 +294,13 @@ export function ModelDiscoveryModal({
 																{/* Checkbox Icon */}
 																<div
 																	className={`
-                                  w-5 h-5 rounded-md border flex items-center justify-center transition-[color,background-color,border-color,box-shadow] shrink-0
+                                  w-5 h-5 rounded-lg border flex items-center justify-center transition-[color,background-color,border-color,box-shadow] shrink-0
                                   ${
 																		isExisting
 																			? "bg-warm-200 border-border text-text-light"
 																			: isSelected
 																				? "bg-primary border-primary text-primary-foreground"
-																				: "border-border text-transparent group-hover:border-cream-500 bg-surface"
+																				: "border-border text-transparent group-hover:border-warm-500 bg-surface"
 																	}
                                 `}
 																>
@@ -325,7 +325,7 @@ export function ModelDiscoveryModal({
 																			{model.id}
 																		</span>
 																		{isExisting && (
-																			<span className="text-[11px] px-1.5 py-0.5 bg-warm-200 text-text-light rounded border border-border flex items-center gap-1 shrink-0">
+																			<span className="text-2xs px-1.5 py-0.5 bg-warm-200 text-text-light rounded-lg border border-border flex items-center gap-1 shrink-0">
 																				<Check className="w-2.5 h-2.5" />
 																				已添加
 																			</span>

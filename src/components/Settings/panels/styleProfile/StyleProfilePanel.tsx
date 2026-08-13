@@ -248,7 +248,7 @@ export function StyleProfilePanel() {
 					<button
 						type="button"
 						onClick={() => setShowCreateModal(true)}
-						className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border border-dashed border-cream-400 dark:border-cream-500/60 text-text-secondary hover:text-text-primary hover:border-cream-500 dark:hover:border-cream-400/60 hover:bg-cream-100/50 dark:hover:bg-cream-800/30 transition-colors duration-150"
+						className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border border-dashed border-border text-text-secondary hover:text-text-primary hover:border-warm-500 hover:bg-background/50 transition-colors duration-150"
 					>
 						<Plus size={14} strokeWidth={1.8} />
 						新建风格包
@@ -286,7 +286,7 @@ export function StyleProfilePanel() {
 						<button
 							type="button"
 							onClick={() => setShowRecipeModal(true)}
-							className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border border-dashed border-amber-400/60 dark:border-amber-500/40 text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 hover:border-amber-500 dark:hover:border-amber-400/60 hover:bg-amber-50/50 dark:hover:bg-amber-900/20 transition-colors duration-150"
+							className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border border-dashed border-border text-text-secondary hover:text-text-primary hover:border-warm-500 hover:bg-primary-muted transition-colors duration-150"
 						>
 							<Blend size={14} strokeWidth={1.8} />
 							新建混搭配方
@@ -349,21 +349,17 @@ function NoStyleCard({ selected, onClick }: NoStyleCardProps) {
 			onClick={onClick}
 			className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 				selected
-					? "border-cream-400/60 dark:border-cream-500/50 bg-cream-100/80 dark:bg-cream-800/50"
-					: "border-cream-200/70 dark:border-cream-600/30 bg-transparent hover:bg-cream-50 dark:hover:bg-cream-800/20 hover:border-cream-300 dark:hover:border-cream-500/40"
+					? "border-border/60 bg-background/80"
+					: "border-border/70 bg-transparent hover:bg-surface hover:border-warm-400"
 			}`}
 		>
 			{/* Radio 指示器 */}
 			<div
 				className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
-					selected
-						? "border-cream-700 dark:border-cream-300"
-						: "border-cream-300 dark:border-cream-500/60"
+					selected ? "border-primary" : "border-border"
 				}`}
 			>
-				{selected && (
-					<div className="w-2 h-2 rounded-full bg-cream-800 dark:bg-cream-200" />
-				)}
+				{selected && <div className="w-2 h-2 rounded-full bg-primary" />}
 			</div>
 
 			<div className="flex-1 min-w-0">
