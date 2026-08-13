@@ -36,7 +36,7 @@ export function ScenarioSelect({
 	groups,
 	value,
 	onChange,
-	placeholder = "请选择...",
+	placeholder = "请选择…",
 	label,
 	renderOption,
 }: ScenarioSelectProps) {

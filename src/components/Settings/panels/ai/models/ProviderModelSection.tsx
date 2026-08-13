@@ -29,7 +29,11 @@ import { settingsAnchorProps } from "../../../fieldRegistry";
 import { getModelIcon } from "../../../modelIcons";
 import { SettingsButton } from "../../../ui/SettingsPrimitives";
 import { SettingsDisclosure } from "../../../ui/SettingsDisclosure";
-import { formatGroupName, groupModels } from "../../../utils";
+import {
+	formatGroupName,
+	getProviderColorProps,
+	groupModels,
+} from "../../../utils";
 import {
 	getModelEndpointTypes,
 	isEndpointConfigurableProvider,
@@ -323,12 +327,11 @@ function ModelRow({
 						<div
 							className={cn(
 								"flex h-full w-full items-center justify-center",
-								provider.color,
+								getProviderColorProps(provider.color).className,
 							)}
+							style={getProviderColorProps(provider.color).style}
 						>
-							{provider.icon && (
-								<provider.icon className="h-3.5 w-3.5 text-white" />
-							)}
+							{provider.icon && <provider.icon className="h-3.5 w-3.5" />}
 						</div>
 					)}
 				</div>
@@ -377,7 +380,7 @@ function ModelRow({
 					<button
 						type="button"
 						onClick={() => onRemove(model)}
-						className="rounded-lg p-2 text-text-light transition-[color,background-color] duration-150 hover:bg-[rgba(181,51,51,0.08)] hover:text-error"
+						className="rounded-lg p-2 text-text-light transition-[color,background-color] duration-150 hover:bg-error/8 hover:text-error"
 						title="删除"
 					>
 						<Trash2 className="h-4 w-4" />

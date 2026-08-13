@@ -92,14 +92,23 @@ export function MarketplaceList() {
 			{/* 错误胶囊：折叠态 = 一行警告 + 数量；展开态 = 列出每个源 + 一键禁用 */}
 			{errors.length > 0 && (
 				<div className="mx-5 mb-2 shrink-0">
-					<button
-						type="button"
+					{/* 外层是可折叠行、内部还有「重试」按钮：button 不能嵌套 button，
+					    用 div[role=button] + 键盘 Enter/Space 支持 */}
+					<div
+						role="button"
+						tabIndex={0}
 						onClick={() => setErrorsExpanded((v) => !v)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" || e.key === " ") {
+								e.preventDefault();
+								setErrorsExpanded((v) => !v);
+							}
+						}}
 						className={cn(
-							"w-full flex items-center gap-2 px-3 py-2 rounded-lg",
+							"w-full flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer",
 							"bg-warning-muted border border-warning/30",
 							"text-xs text-warning",
-							"hover:bg-warning/15 transition",
+							"hover:bg-warning/15 transition focus-ring",
 						)}
 					>
 						<AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -120,7 +129,7 @@ export function MarketplaceList() {
 								errorsExpanded && "rotate-180",
 							)}
 						/>
-					</button>
+					</div>
 					{errorsExpanded && (
 						<div className="mt-1 space-y-1 px-1 animate-fade-in">
 							{errors.map((e) => (
@@ -208,7 +217,7 @@ function SkeletonList() {
 function MarketplaceEmpty({ hasQuery }: { hasQuery: boolean }) {
 	return (
 		<div className="text-center py-14 px-6">
-			<div className="text-[32px] font-serif text-text-light/60 leading-none mb-3">
+			<div className="text-2xl font-semibold text-text-light/60 leading-none mb-3">
 				—
 			</div>
 			<p className="text-xs text-text-secondary font-medium">

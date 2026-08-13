@@ -72,7 +72,7 @@ export function SlashCommandChip({
 					rounded-full border shadow-sm self-start
 					transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 cursor-pointer
 					${styles.bg} ${styles.border} ${styles.ring}
-					hover:shadow hover:ring-2 hover:scale-[1.01]
+					hover:shadow
 				`}
 				onClick={() => canExpand && onToggleExpand?.(chip.id)}
 			>
@@ -105,8 +105,8 @@ export function SlashCommandChip({
 						onRemove(chip.id);
 					}}
 					className={`
-						p-0.5 rounded transition-[color,background-color,border-color,opacity,box-shadow,transform] flex-shrink-0 ml-0.5
-						${isHovered ? "opacity-100 w-4 scale-100" : "opacity-0 w-0 scale-50 overflow-hidden"}
+						p-0.5 rounded-lg transition-opacity duration-150 flex-shrink-0 ml-0.5 w-4
+						${isHovered ? "opacity-100" : "opacity-0"}
 						text-text-light hover:text-text-secondary dark:hover:text-text-light
 						hover:bg-black/5 dark:hover:bg-surface/10
 					`}

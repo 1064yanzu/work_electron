@@ -5,12 +5,12 @@ import {
 	Blocks,
 	BotMessageSquare,
 	CheckCircle2,
+	Compass,
 	FolderOpen,
 	Layers,
 	Library,
 	MessagesSquare,
 	Settings2,
-	Sparkles,
 } from "lucide-react";
 import { listProviders } from "../../lib/api";
 import { EVENTS, events } from "../../lib/events";
@@ -48,7 +48,7 @@ const SLIDES: Slide[] = [
 	{
 		kind: "mascot",
 		slot: "onboarding-1",
-		title: "你好,我是墨鱼君",
+		title: "你好，我是墨鱼君",
 		description:
 			"一个谐音梗诞生的 IP——「墨鱼君爱摸鱼」。我会陪你完成研究、写作和摸鱼的每一刻。",
 	},
@@ -57,25 +57,25 @@ const SLIDES: Slide[] = [
 		slot: "onboarding-2",
 		title: "随时给你安静的陪伴",
 		description:
-			"思考、整理、提醒、完成。我以一种克制的方式出现在该出现的位置,不打扰你。",
+			"思考、整理、提醒、完成。我以一种克制的方式出现在该出现的位置，不打扰你。",
 	},
 	{
 		kind: "mascot",
 		slot: "onboarding-3",
 		title: "挑一个最对眼的我",
 		description:
-			"三种人格,你喜欢哪一种?也可以随时在「设置 - 桌面宠物」里更换。",
+			"三种人格，你喜欢哪一种？也可以随时在「设置 - 桌面宠物」里更换。",
 	},
 	{
 		kind: "tour",
-		title: "三栏,各司其职",
+		title: "三栏，各司其职",
 		description:
 			"左边放资料、中间干活、右边问 AI。按 ⌘K 随时用命令面板找任何功能。",
 	},
 	{
 		kind: "model",
-		title: "最后一步:接上模型",
-		description: "AI 对话、卡片总结都要调用模型,先配一个再开始。",
+		title: "最后一步：接上模型",
+		description: "AI 对话、卡片总结都要调用模型，先配一个再开始。",
 	},
 ];
 
@@ -255,7 +255,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 	return (
 		<div
 			ref={scopeRef}
-			className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+			className="fixed inset-0 z-overlay flex items-center justify-center bg-black/40 backdrop-blur-sm"
 			role="dialog"
 			aria-modal
 		>
@@ -267,7 +267,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 			>
 				<div className="flex items-center justify-between px-7 pt-6 pb-3">
 					<div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-text-light">
-						<Sparkles className="h-3.5 w-3.5" />
+						<Compass className="h-3.5 w-3.5" />
 						首次见面
 					</div>
 					<button
@@ -349,8 +349,8 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 									</div>
 								</div>
 							) : (
-								<div className="flex flex-col items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-8 py-6">
-									<AlertTriangle className="h-9 w-9 text-primary" />
+								<div className="flex flex-col items-center gap-3 rounded-2xl border border-warning/30 bg-warning-muted px-8 py-6">
+									<AlertTriangle className="h-9 w-9 text-warning" />
 									<div className="text-sm font-medium text-text-primary">
 										还没有可用模型
 									</div>
@@ -450,7 +450,7 @@ export function MascotOnboarding({ onFinish }: MascotOnboardingProps) {
 								? "稍后再配，先进去看看"
 								: "开始使用"
 							: "下一步"}
-						<ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+						<ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
 					</button>
 				</div>
 			</div>

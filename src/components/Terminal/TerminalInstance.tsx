@@ -57,9 +57,10 @@ const darkTheme = {
 const lightTheme = {
 	background: "#faf9f5",
 	foreground: "#383a42",
-	cursor: "#526fff",
+	// 光标 / 选区暖化为签名色 terracotta 系，与整体暖色调一致
+	cursor: "#D96C46",
 	cursorAccent: "#faf9f5",
-	selectionBackground: "#bfcef3",
+	selectionBackground: "rgba(217,108,70,0.25)",
 	selectionForeground: "#383a42",
 	black: "#383a42",
 	red: "#e45649",

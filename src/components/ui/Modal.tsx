@@ -171,7 +171,7 @@ export function Modal({
 	return (
 		<div
 			ref={scopeRef}
-			className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans"
+			className="fixed inset-0 z-modal flex items-center justify-center p-4 font-sans"
 			onClick={closeOnOverlayClick ? handleClose : undefined}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {

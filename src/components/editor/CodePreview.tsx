@@ -2,6 +2,7 @@ import { memo } from "react";
 import { useShikiTokens } from "../../hooks/useShikiHighlight";
 import { mapLanguageFromPath } from "../../lib/shiki";
 import { cn } from "../../lib/utils";
+import { TrafficLights } from "../sandbox/preview/TrafficLights";
 type EditorDensity = "comfortable" | "compact";
 
 interface CodePreviewProps {
@@ -35,22 +36,18 @@ export const CodePreview = memo(function CodePreview({
 	}
 
 	return (
-		<div className="rounded-2xl border border-border/80 overflow-hidden bg-dark-bg dark:bg-black shadow-[0_12px_50px_-24px_rgba(0,0,0,0.45)]">
+		<div className="rounded-2xl border border-border/80 overflow-hidden bg-console-night shadow-bai-pop">
 			{showHeader ? (
-				<div className="flex items-center gap-2 px-4 py-3 border-b border-dark-border bg-dark-muted/90">
-					<div className="flex gap-1.5">
-						<span className="w-3 h-3 rounded-full bg-error/75" />
-						<span className="w-3 h-3 rounded-full bg-peach-500/75" />
-						<span className="w-3 h-3 rounded-full bg-success/75" />
-					</div>
-					<span className="text-xs font-medium text-text-light truncate">
+				<div className="flex items-center gap-2 px-4 py-3 border-b border-console-bar bg-console-bar/90">
+					<TrafficLights />
+					<span className="text-xs font-medium text-console-night-fg/70 truncate">
 						{fileName}
 					</span>
 				</div>
 			) : null}
 			<div className={cn("overflow-auto px-0 py-3 font-mono", lineHeightClass)}>
 				{loading || !tokens ? (
-					<pre className="px-4 whitespace-pre-wrap break-words text-cream-200">
+					<pre className="px-4 whitespace-pre-wrap break-words text-console-night-fg/70">
 						{content}
 					</pre>
 				) : (
@@ -59,10 +56,10 @@ export const CodePreview = memo(function CodePreview({
 							key={`${fileName}-line-${index + 1}`}
 							className="grid grid-cols-[3.5rem_minmax(0,1fr)] px-4 hover:bg-surface/[0.03] transition-colors"
 						>
-							<span className="select-none pr-4 text-right text-text-muted">
+							<span className="select-none pr-4 text-right text-console-night-fg/40">
 								{index + 1}
 							</span>
-							<span className="whitespace-pre-wrap break-words text-surface">
+							<span className="whitespace-pre-wrap break-words text-console-night-fg">
 								{line.length > 0
 									? line.map((token, tokenIndex) => (
 											<span key={tokenIndex} style={{ color: token.color }}>

@@ -9,7 +9,6 @@ import {
 	FileText,
 	Globe,
 	Loader2,
-	Search,
 	Lightbulb,
 	X,
 } from "lucide-react";
@@ -20,6 +19,7 @@ import {
 	useWorkspaceStoreSelector,
 	workspaceStore,
 } from "../../lib/workspaceStore";
+import { IllustratedEmptyState } from "../ui/EmptyState";
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 
 interface ResearchViewProps {
@@ -48,20 +48,22 @@ export function ResearchView({ onOpenResearchSource }: ResearchViewProps) {
 
 	if (!currentResearch) {
 		return (
-			<div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
-				<div className="w-16 h-16 rounded-2xl bg-warm-200 flex items-center justify-center mb-4">
-					<Search className="w-8 h-8 text-text-light" />
-				</div>
-				<h3 className="font-medium text-text-secondary mb-1">暂无研究任务</h3>
-				<p className="text-sm text-text-light max-w-[200px]">
-					在右侧 AI 助手中发起深度研究
-				</p>
-				<button
-					onClick={() => setLeftSidebarView("sources")}
-					className="mt-4 px-4 py-2 text-sm text-text-secondary hover:bg-warm-200 rounded-lg transition-colors"
-				>
-					返回资料库
-				</button>
+			<div className="flex h-full flex-col justify-center">
+				<IllustratedEmptyState
+					illustration="search"
+					title="暂无研究任务"
+					description="在右侧 AI 助手中发起深度研究"
+					className="px-4"
+					action={
+						<button
+							type="button"
+							onClick={() => setLeftSidebarView("sources")}
+							className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
+						>
+							返回资料库
+						</button>
+					}
+				/>
 			</div>
 		);
 	}

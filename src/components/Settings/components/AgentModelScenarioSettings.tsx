@@ -277,7 +277,7 @@ export function AgentModelScenarioSettings() {
 							value={settings.defaultModelId}
 							groups={modelGroups}
 							onChange={handleDefaultModelChange}
-							placeholder="选择默认模型..."
+							placeholder="选择默认模型…"
 							label={
 								settings.defaultProviderId
 									? getModelDisplay(
@@ -564,7 +564,7 @@ export function AgentModelScenarioSettings() {
 									onChange={(val) =>
 										setSelectedScenarioType(val as AgentScenario)
 									}
-									placeholder="选择预设场景..."
+									placeholder="选择预设场景…"
 								/>
 							) : (
 								<div className="space-y-2">
@@ -577,7 +577,7 @@ export function AgentModelScenarioSettings() {
 									/>
 									<p className="text-xs text-text-light px-1">
 										输入唯一的场景标识符（推荐英文），Agent
-										将尝试从您的指令中匹配。
+										将尝试从你的指令中匹配。
 									</p>
 								</div>
 							)}
@@ -598,7 +598,7 @@ export function AgentModelScenarioSettings() {
 										setSelectedProviderId(model.providerId);
 									}
 								}}
-								placeholder="选择最适合的模型..."
+								placeholder="选择最适合的模型…"
 								label={
 									selectedProviderId
 										? getModelDisplay(selectedModelId, selectedProviderId)

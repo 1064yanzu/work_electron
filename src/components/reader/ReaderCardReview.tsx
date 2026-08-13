@@ -8,6 +8,7 @@ import {
 	X,
 } from "lucide-react";
 import type { ReaderKnowledgeCard } from "../../lib/api/reader";
+import { confirmDialog } from "../ui/ConfirmDialog";
 import { Tooltip } from "../ui/Tooltip";
 
 interface ReaderCardReviewProps {
@@ -54,6 +55,8 @@ export function ReaderCardReview({
 	useEffect(() => {
 		if (!open) return;
 		const onKey = (e: KeyboardEvent) => {
+			// 更上层浮层（如删除确认框）已消费的按键不处理
+			if (e.defaultPrevented) return;
 			if (e.key === "Escape") {
 				e.preventDefault();
 				onClose();
@@ -87,6 +90,18 @@ export function ReaderCardReview({
 	const handleFlip = useCallback(() => {
 		setFlipped((f) => !f);
 	}, []);
+
+	const handleDelete = useCallback(
+		async (id: string) => {
+			const ok = await confirmDialog.danger(
+				"确定删除这张复习卡？删除后不可恢复。",
+				"删除复习卡",
+			);
+			if (!ok) return;
+			onDelete(id);
+		},
+		[onDelete],
+	);
 
 	const handleQuality = useCallback(
 		async (quality: 0 | 1 | 2) => {
@@ -258,7 +273,7 @@ export function ReaderCardReview({
 					<button
 						type="button"
 						className="reader-card-review__btn reader-card-review__btn--danger"
-						onClick={() => onDelete(card.id)}
+						onClick={() => void handleDelete(card.id)}
 					>
 						<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
 						删除

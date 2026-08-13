@@ -61,7 +61,7 @@ interface ChatInputProps {
 export function ChatInput({
 	onSubmit,
 	disabled = false,
-	placeholder = "输入消息，或用 / 唤起命令...",
+	placeholder = "输入消息，或用 / 唤起命令…",
 	compactPlaceholder,
 	model,
 	models = [],

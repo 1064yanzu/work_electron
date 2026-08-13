@@ -202,7 +202,7 @@ export function PermissionCard({
 
 	return (
 		<div
-			className={`rounded-xl border ${riskConfig.bgColor} overflow-hidden ${
+			className={`rounded-xl border bg-surface overflow-hidden ${
 				request.riskLevel === "L2"
 					? "border-error/30"
 					: request.riskLevel === "L1"
@@ -223,14 +223,14 @@ export function PermissionCard({
 						<div className="flex items-center gap-2 mb-1">
 							<span className="font-medium text-text-primary">{toolName}</span>
 							<span
-								className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${riskConfig.bgColor} ${riskConfig.color}`}
+								className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs ${riskConfig.bgColor} ${riskConfig.color}`}
 							>
 								<RiskIcon className="w-3 h-3" />
 								{riskConfig.label}
 							</span>
 						</div>
 						<p className="text-sm text-text-muted">
-							请求执行此工具，需要您的确认
+							请求执行此工具，需要你的确认
 						</p>
 					</div>
 
@@ -255,7 +255,7 @@ export function PermissionCard({
 						查看参数
 					</button>
 					{expanded && (
-						<pre className="mt-2 p-3 rounded-lg bg-black/5 text-xs text-text-secondary overflow-x-auto max-h-40 overflow-y-auto">
+						<pre className="mt-2 p-3 rounded-lg bg-warm-100 text-xs text-text-secondary overflow-x-auto max-h-40 overflow-y-auto">
 							{request.inputPreview}
 						</pre>
 					)}
@@ -264,7 +264,7 @@ export function PermissionCard({
 				{/* 沙盒外操作警告 */}
 				{request.scope && !request.scope.insideSandbox && (
 					<div
-						className={`mx-4 mb-3 px-3 py-2 rounded-lg flex items-start gap-2 text-xs ${
+						className={`mt-3 px-3 py-2 rounded-lg flex items-start gap-2 text-xs ${
 							request.scope.destructiveLevel === "dangerous"
 								? "bg-error/8 text-error"
 								: "bg-warning-muted text-warning"
@@ -302,7 +302,7 @@ export function PermissionCard({
 						type="checkbox"
 						checked={rememberForSession}
 						onChange={(e) => setRememberForSession(e.target.checked)}
-						className="rounded border-border"
+						className="rounded border-border accent-primary"
 					/>
 					<span className="text-text-secondary">本次会话记住</span>
 				</label>
@@ -311,30 +311,30 @@ export function PermissionCard({
 						type="checkbox"
 						checked={rememberForTool}
 						onChange={(e) => setRememberForTool(e.target.checked)}
-						className="rounded border-border"
+						className="rounded border-border accent-primary"
 					/>
 					<span className="text-text-secondary">对此工具记住</span>
 				</label>
 			</div>
 
 			{/* 操作按钮 */}
-			<div className="flex border-t border-black/5 dark:border-white/10">
+			<div className="flex border-t border-border">
 				<button
 					onClick={handleDeny}
-					className="flex-1 py-3 text-sm font-medium text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 transition-colors"
+					className="flex-1 py-3 text-sm font-medium text-text-secondary hover:bg-warm-200 transition-colors"
 					title="N"
 				>
 					拒绝 (N)
 				</button>
-				<div className="w-px bg-black/10 dark:bg-white/10" />
+				<div className="w-px bg-border" />
 				<button
 					onClick={handleAllowAlways}
-					className="px-4 py-3 text-sm font-medium text-text-secondary hover:bg-black/5 dark:hover:bg-surface/5 transition-colors"
+					className="px-4 py-3 text-sm font-medium text-text-secondary hover:bg-warm-200 transition-colors"
 					title="A — 本会话内所有同类工具自动允许"
 				>
 					全允 (A)
 				</button>
-				<div className="w-px bg-black/10 dark:bg-white/10" />
+				<div className="w-px bg-border" />
 				<button
 					onClick={handleAllow}
 					className="flex-1 py-3 text-sm font-medium text-success hover:bg-success/8 transition-colors"

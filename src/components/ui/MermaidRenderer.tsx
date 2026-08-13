@@ -10,13 +10,15 @@ import {
 	ZoomOut,
 } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
+import { themeManager } from "../../lib/theme";
 import { cn } from "../../lib/utils";
 
 // 懒加载 mermaid：首次渲染图表时才动态 import，避免静态 import 把整个 mermaid bundle
 // （> 4MB gzip）拉进首屏 chunk。共享一个 Promise 让多次实例化只触发一次下载。
 type MermaidModule = typeof import("mermaid");
 let mermaidLoader: Promise<MermaidModule> | null = null;
-let mermaidInitialized = false;
+// mermaid.initialize 是全局配置：记录上次初始化用的主题，亮/暗切换时重新 initialize
+let mermaidInitializedTheme: string | null = null;
 
 async function loadMermaid(): Promise<MermaidModule> {
 	if (!mermaidLoader) {
@@ -28,11 +30,12 @@ async function loadMermaid(): Promise<MermaidModule> {
 async function ensureMermaidInit(): Promise<MermaidModule["default"]> {
 	const mod = await loadMermaid();
 	const mermaid = mod.default;
-	if (!mermaidInitialized) {
-		mermaidInitialized = true;
+	const theme = themeManager.isDark() ? "dark" : "default";
+	if (mermaidInitializedTheme !== theme) {
+		mermaidInitializedTheme = theme;
 		mermaid.initialize({
 			startOnLoad: false,
-			theme: "default",
+			theme,
 			securityLevel: "loose",
 			fontFamily: "ui-sans-serif, system-ui, sans-serif",
 		});
@@ -59,6 +62,12 @@ const MermaidRenderer = memo(function MermaidRenderer({
 	const [id] = useState(
 		() => `mermaid-${Math.random().toString(36).substr(2, 9)}`,
 	);
+
+	// 亮/暗主题切换时 bump 版本号，触发按新主题重渲染
+	const [themeVersion, setThemeVersion] = useState(0);
+	useEffect(() => {
+		return themeManager.subscribe(() => setThemeVersion((v) => v + 1));
+	}, []);
 
 	useEffect(() => {
 		let mounted = true;
@@ -98,7 +107,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 		return () => {
 			mounted = false;
 		};
-	}, [chart, id]);
+	}, [chart, id, themeVersion]);
 
 	const handleCopy = async () => {
 		await navigator.clipboard.writeText(chart);
@@ -276,8 +285,7 @@ const MermaidRenderer = memo(function MermaidRenderer({
 				<Controls />
 				<div
 					ref={containerRef}
-					className="overflow-auto flex items-center justify-center p-6 min-h-[100px]"
-					style={{ backgroundColor: "#ffffff" }}
+					className="overflow-auto flex items-center justify-center p-6 min-h-[100px] bg-surface"
 				>
 					{svg ? (
 						<div
@@ -286,9 +294,9 @@ const MermaidRenderer = memo(function MermaidRenderer({
 							dangerouslySetInnerHTML={{ __html: svg }}
 						/>
 					) : (
-						<div className="flex items-center gap-2 text-sm text-text-light animate-pulse">
+						<div className="flex items-center gap-2 text-sm text-text-light">
 							<RefreshCw className="w-4 h-4 animate-spin" />
-							Rendering chart...
+							Rendering chart…
 						</div>
 					)}
 				</div>

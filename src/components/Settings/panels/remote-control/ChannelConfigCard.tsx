@@ -119,7 +119,7 @@ export function ChannelConfigCard({
 	}, [channelId]);
 
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
+		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-bai-card ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
 			<div className="p-5 space-y-5">
 				{/* 标题 + 开关 */}
 				<div className="flex items-center justify-between">
@@ -333,14 +333,14 @@ export function ChannelConfigCard({
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium ${
 							runtimeChannel?.running
-								? "bg-mint-500/10 text-mint-600"
+								? "bg-success-muted text-success"
 								: "bg-warm-200 text-text-muted"
 						}`}
 					>
 						<span
 							className={`h-1.5 w-1.5 rounded-full ${
 								runtimeChannel?.running
-									? "bg-mint-500 animate-pulse"
+									? "bg-success animate-pulse"
 									: "bg-warm-500"
 							}`}
 						/>
@@ -349,7 +349,7 @@ export function ChannelConfigCard({
 					<span className="text-text-muted">·</span>
 					<span
 						className={`font-medium ${
-							runtimeChannel?.connected ? "text-mint-600" : "text-text-muted"
+							runtimeChannel?.connected ? "text-success" : "text-text-muted"
 						}`}
 					>
 						{runtimeChannel?.connected ? "已连接" : "未连接"}

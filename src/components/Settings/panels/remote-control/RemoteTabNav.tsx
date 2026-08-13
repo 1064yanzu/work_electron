@@ -79,11 +79,11 @@ export function RemoteTabNav({
 				const isActive = tab.key === active;
 				const badgeToneClass =
 					tab.badgeTone === "emerald"
-						? "bg-mint-500/15 text-mint-600"
+						? "bg-success-muted text-success"
 						: tab.badgeTone === "rose"
 							? "bg-error/[0.1] text-error"
 							: tab.badgeTone === "amber"
-								? "bg-peach-500/15 text-peach-500"
+								? "bg-warning-muted text-warning"
 								: "bg-warm-300 text-text-secondary";
 				return (
 					<button

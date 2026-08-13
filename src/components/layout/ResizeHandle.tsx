@@ -63,13 +63,13 @@ export default function ResizeHandle({
 						? [
 								"inset-y-0 w-px",
 								"bg-warm-300",
-								"group-hover:w-[2px] group-hover:bg-warm-400 dark:group-hover:bg-dark-surface",
+								"group-hover:w-[2px] group-hover:bg-warm-400 dark:group-hover:bg-warm-300",
 								"group-focus-visible:w-[3px] group-focus-visible:bg-primary/70",
 							]
 						: [
 								"inset-x-0 h-px",
 								"bg-warm-300",
-								"group-hover:h-[2px] group-hover:bg-warm-400 dark:group-hover:bg-dark-surface",
+								"group-hover:h-[2px] group-hover:bg-warm-400 dark:group-hover:bg-warm-300",
 								"group-focus-visible:h-[3px] group-focus-visible:bg-primary/70",
 							],
 					"group-data-[resize-handle-active]:bg-primary dark:group-data-[resize-handle-active]:bg-primary",

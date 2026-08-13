@@ -53,7 +53,7 @@ export function RenameInline({
 	}, [onDone]);
 
 	return (
-		<div className="flex items-center gap-2 px-3 py-2.5 bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)]">
+		<div className="flex items-center gap-2 px-3 py-2.5 bg-surface rounded-2xl shadow-bai-pop">
 			<span className="font-mono text-xs text-text-light flex-shrink-0">
 				/rename
 			</span>

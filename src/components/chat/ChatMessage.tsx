@@ -1,5 +1,6 @@
 // 单条聊天消息组件
 import {
+	AlertTriangle,
 	Check,
 	Code,
 	Copy,
@@ -244,7 +245,7 @@ function ChatStandardMessageImpl({
 	return (
 		<>
 			<div
-				className={`group mb-6 animate-in fade-in slide-in-from-bottom-2 duration-250 w-full`}
+				className={`group animate-in fade-in slide-in-from-bottom-2 duration-250 w-full`}
 				onContextMenu={handleContextMenu}
 				data-message-id={message.id}
 				style={
@@ -279,7 +280,7 @@ function ChatStandardMessageImpl({
 								onCancel={() => setIsEditing(false)}
 							/>
 						) : (
-							<div className="bg-text-primary text-surface rounded-2xl rounded-tr-sm px-5 py-3 shadow-whisper text-sm leading-6 selection:bg-dark-surface dark:selection:bg-border select-text">
+							<div className="bg-text-primary text-surface rounded-2xl rounded-tr-sm px-5 py-3 shadow-whisper text-sm leading-6 select-text">
 								<div className="whitespace-pre-wrap break-words">
 									{message.content}
 								</div>
@@ -329,9 +330,9 @@ function ChatStandardMessageImpl({
 							<button
 								type="button"
 								onClick={handleRetry}
-								className="flex items-center gap-1 text-xs text-warning hover:text-warning/80 transition-colors"
+								className="flex items-center gap-1 px-2 py-1 -mx-2 rounded-lg text-xs text-warning hover:text-warning/80 hover:bg-warning-muted transition-colors"
 							>
-								<span>⚠</span>
+								<AlertTriangle className="w-3 h-3" strokeWidth={1.5} />
 								<span>发送失败 · 点击重试</span>
 							</button>
 						)}

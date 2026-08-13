@@ -5,9 +5,8 @@
  */
 
 import {
-	ChevronDown,
-	ChevronUp,
 	CheckCircle2,
+	ChevronRight,
 	Circle,
 	ListTodo,
 	XCircle,
@@ -16,6 +15,7 @@ import { useMemo, useState } from "react";
 
 import { useAgentStoreSelector } from "../../lib/agent/store";
 import type { AgentTask } from "../../lib/agent/types";
+import { cn } from "../../lib/utils";
 
 function findTaskById(
 	taskId: string,
@@ -108,11 +108,12 @@ export function TaskListInline({ taskId }: { taskId: string }) {
 						</div>
 					</div>
 					<div className="flex items-center gap-1.5 text-text-light">
-						{expanded ? (
-							<ChevronUp className="w-4 h-4" />
-						) : (
-							<ChevronDown className="w-4 h-4" />
-						)}
+						<ChevronRight
+							className={cn(
+								"w-4 h-4 transition-transform duration-150 ease-out-expo",
+								expanded && "rotate-90",
+							)}
+						/>
 					</div>
 				</button>
 

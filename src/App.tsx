@@ -423,7 +423,7 @@ function AppRoot() {
 	return (
 		<GlobalContextMenuProvider>
 			<MouseDragProvider>
-				<div className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-250 flex selection:bg-primary/20 p-0 gap-0 animate-in fade-in zoom-in-95 bg-background text-text-secondary">
+				<div className="h-screen w-screen font-sans overflow-hidden relative transition-colors duration-250 flex p-0 gap-0 animate-in fade-in zoom-in-95 bg-background text-text-secondary">
 					{/* 活动栏（rail）固定 52px，不参与 PanelGroup 的百分比布局——
 					    避免折叠时 collapsedSize 百分比在宽窗口下比 rail 宽，露出一条空白残条 */}
 					<SidebarRail onOpenSettings={() => handleOpenSettings()} />

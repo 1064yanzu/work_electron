@@ -51,8 +51,8 @@ const baseControlClass = cn(
 );
 
 const restingClass = cn(
-	"border-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)]",
-	"hover:border-warm-500 hover:bg-warm-50/60 hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
+	"border-border/80 shadow-bai-card",
+	"hover:border-warm-500 hover:bg-warm-50/60",
 	"focus:border-primary/50 focus:bg-surface focus:ring-2 focus:ring-primary/10",
 );
 

@@ -8,6 +8,7 @@
 
 import {
 	Check,
+	ChevronLeft,
 	ChevronRight,
 	MessageCircleQuestion,
 	Send,
@@ -445,7 +446,7 @@ function AskUserQuestionPopup({
 							onClick={goPrev}
 							className="auq-popup-btn-ghost"
 						>
-							<span aria-hidden>←</span>
+							<ChevronLeft className="w-3.5 h-3.5" aria-hidden />
 							<span>上一步</span>
 						</button>
 					) : (

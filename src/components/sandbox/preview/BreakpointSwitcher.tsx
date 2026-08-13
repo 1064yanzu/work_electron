@@ -81,7 +81,7 @@ export function BreakpointSwitcher({
 			<div
 				className={cn(
 					"absolute top-0.5 bottom-0.5 rounded-full bg-surface dark:bg-cream-700",
-					"shadow-[0_1px_2px_0_rgba(26,26,25,0.06),0_0_0_1px_rgba(232,229,221,0.6)]",
+					"shadow-bai-card ring-1 ring-border/60",
 					"transition-[transform,width] duration-250 ease-out-expo",
 				)}
 				style={{
@@ -115,7 +115,7 @@ export function BreakpointSwitcher({
 								: "text-text-light hover:text-text-secondary",
 						)}
 					>
-						<Icon className="w-[15px] h-[15px]" strokeWidth={1.75} />
+						<Icon className="w-4 h-4" strokeWidth={1.5} />
 					</button>
 				);
 			})}

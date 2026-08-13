@@ -67,7 +67,7 @@ export function SettingsSidebarCategory({
 							"flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm",
 							"min-h-[34px]",
 							"transition-[background-color,color] duration-150 ease-out",
-							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+							"focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--t-primary-muted)]",
 							isActive
 								? "bg-warm-200 font-medium text-text-primary"
 								: "text-text-secondary hover:bg-warm-200/70 hover:text-text-primary",

@@ -4,11 +4,12 @@ import {
 	List,
 	Trash2,
 	BookOpen,
+	BotMessageSquare,
 	Brain,
 	Pencil,
 	Play,
-	Sparkles,
 	Loader2,
+	StickyNote,
 	Tag,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ import type {
 	ReaderKnowledgeCard,
 	ReaderTocItem,
 } from "../../lib/api/reader";
+import { confirmDialog } from "../ui/ConfirmDialog";
 
 interface ReaderTOCProps {
 	tab: "toc" | "highlights" | "bookmarks" | "cards";
@@ -164,7 +166,9 @@ function HighlightList({
 						<span className="reader-highlight-row__chip" />
 						<span className="reader-highlight-row__text">{h.text}</span>
 						{h.note ? (
-							<span className="reader-highlight-row__note">📝 {h.note}</span>
+							<span className="reader-highlight-row__note">
+								<StickyNote className="w-3 h-3" strokeWidth={1.5} /> {h.note}
+							</span>
 						) : null}
 					</button>
 					<button
@@ -235,6 +239,14 @@ function CardList({
 	dueCount,
 }: ReaderTOCProps) {
 	const chapterLabelMap = useChapterLabelMap(toc);
+	const handleRemoveCard = async (id: string) => {
+		const ok = await confirmDialog.danger(
+			"确定删除这张复习卡？删除后不可恢复。",
+			"删除复习卡",
+		);
+		if (!ok) return;
+		onRemoveCard(id);
+	};
 	return (
 		<div className="reader-card-list">
 			<div className="reader-card-list__actions">
@@ -247,7 +259,7 @@ function CardList({
 					{generating ? (
 						<Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
 					) : (
-						<Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
+						<BotMessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />
 					)}
 					{generating
 						? extractedCount > 0
@@ -342,7 +354,7 @@ function CardList({
 										className="reader-card-row__action"
 										aria-label="删除卡片"
 										title="删除"
-										onClick={() => onRemoveCard(card.id)}
+										onClick={() => void handleRemoveCard(card.id)}
 									>
 										<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
 									</button>

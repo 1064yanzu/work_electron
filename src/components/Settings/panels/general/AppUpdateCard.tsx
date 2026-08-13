@@ -343,7 +343,7 @@ export function AppUpdateCard() {
 				>
 					<div className="flex items-start justify-between gap-3">
 						<div className="flex min-w-0 items-start gap-2.5">
-							<span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-warm-50 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)]">
+							<span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-warm-50 shadow-bai-ring">
 								{headline.icon}
 							</span>
 							<div className="min-w-0">

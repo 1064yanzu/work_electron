@@ -346,94 +346,6 @@ a[href]:focus-visible {
 }
 
 /* ============================================
-   文档查看器样式 — 暖色调
-   ============================================ */
-.document-viewer {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	padding: 2rem;
-	background-color: #f5f4ed;
-	border-radius: 1rem;
-	border: 1px solid #e8e6dc;
-}
-
-.dark .document-viewer {
-	background-color: #1e1d1b;
-	border-color: #30302e;
-}
-
-.document-placeholder {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 0.75rem;
-	text-align: center;
-}
-
-.document-icon {
-	font-size: 3rem;
-}
-
-.document-name {
-	font-size: 1.125rem;
-	font-weight: 500;
-	color: #141413;
-}
-
-.dark .document-name {
-	color: #faf9f5;
-}
-
-.document-hint {
-	font-size: 0.875rem;
-	color: #87867f;
-}
-
-.document-open-btn {
-	margin-top: 1.5rem;
-	padding: 0.625rem 1.5rem;
-	background-color: #141413;
-	color: #faf9f5;
-	border-radius: 0.75rem;
-	font-size: 0.875rem;
-	font-weight: 500;
-	text-decoration: none;
-	transition: opacity 0.15s;
-}
-
-.document-open-btn:hover {
-	opacity: 0.85;
-}
-
-.dark .document-open-btn {
-	background-color: #faf9f5;
-	color: #141413;
-}
-
-/* 图片抽取结果样式 */
-.image-extraction-result {
-	margin-top: 1.5rem;
-	padding-top: 1.5rem;
-	border-top: 1px solid #e8e6dc;
-}
-
-.dark .image-extraction-result {
-	border-color: #30302e;
-}
-
-.image-extraction-result figure {
-	margin: 0;
-}
-
-.image-extraction-result img {
-	border-radius: 0.75rem;
-	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
-	max-width: 100%;
-}
-
-/* ============================================
    全局背景与面板底色 — 直接使用 var(--t-bg)，不再需要 deprecated 包装类
    ============================================ */
 
@@ -480,49 +392,6 @@ a[href]:focus-visible {
    高级交互工具类
    ============================================ */
 @layer utilities {
-	/* 按钮微交互 */
-	.btn-interactive {
-		@apply duration-150 ease-out;
-		transition-property:
-			transform, background-color, color, border-color, box-shadow;
-		transform: scale(1);
-	}
-
-	.btn-interactive:active {
-		transform: scale(0.98);
-	}
-
-	.btn-interactive:focus-visible {
-		outline: none;
-		box-shadow: 0 0 0 2px var(--t-ring, rgba(26, 26, 25, 0.18));
-	}
-
-	/* 卡片悬浮效果 */
-	.card-hover {
-		@apply duration-200 ease-out;
-		transition-property: transform, box-shadow, border-color, background-color;
-	}
-
-	.card-hover:hover {
-		transform: translateY(-2px);
-		box-shadow: rgba(0, 0, 0, 0.05) 0px 8px 32px;
-	}
-
-	/* 圆润悬浮按钮 */
-	.btn-float {
-		@apply duration-200 ease-out;
-		transition-property: transform, box-shadow, background-color, color;
-	}
-
-	.btn-float:hover {
-		box-shadow: rgba(0, 0, 0, 0.08) 0px 8px 24px;
-		transform: translateY(-1px);
-	}
-
-	.btn-float:active {
-		transform: translateY(0);
-	}
-
 	/* 骨架屏 — 暖色调 */
 	.skeleton {
 		@apply relative overflow-hidden;
@@ -545,13 +414,6 @@ a[href]:focus-visible {
 		box-shadow: 0 0 0 2px var(--t-ring, rgba(26, 26, 25, 0.18));
 	}
 
-	/* 平滑过渡 */
-	.transition-smooth {
-		@apply duration-200 ease-out;
-		transition-property:
-			transform, opacity, background-color, color, border-color, box-shadow;
-	}
-
 	/* Modal 退出动画 */
 	.animate-fade-out {
 		animation: fadeOut 0.2s ease-in forwards;
@@ -559,11 +421,6 @@ a[href]:focus-visible {
 
 	.animate-scale-out {
 		animation: scaleOut 0.2s ease-in forwards;
-	}
-
-	/* Dropdown 退出动画 */
-	.animate-dropdown-out {
-		animation: dropdownOut 0.15s ease-in forwards;
 	}
 }
 
@@ -590,39 +447,9 @@ a[href]:focus-visible {
 	}
 }
 
-@keyframes dropdownOut {
-	from {
-		opacity: 1;
-		transform: scale(1) translateY(0);
-	}
-	to {
-		opacity: 0;
-		transform: scale(0.95) translateY(-4px);
-	}
-}
-
 /* ============================================
    Claude 风格阴影系统 — 暖色环形阴影
    ============================================ */
-
-/* 环形阴影 — Claude 签名样式 */
-.shadow-ring {
-	box-shadow:
-		#e8e6dc 0px 0px 0px 0px,
-		#d1cfc5 0px 0px 0px 1px;
-}
-
-.dark .shadow-ring {
-	box-shadow:
-		#30302e 0px 0px 0px 0px,
-		#4a4845 0px 0px 0px 1px;
-}
-
-.shadow-ring-warm {
-	box-shadow:
-		rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-		#d1cfc5 0px 0px 0px 1px;
-}
 
 /* 轻语阴影 — 极轻浮起，B.AI 风格克制 */
 .shadow-whisper {
@@ -635,32 +462,6 @@ a[href]:focus-visible {
 	box-shadow:
 		0 1px 2px 0 rgb(0 0 0 / 0.18),
 		0 2px 8px 0 rgb(0 0 0 / 0.2);
-}
-
-/* 卡片阴影 — B.AI 风格，靠 1px 描边分层而非深阴影 */
-.shadow-card {
-	box-shadow:
-		0 0 0 1px var(--t-border, #e8e5dd),
-		0 1px 2px 0 rgb(26 26 25 / 0.04);
-}
-
-.dark .shadow-card {
-	box-shadow:
-		0 0 0 1px var(--t-border, #2f2f2c),
-		0 1px 2px 0 rgb(0 0 0 / 0.2);
-}
-
-/* 悬浮阴影 — hover 时增强一档，仍保持克制 */
-.shadow-float {
-	box-shadow:
-		0 0 0 1px var(--t-border, #e8e5dd),
-		0 4px 12px 0 rgb(26 26 25 / 0.06);
-}
-
-.dark .shadow-float {
-	box-shadow:
-		0 0 0 1px var(--t-border, #2f2f2c),
-		0 4px 12px 0 rgb(0 0 0 / 0.3);
 }
 
 /* ============================================
@@ -1224,61 +1025,34 @@ html[data-motion-preference="reduced"] *::after {
 	box-shadow: inset 0 0 0 1px var(--t-border, #e8e5dd);
 }
 
-.bai-avatar-glow-mono {
-	background: conic-gradient(
-		from 180deg at 50% 50%,
-		#d8d4c9 0deg,
-		#9d9d98 120deg,
-		#1a1a19 240deg,
-		#d8d4c9 360deg
-	);
-}
-
 /* B.AI 卡片 — 1px 暖描边 + 极轻阴影，替换深阴影 */
 .bai-card {
 	background-color: var(--t-bg-surface, #ffffff);
 	border: 1px solid var(--t-border, #e8e5dd);
 	border-radius: 1rem;
-	box-shadow: 0 1px 2px 0 rgb(26 26 25 / 0.04);
+	box-shadow: var(--shadow-card, 0 1px 2px 0 rgb(26 26 25 / 0.04));
 	transition:
-		border-color 0.18s ease,
-		box-shadow 0.18s ease,
-		transform 0.18s ease;
+		border-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+		box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1),
+		transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .bai-card-interactive {
 	background-color: var(--t-bg-surface, #ffffff);
 	border: 1px solid var(--t-border, #e8e5dd);
 	border-radius: 1rem;
-	box-shadow: 0 1px 2px 0 rgb(26 26 25 / 0.04);
+	box-shadow: var(--shadow-card, 0 1px 2px 0 rgb(26 26 25 / 0.04));
 	cursor: pointer;
 	transition:
-		border-color 0.18s ease,
-		box-shadow 0.18s ease,
-		transform 0.18s ease;
+		border-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+		box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1),
+		transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .bai-card-interactive:hover {
 	border-color: var(--t-text-muted, #d8d4c9);
-	box-shadow: 0 4px 12px 0 rgb(26 26 25 / 0.06);
+	box-shadow: var(--shadow-pop, 0 4px 12px 0 rgb(26 26 25 / 0.06));
 	transform: translateY(-1px);
-}
-
-/* B.AI focus ring — 用主色系暖灰，不用浏览器蓝 */
-.bai-focus-ring:focus-visible {
-	outline: none;
-	box-shadow: 0 0 0 3px var(--t-primary-muted, rgba(26, 26, 25, 0.12));
-}
-
-/* B.AI dotted 分隔（极简虚线分组） */
-.bai-divider {
-	border-top: 1px dashed var(--t-border, #e8e5dd);
-	border-image: repeating-linear-gradient(
-			to right,
-			var(--t-border, #e8e5dd) 0 4px,
-			transparent 4px 8px
-		)
-		1;
 }
 
 /* 标题旁的小图标徽章（替换 sparkle/wand 这类 AI 装饰） */

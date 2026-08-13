@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import {
 	PROVIDER_TEMPLATES,
 	type Provider,
@@ -36,6 +37,20 @@ export const getTemplateForProvider = (
 	return PROVIDER_TEMPLATES.find(
 		(t) => t.providerType === provider.providerType,
 	);
+};
+
+/**
+ * Provider 品牌色渲染 props。
+ * 模板 JSON 的 color 字段存 hex 值（Tailwind content 扫描不到 JSON 里的类名，
+ * 动态类会在构建中被裁掉），hex 走 inline style；无 color 或旧格式走中性兜底类。
+ */
+export const getProviderColorProps = (
+	color: string | undefined,
+): { className: string; style?: CSSProperties } => {
+	if (color?.startsWith("#")) {
+		return { className: "text-white", style: { backgroundColor: color } };
+	}
+	return { className: "bg-warm-300 text-text-secondary" };
 };
 
 /**

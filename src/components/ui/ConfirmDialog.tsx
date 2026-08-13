@@ -76,11 +76,12 @@ function ConfirmDialogView({
 	})();
 
 	return (
-		<div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+		<div className="fixed inset-0 z-modal flex items-center justify-center p-4">
 			<button
 				type="button"
 				className={cn(
-					"absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity",
+					"absolute inset-0 bg-text-primary/20 backdrop-blur-sm transition-opacity",
+					"animate-in fade-in duration-150",
 					isClosing ? "opacity-0" : "opacity-100",
 				)}
 				onClick={() => close(false)}
@@ -89,7 +90,8 @@ function ConfirmDialogView({
 
 			<FocusTrap
 				className={cn(
-					"relative w-full max-w-[440px] rounded-3xl border border-border bg-surface shadow-bai-pop overflow-hidden",
+					"relative w-full max-w-[440px] rounded-2xl border border-border bg-surface shadow-bai-pop overflow-hidden",
+					"animate-in fade-in zoom-in-95 duration-150",
 					"transition-[opacity,transform] duration-150",
 					isClosing ? "scale-[0.98] opacity-0" : "opacity-100",
 				)}
@@ -117,7 +119,7 @@ function ConfirmDialogView({
 						<div className="flex-1 min-w-0 pt-0.5">
 							<h3
 								id="confirm-title"
-								className="text-[17px] font-semibold text-text-primary tracking-tight"
+								className="text-base font-semibold text-text-primary tracking-tight"
 							>
 								{title}
 							</h3>
@@ -135,7 +137,7 @@ function ConfirmDialogView({
 							ref={cancelButtonRef}
 							type="button"
 							onClick={() => close(false)}
-							className="rounded-xl px-5 py-2.5 text-sm font-medium text-text-secondary transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/5 dark:hover:bg-white/5"
+							className="rounded-xl px-5 py-2.5 text-sm font-medium text-text-secondary transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-warm-200"
 						>
 							{cancelText}
 						</button>

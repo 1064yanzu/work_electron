@@ -288,7 +288,7 @@ export function RemoteTerminalSection({ config, saving, onSave }: Props) {
 									className={cn(
 										"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
 										terminal.enabled
-											? "bg-mint-500/10 text-mint-600"
+											? "bg-success-muted text-success"
 											: "bg-warm-200 text-text-muted",
 									)}
 								>

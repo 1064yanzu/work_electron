@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "../../lib/utils";
@@ -115,11 +115,12 @@ export function ThoughtInline({
 			>
 				{/* 折叠箭头 */}
 				<span className="w-4 h-4 flex items-center justify-center text-text-light flex-shrink-0">
-					{open ? (
-						<ChevronDown className="w-3.5 h-3.5" />
-					) : (
-						<ChevronRight className="w-3.5 h-3.5" />
-					)}
+					<ChevronRight
+						className={cn(
+							"w-3.5 h-3.5 transition-transform duration-150 ease-out-expo",
+							open && "rotate-90",
+						)}
+					/>
 				</span>
 
 				{/* 文字：Thought for Xs */}

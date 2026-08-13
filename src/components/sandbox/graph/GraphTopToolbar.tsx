@@ -82,7 +82,7 @@ export function GraphTopToolbar({
 							value={searchQuery}
 							onChange={(e) => onSearchQueryChange(e.target.value)}
 							onKeyDown={onSearchInputKeyDown}
-							placeholder="搜索节点..."
+							placeholder="搜索节点…"
 							className={cn(
 								SURFACE,
 								"h-8 max-w-[68vw] pl-8 pr-8 text-xs text-text-primary",
@@ -167,7 +167,8 @@ export function GraphTopToolbar({
 									aria-checked={active}
 									onClick={() => onFilterChange(segment.value)}
 									className={cn(
-										"h-full px-2.5 rounded-[6px] text-xs transition-colors cursor-pointer",
+										// 外容器 rounded-lg(8px)，内部按「内 = 外 - 2px」用 rounded-md(6px)
+										"h-full px-2.5 rounded-md text-xs transition-colors cursor-pointer",
 										active
 											? "bg-warm-200 font-medium text-text-primary"
 											: "text-text-muted hover:text-text-primary",
@@ -200,10 +201,10 @@ export function GraphTopToolbar({
 						{follow ? (
 							<LocateFixed
 								className="w-3.5 h-3.5 text-terracotta"
-								strokeWidth={1.7}
+								strokeWidth={1.5}
 							/>
 						) : (
-							<LocateOff className="w-3.5 h-3.5" strokeWidth={1.7} />
+							<LocateOff className="w-3.5 h-3.5" strokeWidth={1.5} />
 						)}
 						{follow ? "跟随" : "手动"}
 					</button>

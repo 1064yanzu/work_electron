@@ -141,12 +141,12 @@ export function ModelDiscoveryModal({
 	if (!isOpen) return null;
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 font-sans">
+		<div className="fixed inset-0 z-modal flex items-center justify-center bg-text-primary/20 backdrop-blur-sm p-4 font-sans">
 			<div
 				ref={trapRef}
 				role="dialog"
 				aria-modal="true"
-				className="w-full max-w-2xl bg-background rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-border/70 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+				className="w-full max-w-2xl bg-background rounded-2xl shadow-bai-pop border border-border/70 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
 				style={{ height: "85vh", maxHeight: "850px" }}
 			>
 				{/* Header */}
@@ -178,7 +178,7 @@ export function ModelDiscoveryModal({
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-light group-focus-within:text-text-secondary transition-colors" />
 						<input
 							type="text"
-							placeholder="搜索模型 ID..."
+							placeholder="搜索模型 ID…"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 							className="w-full pl-10 pr-4 py-2.5 bg-warm-50 border border-transparent focus:bg-surface focus:border-border rounded-xl text-sm outline-none transition-[color,background-color,border-color,box-shadow]"
@@ -218,7 +218,7 @@ export function ModelDiscoveryModal({
 						<div className="flex flex-col items-center justify-center h-full text-text-light gap-4">
 							<Loader2 className="w-10 h-10 animate-spin text-text-light" />
 							<p className="text-sm font-medium text-text-muted">
-								正在连接 {provider.name} API...
+								正在连接 {provider.name} API…
 							</p>
 						</div>
 					) : discoveredModels.length === 0 ? (
@@ -241,11 +241,13 @@ export function ModelDiscoveryModal({
 										className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden"
 									>
 										{/* Group Header */}
-										<div
-											className="flex items-center justify-between px-4 py-3 bg-warm-50/50 border-b border-border cursor-pointer hover:bg-warm-50 transition-colors select-none"
-											onClick={() => toggleGroupCollapse(groupName)}
-										>
-											<div className="flex items-center gap-2">
+										<div className="flex items-center justify-between bg-warm-50/50 border-b border-border">
+											<button
+												type="button"
+												onClick={() => toggleGroupCollapse(groupName)}
+												aria-expanded={!isCollapsed}
+												className="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 text-left hover:bg-warm-50 transition-colors select-none"
+											>
 												{isCollapsed ? (
 													<ChevronRight className="w-4 h-4 text-text-light" />
 												) : (
@@ -257,23 +259,24 @@ export function ModelDiscoveryModal({
 														{models.length}
 													</span>
 												</h3>
-											</div>
-											<div
-												className="flex items-center gap-3"
-												onClick={(e) => e.stopPropagation()}
+											</button>
+											<button
+												type="button"
+												onClick={() => toggleGroupSelection(models)}
+												className="mr-4 shrink-0 text-xs font-medium text-text-light hover:text-text-secondary transition-colors px-2 py-1 hover:bg-warm-200 rounded-lg"
 											>
-												<button
-													onClick={() => toggleGroupSelection(models)}
-													className="text-xs font-medium text-text-light hover:text-text-secondary transition-colors px-2 py-1 hover:bg-warm-200 rounded-lg"
-												>
-													{allSelected ? "取消全选" : "全选"}
-												</button>
-											</div>
+												{allSelected ? "取消全选" : "全选"}
+											</button>
 										</div>
 
 										{/* Group Content */}
 										{!isCollapsed && (
-											<div className="divide-y divide-border">
+											<div
+												className="divide-y divide-border"
+												role="listbox"
+												aria-label={`${groupName} 模型`}
+												aria-multiselectable="true"
+											>
 												{models.map((model) => {
 													const isSelected = selectedModels.has(model.id);
 													const isExisting = existingModelSet.has(model.id);
@@ -281,9 +284,19 @@ export function ModelDiscoveryModal({
 													return (
 														<div
 															key={model.id}
+															role="option"
+															aria-selected={isSelected}
+															aria-disabled={isExisting}
+															tabIndex={isExisting ? -1 : 0}
 															onClick={() =>
 																!isExisting && toggleModel(model.id)
 															}
+															onKeyDown={(e) => {
+																if (e.key === "Enter" || e.key === " ") {
+																	e.preventDefault();
+																	if (!isExisting) toggleModel(model.id);
+																}
+															}}
 															className={`
                                 group flex items-center justify-between px-4 py-3 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out
                                 ${isExisting ? "opacity-60 bg-warm-50/30 cursor-default" : "cursor-pointer hover:bg-warm-50"}
@@ -306,7 +319,7 @@ export function ModelDiscoveryModal({
 																>
 																	<Check
 																		className="w-3.5 h-3.5"
-																		strokeWidth={3}
+																		strokeWidth={2}
 																	/>
 																</div>
 
@@ -366,7 +379,7 @@ export function ModelDiscoveryModal({
 				</div>
 
 				{/* Footer */}
-				<div className="px-6 py-5 bg-surface border-t border-border flex justify-between items-center shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-10">
+				<div className="px-6 py-5 bg-surface border-t border-border flex justify-between items-center shrink-0 z-10">
 					<div className="text-sm text-text-muted flex items-center gap-2">
 						<div className="w-2 h-2 rounded-full bg-mint-500"></div>
 						已选择{" "}

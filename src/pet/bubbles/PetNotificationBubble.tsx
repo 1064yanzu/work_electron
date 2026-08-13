@@ -15,6 +15,7 @@ import { useMemo, type PointerEvent } from "react";
 import { Check, AlertTriangle, HelpCircle } from "lucide-react";
 import { PetBubbleShell, type PetBubblePlacement } from "./PetBubbleShell";
 import { CloseIconButton } from "./CloseIconButton";
+import { PET_TONE_APPROVAL, PET_TONE_DONE, PET_TONE_ERROR } from "./palette";
 import { withAlpha } from "./utils";
 import { selectLine } from "../../lib/mascot/personality";
 import type { MascotSelection } from "../../lib/mascotStore";
@@ -47,17 +48,17 @@ const STYLE_MAP: Record<PetNotificationType, NotificationStyle> = {
 	done: {
 		personalityKey: "done",
 		icon: Check,
-		tone: "#3F9C6E", // 沉稳绿，与暖色不冲突
+		tone: PET_TONE_DONE, // 沉稳绿，与暖色不冲突
 	},
 	error: {
 		personalityKey: "error",
 		icon: AlertTriangle,
-		tone: "#D9694B", // 橙红
+		tone: PET_TONE_ERROR, // 危险红（与全局 error 语义对齐）
 	},
 	approval: {
 		personalityKey: "approval",
 		icon: HelpCircle,
-		tone: "#8B6FB8", // 内敛紫
+		tone: PET_TONE_APPROVAL, // 内敛紫
 	},
 };
 
@@ -106,7 +107,7 @@ export function PetNotificationBubble({
 							color: style.tone,
 						}}
 					>
-						<Icon className="h-3 w-3" strokeWidth={2.6} />
+						<Icon className="h-3 w-3" strokeWidth={2} />
 					</span>
 					<div className="flex-1 text-sm font-medium leading-snug text-[color:var(--t-text-primary,#1a1a19)]">
 						{prefix ? (
@@ -144,7 +145,7 @@ export function PetNotificationBubble({
 							<button
 								type="button"
 								onClick={onDismiss}
-								className="text-xs text-[color:var(--t-text-light,#9d9d98)] transition-colors hover:text-[color:var(--t-text-secondary,#6b6b68)]"
+								className="text-xs text-[color:var(--t-text-muted,#9d9d98)] transition-colors hover:text-[color:var(--t-text-secondary,#6b6b68)]"
 							>
 								稍后
 							</button>

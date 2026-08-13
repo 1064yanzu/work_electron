@@ -175,14 +175,8 @@ export function ToolOutputDisplay({
 				setImagePath(finalPath);
 				const fileName =
 					finalPath.split("/").pop() || `image-${Date.now()}.jpg`;
-				console.log("[ToolOutputDisplay] Image path:", finalPath);
 
 				// 添加到产物列表
-				console.log("[ToolOutputDisplay] Adding artifact to task:", {
-					finalPath,
-					fileName,
-					toolCallId,
-				});
 				const exists = (currentTask?.artifacts || []).some(
 					(a) => a.type === "image" && String(a.url || "").trim() === finalPath,
 				);
@@ -194,7 +188,6 @@ export function ToolOutputDisplay({
 						url: finalPath,
 						metadata: { toolCallId, source: "subagent" },
 					});
-					console.log("[ToolOutputDisplay] Artifact added successfully");
 				}
 
 				// 触发中间栏预览
@@ -221,7 +214,7 @@ export function ToolOutputDisplay({
 	// 渲染图片（已添加到产物列表，会在中间栏自动预览）
 	if (imagePath) {
 		return (
-			<div className="bg-warm-50/50 p-2 rounded border border-border/50">
+			<div className="bg-warm-50/50 p-2 rounded-lg border border-border/50">
 				<InlineImage
 					path={imagePath}
 					title="生成的图片（已添加到产物列表）"
@@ -234,7 +227,7 @@ export function ToolOutputDisplay({
 	// 加载中
 	if (loading) {
 		return (
-			<div className="bg-warm-50/50 p-4 rounded border border-border/50 flex items-center gap-3">
+			<div className="bg-warm-50/50 p-4 rounded-lg border border-border/50 flex items-center gap-3">
 				<Loader2 className="w-5 h-5 animate-spin text-text-light" />
 				<span className="text-sm text-text-muted">正在处理图片...</span>
 			</div>
@@ -244,7 +237,7 @@ export function ToolOutputDisplay({
 	// 错误
 	if (error && hasPartialBase64) {
 		return (
-			<div className="bg-error/8 p-3 rounded border border-error/20">
+			<div className="bg-error/8 p-3 rounded-lg border border-error/20">
 				<span className="text-sm text-error">{error}</span>
 			</div>
 		);
@@ -252,7 +245,7 @@ export function ToolOutputDisplay({
 
 	// 默认：显示截断的文本
 	return (
-		<div className="bg-warm-50/50 p-2 rounded border border-border/50">
+		<div className="bg-warm-50/50 p-2 rounded-lg border border-border/50">
 			<pre className="whitespace-pre-wrap break-all text-text-secondary text-xs max-h-[200px] overflow-y-auto">
 				{outputStr.slice(0, 500) + (outputStr.length > 500 ? "..." : "")}
 			</pre>

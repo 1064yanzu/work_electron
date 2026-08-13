@@ -250,7 +250,7 @@ export function MCPSettings() {
 							disabled={isCheckingEnv}
 							loading={isCheckingEnv}
 						>
-							{isCheckingEnv ? "检测中..." : "重新检测"}
+							{isCheckingEnv ? "检测中…" : "重新检测"}
 						</SettingsButton>
 					</div>
 
@@ -326,7 +326,7 @@ export function MCPSettings() {
 						</div>
 					) : (
 						<div className="text-center py-4 text-text-muted text-xs">
-							点击上方按钮检测运行环境...
+							点击上方按钮检测运行环境…
 						</div>
 					)}
 				</div>
@@ -364,7 +364,7 @@ export function MCPSettings() {
 				</div>
 
 				{isLoading ? (
-					<div className="text-center py-8 text-text-muted">加载中...</div>
+					<div className="text-center py-8 text-text-muted">加载中…</div>
 				) : (
 					servers.map((server) => (
 						<SettingsSectionCard key={server.id}>

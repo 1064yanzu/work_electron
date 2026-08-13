@@ -128,7 +128,7 @@ export function ModelSelector({
 						<input
 							ref={inputRef}
 							type="text"
-							placeholder="Search models..."
+							placeholder="搜索模型…"
 							className="w-full bg-background text-text-primary text-sm rounded-full pl-8 pr-3 py-1.5 border border-border focus:outline-none focus:ring-2 focus:ring-border/40 focus:border-border placeholder:text-text-muted"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
@@ -140,7 +140,7 @@ export function ModelSelector({
 				<div className="flex-1 overflow-y-auto p-1.5 space-y-1 custom-scrollbar">
 					{groups.length === 0 ? (
 						<div className="p-4 text-center text-xs text-text-muted">
-							No models found
+							未找到匹配的模型
 						</div>
 					) : (
 						groups.map(([provider, providerModels]) => {

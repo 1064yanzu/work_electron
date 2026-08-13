@@ -184,10 +184,10 @@ export function ModelSettings() {
 									type="button"
 									onClick={handleDelete}
 									disabled={isDeleting}
-									className="-ml-4 flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-error transition-[color,background-color] duration-150 hover:bg-[rgba(181,51,51,0.08)]"
+									className="-ml-4 flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-error transition-[color,background-color] duration-150 hover:bg-error/8"
 								>
 									<Trash2 className="h-4 w-4" />
-									{isDeleting ? "删除中..." : "删除此服务商"}
+									{isDeleting ? "删除中…" : "删除此服务商"}
 								</button>
 							</div>
 						</div>

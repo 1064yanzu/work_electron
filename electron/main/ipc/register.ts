@@ -397,7 +397,10 @@ export function registerIpcHandlers({
 		getMainWindow: () => mainWindowRef,
 		getAnthropicBaseUrl: async () => {
 			const httpStatus = await getHttpStatus();
-			return httpStatus.anthropicProxy.baseUrl || "http://127.0.0.1:8765";
+			// 读监督器实时状态而不是启动快照：代理自动重启后端口可能变化，
+			// 新起的 SDK run 必须拿到当前活跃实例的地址。
+			const live = httpStatus.anthropicProxySupervisor.getStatus();
+			return live.baseUrl || "http://127.0.0.1:8765";
 		},
 		// 代理现在要求鉴权，SDK 子进程必须拿着 token 才能调进来。
 		// 这里读活跃副本而不是 httpStatus 快照，轮换后新起的 run 会自动用新 token。
@@ -633,17 +636,33 @@ export function registerIpcHandlers({
 	// 而不是返回 startHttpServers() 那次 memoized 的旧值。
 	handle("http_get_status", (async () => {
 		const status = await getHttpStatus();
+		// 代理的 port/baseUrl 读监督器实时值：自动重启后启动快照会失真。
+		const proxyLive = status.anthropicProxySupervisor.getStatus();
 		return {
 			clip: {
 				...status.clip,
 				token: getActiveServiceToken(CLIP_SERVICE_TOKEN_KEY),
 			},
 			anthropicProxy: {
-				...status.anthropicProxy,
+				port: proxyLive.port,
+				baseUrl: proxyLive.baseUrl,
 				token: getActiveServiceToken(ANTHROPIC_PROXY_TOKEN_KEY),
 			},
 		};
 	}) satisfies IpcHandler<"http_get_status">);
+
+	// 代理健康态：按需探活（Copilot 横幅挂载时 / 设置面板刷新时调用）
+	handle("anthropic_proxy_get_health", (async () => {
+		const status = await getHttpStatus();
+		return status.anthropicProxySupervisor.checkNow();
+	}) satisfies IpcHandler<"anthropic_proxy_get_health">);
+
+	// 手动重启代理（Copilot 错误态横幅 / 设置面板的「重启」按钮）
+	handle("anthropic_proxy_restart", (async () => {
+		const status = await getHttpStatus();
+		const health = await status.anthropicProxySupervisor.restart();
+		return { success: health.healthy, health };
+	}) satisfies IpcHandler<"anthropic_proxy_restart">);
 
 	handle("http_rotate_service_token", (async (_event, input) => {
 		const configKey =

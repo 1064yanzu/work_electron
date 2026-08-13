@@ -43,6 +43,7 @@ import { CopilotMessagePane } from "./chat/CopilotMessagePane";
 import { CopilotHeader } from "./copilot/CopilotHeader";
 import { CopilotInputArea } from "./copilot/CopilotInputArea";
 import { CopilotStatusArea } from "./copilot/CopilotStatusArea";
+import { ProxyHealthBanner } from "./copilot/ProxyHealthBanner";
 import {
 	LazyPromptLibraryModal,
 	MESSAGE_WINDOW_SIZE,
@@ -391,7 +392,7 @@ export default function CopilotSidebar() {
 			{/* 拖拽资料到 AI 对话的视觉提示 */}
 			{showDropIndicator && (
 				<div
-					className={`absolute inset-0 z-[100] pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-warm-500/5 border-border"}`}
+					className={`absolute inset-0 z-20 pointer-events-none flex items-center justify-center border-2 border-dashed rounded-xl transition-colors ${isMouseDragOver ? "bg-primary/10 border-primary" : "bg-warm-500/5 border-border"}`}
 				>
 					<div className="bg-surface px-4 py-3 rounded-xl shadow-bai-pop border border-border flex items-center gap-3">
 						<div className="w-10 h-10 rounded-lg bg-warm-200 border border-border flex items-center justify-center">
@@ -420,6 +421,9 @@ export default function CopilotSidebar() {
 				onOpenPromptLibrary={handleOpenPromptLibraryFromHeader}
 				onNewSession={handleNewSession}
 			/>
+
+			{/* 代理不可用时的明确错误态：AI 流量唯一出口挂掉必须显式告知，而不是等请求笼统失败 */}
+			<ProxyHealthBanner />
 
 			<CopilotStatusArea
 				requests={pendingPermissionRequests}

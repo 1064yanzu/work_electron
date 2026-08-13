@@ -157,7 +157,7 @@ function LoadingImagePlaceholder({ alt }: { alt?: string }) {
 						className="w-4 h-4 bai-icon-peach animate-pulse"
 						strokeWidth={1.5}
 					/>
-					<span>{alt || "AI 配图生成中..."}</span>
+					<span>{alt || "AI 配图生成中…"}</span>
 				</span>
 				<span className="text-xs text-text-light">请稍候，图片即将呈现</span>
 			</span>
@@ -330,7 +330,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 					<Suspense
 						fallback={
 							<div className="my-3 rounded-xl border border-border bg-warm-50 p-4 text-xs text-text-muted">
-								正在加载图表渲染器...
+								正在加载图表渲染器…
 							</div>
 						}
 					>

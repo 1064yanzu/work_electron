@@ -67,39 +67,6 @@ export function PreviewStatusOverlay({
 						))}
 					</div>
 				</div>
-
-				{/* 中央加载提示 */}
-				<div className="absolute inset-0 flex items-center justify-center bg-surface/40 backdrop-blur-[1.5px]">
-					<div className="flex items-center gap-2.5 rounded-full bg-surface/95 dark:bg-cream-900/95 border border-border px-4 py-2 shadow-[0_4px_12px_0_rgba(26,26,25,0.06)]">
-						<svg
-							className="w-3.5 h-3.5 text-terracotta"
-							viewBox="0 0 24 24"
-							fill="none"
-							aria-hidden="true"
-						>
-							<title>加载指示</title>
-							<circle
-								cx="12"
-								cy="12"
-								r="9"
-								stroke="currentColor"
-								strokeWidth="2.4"
-								strokeOpacity="0.18"
-							/>
-							<path
-								d="M21 12a9 9 0 0 0-9-9"
-								stroke="currentColor"
-								strokeWidth="2.4"
-								strokeLinecap="round"
-								className="origin-center"
-								style={{ animation: "spin 0.9s linear infinite" }}
-							/>
-						</svg>
-						<span className="text-xs font-medium text-text-secondary">
-							正在加载预览...
-						</span>
-					</div>
-				</div>
 			</div>
 		);
 	}
@@ -109,7 +76,7 @@ export function PreviewStatusOverlay({
 			<div
 				className={cn(
 					"absolute inset-0 z-10 flex items-center justify-center",
-					"bg-gradient-to-b from-surface to-cream-100/60 dark:from-cream-900 dark:to-cream-900/60",
+					"bg-warm-50",
 					"animate-fade-in",
 					className,
 				)}
@@ -141,7 +108,7 @@ export function PreviewStatusOverlay({
 								"focus-ring",
 							)}
 						>
-							<RefreshCw className="w-3.5 h-3.5" strokeWidth={1.75} />
+							<RefreshCw className="w-3.5 h-3.5" strokeWidth={1.5} />
 							重试加载
 						</button>
 					) : null}
@@ -155,20 +122,14 @@ export function PreviewStatusOverlay({
 		<div
 			className={cn(
 				"absolute inset-0 z-10 flex items-center justify-center",
-				"bg-gradient-to-b from-surface to-cream-100/40 dark:from-cream-900 dark:to-cream-950",
+				"bg-warm-50",
 				"animate-fade-in",
 				className,
 			)}
 		>
 			<div className="text-center max-w-sm px-8">
-				<div className="mx-auto mb-5 relative w-16 h-16">
-					<div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-cream-200 to-cream-300 dark:from-cream-700 dark:to-cream-800 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_2px_8px_rgba(26,26,25,0.04)]" />
-					<div className="absolute inset-0 flex items-center justify-center">
-						<Globe2 className="w-7 h-7 text-text-muted" strokeWidth={1.5} />
-					</div>
-					{/* 装饰性光环 */}
-					<div className="absolute -inset-2 rounded-full border border-cream-300/50 dark:border-cream-700/50" />
-					<div className="absolute -inset-4 rounded-full border border-cream-300/30 dark:border-cream-700/30" />
+				<div className="mx-auto mb-5 w-14 h-14 rounded-2xl border border-border bg-surface flex items-center justify-center">
+					<Globe2 className="w-7 h-7 text-text-muted" strokeWidth={1.5} />
 				</div>
 				<h3 className="text-base font-semibold text-text-primary mb-1.5">
 					{title || "暂无可预览内容"}

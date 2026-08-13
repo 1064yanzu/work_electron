@@ -11,9 +11,20 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ToolArtifact, ToolCall } from "../../../lib/agent/types";
 import { EVENTS, events } from "../../../lib/events";
+import {
+	isTopOverlay,
+	popOverlay,
+	pushOverlay,
+} from "../../../lib/overlayStack";
 import { cn } from "../../../lib/utils";
 import type { ExecutionGraphSource } from "./types";
-import { formatDuration, getSubagentType, safeJson } from "./utils";
+import {
+	formatDuration,
+	getSubagentType,
+	safeJson,
+	statusPill,
+	taskStatusPill,
+} from "./utils";
 
 interface GraphInspectorPanelProps {
 	selectedNodeId: string;
@@ -117,10 +128,10 @@ export function GraphInspectorPanel({
 				: "详情";
 
 	const subtitle = selectedToolCall
-		? selectedToolCall.status
+		? statusPill(selectedToolCall.status).label
 		: selectedArtifact
-			? selectedArtifact.type
-			: source.status;
+			? `${selectedArtifact.type.toUpperCase()} 产物`
+			: taskStatusPill(source.status).label;
 
 	const copy = useCallback(
 		async (tag: "input" | "output" | "path", text: string) => {
@@ -140,14 +151,22 @@ export function GraphInspectorPanel({
 		return () => clearTimeout(t);
 	}, [copiedTag]);
 
+	// 面板打开期间注册进 overlayStack，Esc 只在自己位于栈顶时消费，
+	// 避免与其他弹层（Modal/ConfirmDialog）同时响应
 	useEffect(() => {
+		if (pinned) return;
+		const overlayId = pushOverlay();
 		const handleEsc = (e: KeyboardEvent) => {
 			if (e.key !== "Escape") return;
-			if (pinned) return;
+			if (!isTopOverlay(overlayId)) return;
+			e.preventDefault();
 			onClose();
 		};
 		window.addEventListener("keydown", handleEsc);
-		return () => window.removeEventListener("keydown", handleEsc);
+		return () => {
+			window.removeEventListener("keydown", handleEsc);
+			popOverlay(overlayId);
+		};
 	}, [onClose, pinned]);
 
 	return (
@@ -225,7 +244,7 @@ export function GraphInspectorPanel({
 												source: "graph",
 											});
 										}}
-										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-dark-muted text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+										className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-primary text-primary-foreground text-xs font-medium hover:bg-primary-hover transition-colors"
 									>
 										<ChevronRight className="w-4 h-4" />
 										定位右栏
@@ -324,7 +343,7 @@ export function GraphInspectorPanel({
 										<button
 											type="button"
 											onClick={() => onOpenArtifact(selectedArtifact.url!)}
-											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-dark-muted text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+											className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-primary text-primary-foreground text-xs font-medium hover:bg-primary-hover transition-colors"
 										>
 											<Eye className="w-4 h-4" />
 											打开预览

@@ -9,8 +9,8 @@ import {
 	Minimize2,
 	PanelLeft,
 	Search,
+	BotMessageSquare,
 	Settings as SettingsIcon,
-	Sparkles,
 	Sun,
 	Type,
 	Volume2,
@@ -201,7 +201,7 @@ export function ReaderTopBar({
 						onClick={onToggleRightPanel}
 						aria-label="AI 副驾驶"
 					>
-						<Sparkles className="w-4 h-4" strokeWidth={1.5} />
+						<BotMessageSquare className="w-4 h-4" strokeWidth={1.5} />
 					</button>
 				</Tooltip>
 				<Tooltip

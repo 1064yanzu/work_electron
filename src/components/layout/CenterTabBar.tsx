@@ -504,7 +504,7 @@ export function CenterTabBar({ groupId }: { groupId: string }) {
 		<div
 			className={cn(
 				"flex h-header shrink-0 items-center gap-1 border-b border-border/80 bg-surface/92 px-2 backdrop-blur-sm",
-				barIsDropTarget && "bg-terracotta/[0.06]",
+				barIsDropTarget && "bg-terracotta/8",
 			)}
 			onDragOver={(event) => {
 				if (!event.dataTransfer.types.includes(TAB_DRAG_MIME)) return;
@@ -640,7 +640,7 @@ export function CenterTabBar({ groupId }: { groupId: string }) {
 									active && "opacity-70",
 								)}
 							>
-								<X className="h-3 w-3" strokeWidth={2} />
+								<X className="h-3 w-3" strokeWidth={1.5} />
 							</span>
 						</button>
 					);

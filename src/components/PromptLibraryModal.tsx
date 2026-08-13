@@ -140,7 +140,7 @@ function PromptCard({
 							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							{hasCopied ? (
-								<Check className="w-5 h-5 text-green-500" />
+								<Check className="w-5 h-5 text-success" />
 							) : (
 								<Copy className="w-5 h-5" />
 							)}
@@ -157,7 +157,7 @@ function PromptCard({
 					<Tooltip content="删除">
 						<button
 							onClick={onDelete}
-							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-error-muted rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							<Trash2 className="w-5 h-5" />
 						</button>
@@ -204,7 +204,7 @@ function PromptCard({
 							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-text-secondary dark:hover:text-cream-200 hover:bg-warm-200 dark:hover:bg-cream-700 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							{hasCopied ? (
-								<Check className="w-5 h-5 text-green-500" />
+								<Check className="w-5 h-5 text-success" />
 							) : (
 								<Copy className="w-5 h-5" />
 							)}
@@ -221,7 +221,7 @@ function PromptCard({
 					<Tooltip content="删除">
 						<button
 							onClick={onDelete}
-							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
+							className="w-10 h-10 flex items-center justify-center text-text-light hover:text-error hover:bg-error-muted rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] active:scale-95"
 						>
 							<Trash2 className="w-5 h-5" />
 						</button>
@@ -453,7 +453,7 @@ export function PromptLibraryModal({
 
 	return ReactDOM.createPortal(
 		<div
-			className="fixed inset-0 z-[100] flex items-center justify-center bg-dark-bg/20 backdrop-blur-sm dark:bg-black/50 animate-in fade-in duration-150 p-4 sm:p-6 md:p-8"
+			className="fixed inset-0 z-modal flex items-center justify-center bg-dark-bg/20 backdrop-blur-sm dark:bg-black/50 animate-in fade-in duration-150 p-4 sm:p-6 md:p-8"
 			onClick={handleBackdropClick}
 		>
 			{/* 响应式弹窗容器 - Clean Modern Style */}
@@ -525,7 +525,7 @@ export function PromptLibraryModal({
 										onDragLeave={handleDragLeave}
 										onDrop={(e) => handleDrop(e, folder.id)}
 										className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 group cursor-pointer
-										${dragOverFolderId === folder.id ? "bg-focus/8 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
+										${dragOverFolderId === folder.id ? "bg-info-muted ring-2 ring-info" : ""}
 										${
 											activeFolderId === folder.id
 												? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"
@@ -573,14 +573,14 @@ export function PromptLibraryModal({
 									<>
 										{/* Backdrop to close menu when clicking outside */}
 										<div
-											className="fixed inset-0 z-[140]"
+											className="fixed inset-0 z-10"
 											onClick={(e) => {
 												e.stopPropagation();
 												setFolderMenuId(null);
 											}}
 										/>
 										{/* Menu */}
-										<div className="absolute right-0 top-full mt-1 w-36 bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-bai-pop border border-cream-400 dark:border-cream-500 py-1 z-[150] animate-in fade-in slide-in-from-top-2 duration-150">
+										<div className="absolute right-0 top-full mt-1 w-36 bg-cream-50 dark:bg-cream-900 rounded-2xl shadow-bai-pop border border-cream-400 dark:border-cream-500 py-1 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
 											<button
 												onClick={(e) => {
 													e.stopPropagation();
@@ -608,7 +608,7 @@ export function PromptLibraryModal({
 													e.stopPropagation();
 													handleDeleteFolder(folder.id, true);
 												}}
-												className="w-full px-3 py-2 text-left text-sm text-error hover:bg-[rgba(181,51,51,0.08)] dark:hover:bg-red-900/20 flex items-center gap-2"
+												className="w-full px-3 py-2 text-left text-sm text-error hover:bg-error-muted flex items-center gap-2"
 											>
 												<Trash2 className="w-3.5 h-3.5" />
 												删除（含内容）
@@ -626,7 +626,7 @@ export function PromptLibraryModal({
 							onDragLeave={handleDragLeave}
 							onDrop={(e) => handleDrop(e, undefined)}
 							className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 group
-								${dragOverFolderId === "uncategorized" ? "bg-focus/8 dark:bg-blue-900/20 ring-2 ring-blue-400" : ""}
+								${dragOverFolderId === "uncategorized" ? "bg-info-muted ring-2 ring-info" : ""}
 								${
 									activeFolderId === "uncategorized"
 										? "bg-surface text-text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5 font-medium"

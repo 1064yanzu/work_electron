@@ -116,7 +116,7 @@ export function PetReminderBubble({
 							<button
 								type="button"
 								onClick={onSnooze}
-								className="text-xs text-[color:var(--t-text-light,#9d9d98)] transition-colors hover:text-[color:var(--t-text-secondary,#6b6b68)]"
+								className="text-xs text-[color:var(--t-text-muted,#9d9d98)] transition-colors hover:text-[color:var(--t-text-secondary,#6b6b68)]"
 							>
 								{snoozeLabel}
 							</button>

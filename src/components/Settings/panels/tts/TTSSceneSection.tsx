@@ -18,7 +18,6 @@ import { cn } from "../../../../lib/utils";
 
 interface TTSSceneSectionProps {
 	icon: LucideIcon;
-	accentColor?: string;
 	title: string;
 	description: string;
 	enabled: boolean;
@@ -32,7 +31,6 @@ interface TTSSceneSectionProps {
 
 export function TTSSceneSection({
 	icon: Icon,
-	accentColor = "var(--t-primary, #1A1A19)",
 	title,
 	description,
 	enabled,
@@ -54,13 +52,12 @@ export function TTSSceneSection({
 			<div className="flex items-start justify-between gap-3 px-5 py-4">
 				<div className="flex items-start gap-3">
 					<span
-						className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border"
-						style={{
-							backgroundColor: enabled
-								? `${accentColor}14`
-								: "var(--t-bg-surface, #FFFFFF)",
-							color: enabled ? accentColor : "var(--t-text-muted, #9D9D98)",
-						}}
+						className={cn(
+							"inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border",
+							enabled
+								? "bg-primary/8 text-primary"
+								: "bg-warm-200 text-text-muted",
+						)}
 					>
 						<Icon className="h-4 w-4" strokeWidth={1.6} />
 					</span>
@@ -70,17 +67,8 @@ export function TTSSceneSection({
 								{title}
 							</h3>
 							{enabled && (
-								<span
-									className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold"
-									style={{
-										backgroundColor: `${accentColor}1F`,
-										color: accentColor,
-									}}
-								>
-									<span
-										className="h-1 w-1 rounded-full"
-										style={{ backgroundColor: accentColor }}
-									/>
+								<span className="inline-flex items-center gap-1 rounded-full bg-primary/8 px-2 py-0.5 text-2xs font-semibold text-primary">
+									<span className="h-1 w-1 rounded-full bg-primary" />
 									已启用
 								</span>
 							)}

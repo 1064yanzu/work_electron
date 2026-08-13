@@ -162,12 +162,12 @@ function MetaLine({
 	if (isClip) {
 		tokens.push({
 			key: "clip",
-			node: <span className="shrink-0 text-success/75">剪存</span>,
+			node: <span className="shrink-0 text-text-secondary/80">剪存</span>,
 		});
 	} else if (isSearch) {
 		tokens.push({
 			key: "search",
-			node: <span className="shrink-0 text-focus/75">搜索</span>,
+			node: <span className="shrink-0 text-text-secondary/80">搜索</span>,
 		});
 	}
 
@@ -296,7 +296,7 @@ function SourceCardImpl({
 			onClick={selectionMode ? onToggleSelect : onClick}
 			onContextMenu={onContextMenu}
 			className={[
-				"group relative cursor-pointer rounded-md px-2 py-1.5",
+				"group relative cursor-pointer rounded-lg px-2 py-1.5",
 				"flex items-start gap-2.5",
 				"transition-colors duration-150 ease-out",
 				selectionMode

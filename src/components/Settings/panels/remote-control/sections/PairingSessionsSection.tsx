@@ -141,9 +141,9 @@ function SegmentButton({
 	const countClass =
 		count && count > 0
 			? countTone === "amber"
-				? "bg-peach-500/15 text-peach-500"
+				? "bg-warning-muted text-warning"
 				: countTone === "emerald"
-					? "bg-mint-500/15 text-mint-600"
+					? "bg-success-muted text-success"
 					: "bg-warm-300 text-text-secondary"
 			: "bg-warm-300 text-text-muted";
 	return (

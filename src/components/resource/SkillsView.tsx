@@ -22,6 +22,7 @@ import { MarketplaceList } from "../skills/MarketplaceList";
 import { InstallProgress } from "../skills/InstallProgress";
 import { useWorkspaceStoreSelector } from "../../lib/workspaceStore";
 import { useSkillDragImport } from "./hooks/useSkillDragImport";
+import { SidebarViewHeader } from "./sidebar/SidebarViewHeader";
 
 type FilterType = "all" | "general" | "enabled";
 type TabType = "installed" | "marketplace";
@@ -158,7 +159,7 @@ export function SkillsView(_props: SkillsViewProps) {
 				<div className="absolute inset-0 z-40 pointer-events-none">
 					<div className="absolute inset-0 bg-surface/60 dark:bg-black/40 backdrop-blur-md" />
 					<div className="absolute inset-0 flex items-center justify-center p-6">
-						<div className="w-full max-w-sm rounded-3xl bg-surface/85 shadow-[0_8px_30px_rgb(0,0,0,0.10)] ring-1 ring-black/5 dark:ring-white/10 px-5 py-4">
+						<div className="w-full max-w-sm rounded-3xl bg-surface/85 shadow-float px-5 py-4">
 							<div className="flex items-center gap-4">
 								<div className="w-11 h-11 rounded-2xl bg-warm-200 flex items-center justify-center">
 									<ArrowDownToLine className="w-5 h-5 text-text-secondary" />
@@ -176,44 +177,16 @@ export function SkillsView(_props: SkillsViewProps) {
 					</div>
 				</div>
 			)}
-			{/* Header — editorial */}
-			<div className="px-5 pt-6 pb-3 shrink-0">
-				<div className="flex items-start justify-between gap-2">
-					<div className="min-w-0">
-						<div className="text-2xs font-semibold tracking-[0.22em] text-text-light uppercase">
-							Agent Skills
-						</div>
-						<h2 className="font-serif text-[20px] leading-[1.15] text-text-primary mt-1.5 tracking-tight">
-							技能库
-						</h2>
-						<p className="text-xs text-text-muted mt-1.5 leading-relaxed">
-							{enabledCount > 0 ? (
-								<>
-									<span className="tabular-nums text-text-secondary">
-										{enabledCount}
-									</span>
-									<span> / </span>
-									<span className="tabular-nums">{skills.length}</span>
-									<span> 已启用</span>
-								</>
-							) : (
-								<>共 {skills.length} 个技能</>
-							)}
-							{updateCount > 0 && (
-								<>
-									<span className="mx-1.5 text-text-light/50">·</span>
-									<button
-										type="button"
-										onClick={() => setTab("marketplace")}
-										className="text-warning hover:underline underline-offset-2"
-									>
-										{updateCount} 个更新
-									</button>
-								</>
-							)}
-						</p>
-					</div>
-					<div className="flex items-center gap-0.5 shrink-0 -mr-1">
+			{/* Header — 统一走 SidebarViewHeader（h-header + border-b + px-3） */}
+			<SidebarViewHeader
+				title="技能库"
+				meta={
+					enabledCount > 0
+						? `${enabledCount} / ${skills.length} 已启用`
+						: `共 ${skills.length} 个技能`
+				}
+				actions={
+					<>
 						<IconButton
 							onClick={handleRefresh}
 							disabled={isLoading}
@@ -241,12 +214,12 @@ export function SkillsView(_props: SkillsViewProps) {
 								</IconButton>
 							</>
 						)}
-					</div>
-				</div>
-			</div>
+					</>
+				}
+			/>
 
 			{/* Tabs — underline editorial */}
-			<div className="px-5 shrink-0 border-b border-border/70">
+			<div className="px-3 shrink-0 border-b border-border/70">
 				<div className="flex items-center gap-5">
 					<UnderlineTab
 						active={tab === "installed"}
@@ -266,7 +239,7 @@ export function SkillsView(_props: SkillsViewProps) {
 
 			{/* Error */}
 			{error && (
-				<div className="mx-5 mt-3 px-3 py-2 rounded-lg bg-error/8 dark:bg-error/15 border border-error/20 text-xs text-error flex items-center justify-between gap-2 animate-fade-in">
+				<div className="mx-3 mt-3 px-3 py-2 rounded-lg bg-error/8 dark:bg-error/15 border border-error/20 text-xs text-error flex items-center justify-between gap-2 animate-fade-in">
 					<span className="truncate">{error}</span>
 					<button
 						type="button"
@@ -286,24 +259,27 @@ export function SkillsView(_props: SkillsViewProps) {
 				<MarketplaceList />
 			) : (
 				<>
-					{/* Search & Filter */}
-					<div className="px-5 pt-4 pb-3 shrink-0 space-y-2.5">
+					{/* Search & Filter — 搜索框对齐 ThreadsView 规格：透明底，hover/focus 浮现浅底 */}
+					<div className="px-3 pt-3 pb-3 shrink-0 space-y-2.5">
 						<div className="relative">
-							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-light pointer-events-none" />
+							<Search
+								className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-light"
+								strokeWidth={1.5}
+							/>
 							<input
 								type="text"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								placeholder="搜索技能…"
-								className="w-full pl-9 pr-8 py-2 text-xs bg-surface border border-border/80 rounded-lg text-text-secondary placeholder:text-text-light focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/8 transition"
+								className="h-8 w-full rounded-lg bg-transparent pl-8 pr-7 text-sm text-text-primary transition-colors duration-150 placeholder:text-text-light hover:bg-warm-200/45 focus:bg-warm-200/70 focus:outline-none dark:hover:bg-white/[0.04] dark:focus:bg-white/[0.07]"
 							/>
 							{searchQuery && (
 								<button
 									type="button"
 									onClick={() => setSearchQuery("")}
-									className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-text-light hover:text-text-secondary hover:bg-warm-200/70"
+									className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-lg text-text-light transition-colors hover:bg-warm-200/70 hover:text-text-secondary"
 								>
-									<X className="w-3 h-3" />
+									<X className="w-3 h-3" strokeWidth={1.5} />
 								</button>
 							)}
 						</div>
@@ -314,7 +290,7 @@ export function SkillsView(_props: SkillsViewProps) {
 									type="button"
 									onClick={() => setFilter(f.value)}
 									className={cn(
-										"px-2.5 py-1 text-xs rounded-md transition-colors font-medium shrink-0",
+										"px-2.5 py-1 text-xs rounded-lg transition-colors font-medium shrink-0",
 										filter === f.value
 											? "bg-primary text-primary-foreground"
 											: "text-text-muted hover:text-text-secondary hover:bg-warm-200/70",
@@ -359,14 +335,14 @@ export function SkillsView(_props: SkillsViewProps) {
 												<span
 													className={cn(
 														"w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
-														skill.enabled ? "bg-success" : "bg-border",
+														skill.enabled ? "bg-primary" : "bg-border",
 													)}
 												/>
 												<div className="flex-1 min-w-0">
 													<div className="flex items-baseline gap-1.5 min-w-0">
 														<span
 															className={cn(
-																"text-xs font-medium truncate",
+																"text-sm font-medium truncate",
 																skill.enabled
 																	? "text-text-primary"
 																	: "text-text-muted",
@@ -376,7 +352,7 @@ export function SkillsView(_props: SkillsViewProps) {
 														</span>
 														{skill.modeClass === "design" && (
 															<span
-																className="shrink-0 px-1.5 py-px text-2xs uppercase tracking-[0.12em] rounded-sm bg-primary/10 text-primary/80 leading-tight"
+																className="shrink-0 px-1.5 py-px text-2xs uppercase tracking-[0.12em] rounded-lg bg-primary/10 text-primary/80 leading-tight"
 																title={
 																	skill.modeTag
 																		? `od.mode: ${skill.modeTag}`
@@ -389,10 +365,10 @@ export function SkillsView(_props: SkillsViewProps) {
 													</div>
 													<p
 														className={cn(
-															"text-2xs truncate mt-0.5 leading-snug",
+															"text-xs truncate mt-0.5 leading-snug",
 															skill.enabled
-																? "text-text-light"
-																: "text-text-light/70",
+																? "text-text-muted"
+																: "text-text-muted/70",
 														)}
 													>
 														{skill.description || "（暂无描述）"}
@@ -530,12 +506,12 @@ function UnderlineTab({
 				</span>
 			)}
 			{badge && badge > 0 ? (
-				<span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-warning/90 text-2xs font-semibold text-white tabular-nums">
+				<span className="ml-0.5 inline-flex items-center justify-center min-w-[14px] h-3.5 px-1 rounded-full bg-warm-300 text-2xs font-semibold text-text-primary tabular-nums">
 					{badge > 99 ? "99+" : badge}
 				</span>
 			) : null}
 			{active && (
-				<span className="absolute left-0 right-0 -bottom-px h-0.5 bg-primary rounded-full" />
+				<span className="absolute left-0 right-0 -bottom-px h-0.5 bg-text-primary rounded-full" />
 			)}
 		</button>
 	);
@@ -560,13 +536,13 @@ function ToggleSwitch({
 					: "已禁用：UI 隐藏 + 启动时不同步到 project。要彻底屏蔽请删除"
 			}
 			className={cn(
-				"relative w-7 h-4 rounded-full transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/15",
-				enabled ? "bg-success" : "bg-warm-300",
+				"relative w-7 h-4 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:shadow-[0_0_0_3px_var(--t-primary-muted)]",
+				enabled ? "bg-primary" : "bg-warm-300",
 			)}
 		>
 			<span
 				className={cn(
-					"absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform",
+					"absolute top-0.5 w-3 h-3 rounded-full bg-primary-foreground shadow-sm transition-transform",
 					enabled ? "translate-x-3.5" : "translate-x-0.5",
 				)}
 			/>

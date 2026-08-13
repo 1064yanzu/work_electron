@@ -90,17 +90,33 @@ export default {
 				"2xs": ["11px", { lineHeight: "15px" }],
 			},
 			// 三栏头部统一高度（index.css :root 定义 --header-h）
+			// 4.5 = 18px：页头级图标标准尺寸（w-4.5 h-4.5），Tailwind 3 默认刻度缺此档
 			spacing: {
 				header: "var(--header-h, 40px)",
+				4.5: "1.125rem",
+			},
+			// 全局分层五档 —— 与 overlayStack 的 Esc 顺序同源心智：
+			// 全屏 overlay < 弹窗 < 弹出层(菜单/下拉) < toast < tooltip
+			zIndex: {
+				overlay: "100",
+				modal: "200",
+				popover: "300",
+				toast: "400",
+				tooltip: "500",
 			},
 			fontFamily: {
+				// 与 index.css body 字体栈保持一致（含中文 fallback），
+				// 否则挂 font-sans 类的子树在 Windows 上中文会掉进浏览器默认字体
 				sans: [
 					"Inter",
+					'"PingFang SC"',
+					'"Noto Sans SC"',
+					'"HarmonyOS Sans"',
+					'"Segoe UI"',
 					"ui-sans-serif",
 					"system-ui",
 					"-apple-system",
 					"BlinkMacSystemFont",
-					'"Segoe UI"',
 					"Roboto",
 					'"Helvetica Neue"',
 					"Arial",

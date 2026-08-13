@@ -154,7 +154,7 @@ function DiffSummaryInner({ rootPath, taskId }: DiffSummaryProps) {
 	const firstDiff = diffList[0];
 
 	return (
-		<div className="my-3 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] dark:bg-cream-900/70 dark:ring-cream-800">
+		<div className="my-3 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-bai-card dark:bg-cream-900/70 dark:ring-cream-800">
 			<div className="flex items-center justify-between gap-3 px-3 py-2.5">
 				<div className="min-w-0 text-sm font-medium text-text-primary dark:text-cream-100">
 					{summaryStats.total} files changed

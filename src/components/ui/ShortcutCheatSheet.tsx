@@ -73,11 +73,11 @@ export function ShortcutCheatSheet() {
 
 	return createPortal(
 		<div
-			className="fixed inset-0 z-[9980] flex items-center justify-center p-6"
+			className="fixed inset-0 z-modal flex items-center justify-center p-6"
 			role="presentation"
 			onClick={() => shortcutRegistry.closeCheatSheet()}
 		>
-			<div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] animate-in fade-in duration-150" />
+			<div className="absolute inset-0 bg-text-primary/20 backdrop-blur-sm animate-in fade-in duration-150" />
 			<FocusTrap
 				active
 				onEscape={() => shortcutRegistry.closeCheatSheet()}

@@ -38,9 +38,7 @@ export function ChatInputAddMenu({
 		useToolbarMenu(MENU_WIDTH);
 	const style = useStyleProfiles(isOpen);
 
-	const styleAccent = style.isRecipe
-		? "text-amber-500 dark:text-amber-300"
-		: "text-peach-500 dark:text-peach-200";
+	const styleAccent = "text-peach-500 dark:text-peach-200";
 
 	const run = (action: () => void) => {
 		close();
@@ -59,9 +57,7 @@ export function ChatInputAddMenu({
 				disabled={disabled}
 				open={isOpen}
 				useNativeTitle
-				dotTone={
-					style.hasActive ? (style.isRecipe ? "amber" : "peach") : undefined
-				}
+				dotTone={style.hasActive ? "peach" : undefined}
 			/>
 
 			{isOpen && (
@@ -80,7 +76,7 @@ export function ChatInputAddMenu({
 						leading={
 							<Paperclip
 								className="w-3.5 h-3.5 text-text-muted"
-								strokeWidth={1.6}
+								strokeWidth={1.5}
 							/>
 						}
 					/>
@@ -92,7 +88,7 @@ export function ChatInputAddMenu({
 						leading={
 							<Command
 								className="w-3.5 h-3.5 text-text-muted"
-								strokeWidth={1.6}
+								strokeWidth={1.5}
 							/>
 						}
 					/>
@@ -126,7 +122,7 @@ export function ChatInputAddMenu({
 									leading={
 										<Pen
 											className="w-3.5 h-3.5 text-text-muted"
-											strokeWidth={1.6}
+											strokeWidth={1.5}
 										/>
 									}
 								/>
@@ -138,11 +134,11 @@ export function ChatInputAddMenu({
 									description={r.description ?? "混搭配方"}
 									active={style.activeRecipeId === r.id}
 									onClick={() => void style.selectRecipe(r.id).then(close)}
-									accentClassName="text-amber-500 dark:text-amber-300"
+									accentClassName="text-peach-500 dark:text-peach-200"
 									leading={
 										<Blend
-											className="w-3.5 h-3.5 text-amber-500/70 dark:text-amber-400/60"
-											strokeWidth={1.6}
+											className="w-3.5 h-3.5 text-text-muted"
+											strokeWidth={1.5}
 										/>
 									}
 								/>

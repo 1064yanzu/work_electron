@@ -1,4 +1,4 @@
-import { Check, FilePen, FilePlus, Loader2, X } from "lucide-react";
+import { Check, FilePen, FilePlus, X } from "lucide-react";
 
 import type { FileUpdate } from "../../lib/chat/types";
 
@@ -23,24 +23,21 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 				isError
 					? "text-error"
 					: isRunning
-						? "text-success"
+						? "text-text-secondary"
 						: "text-text-primary"
 			}`}
 		>
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex items-center gap-3 min-w-0 flex-1">
 					<div
-						className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 ring-1 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
+						className={`relative w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ring-1 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 							isError
 								? "bg-error-muted text-error ring-error/20"
 								: isRunning
-									? "bg-success-muted text-success ring-success/30"
+									? "bg-warm-100 text-text-secondary ring-border/70"
 									: "bg-warm-100 text-text-muted ring-border/70"
 						}`}
 					>
-						{isRunning && (
-							<span className="absolute inset-0 rounded-md ring-2 ring-success/30 animate-ping" />
-						)}
 						{isCreate ? (
 							<FilePlus className="w-4.5 h-4.5 relative" />
 						) : (
@@ -55,26 +52,11 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 						</h4>
 						<p
 							className={`text-xs flex items-center gap-1.5 transition-colors ${
-								isRunning ? "text-success font-medium" : "text-text-muted"
+								isRunning
+									? "text-text-secondary font-medium"
+									: "text-text-muted"
 							}`}
 						>
-							{/* 进行中指示用呼吸点（thinking-dot），弹跳动效过于喧闹 */}
-							{isRunning && (
-								<span className="inline-flex gap-0.5">
-									<span
-										className="w-1 h-1 rounded-full bg-current animate-thinking-dot"
-										style={{ animationDelay: "0ms" }}
-									/>
-									<span
-										className="w-1 h-1 rounded-full bg-current animate-thinking-dot"
-										style={{ animationDelay: "150ms" }}
-									/>
-									<span
-										className="w-1 h-1 rounded-full bg-current animate-thinking-dot"
-										style={{ animationDelay: "300ms" }}
-									/>
-								</span>
-							)}
 							{statusText}
 						</p>
 					</div>
@@ -82,18 +64,16 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 
 				<div className="flex items-center gap-2 shrink-0 self-center">
 					{update.additions > 0 && (
-						<span className="text-xs font-mono font-medium text-text-secondary bg-warm-50 px-1.5 py-0.5 rounded">
+						<span className="text-xs font-mono font-medium text-text-secondary bg-warm-50 px-1.5 py-0.5 rounded-lg">
 							+{update.additions}
 						</span>
 					)}
 					{update.deletions > 0 && (
-						<span className="text-xs font-mono font-medium text-text-secondary bg-warm-50 px-1.5 py-0.5 rounded">
+						<span className="text-xs font-mono font-medium text-text-secondary bg-warm-50 px-1.5 py-0.5 rounded-lg">
 							-{update.deletions}
 						</span>
 					)}
-					{isRunning ? (
-						<Loader2 className="w-4 h-4 animate-spin text-success" />
-					) : isError ? (
+					{isRunning ? null : isError ? (
 						<X className="w-4 h-4 text-error" />
 					) : (
 						<Check className="w-4 h-4 text-success animate-in zoom-in-50 duration-150" />
@@ -102,8 +82,8 @@ export function FileChangeCard({ update }: { update: FileUpdate }) {
 			</div>
 			{/* 进度条：running 时显示 indeterminate 动画 */}
 			{isRunning && (
-				<div className="absolute left-0 right-0 bottom-0 h-0.5 overflow-hidden bg-success/10">
-					<span className="block h-full w-1/3 bg-success rounded-full animate-file-progress" />
+				<div className="absolute left-0 right-0 bottom-0 h-0.5 overflow-hidden bg-warm-200">
+					<span className="block h-full w-1/3 bg-text-muted rounded-full animate-file-progress" />
 				</div>
 			)}
 		</div>

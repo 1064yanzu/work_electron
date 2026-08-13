@@ -12,6 +12,7 @@ import { useState } from "react";
 import { ttsDeleteVoice, ttsVoicePreview } from "../../lib/api/tts";
 import { useTTSVoices } from "../../lib/tts";
 import { settingsInputClass } from "../Settings/ui/SettingsPrimitives";
+import { confirmDialog } from "../ui/ConfirmDialog";
 import { toast } from "../ui/Toast";
 
 interface VoicePickerProps {
@@ -57,6 +58,12 @@ export function VoicePicker({
 	const [busyVoice, setBusyVoice] = useState<string | null>(null);
 
 	const handleDelete = async (voiceId: string) => {
+		const voiceName = voices.find((v) => v.id === voiceId)?.name ?? voiceId;
+		const ok = await confirmDialog.danger(
+			`确定删除克隆音色 "${voiceName}"？删除后不可恢复。`,
+			"删除克隆音色",
+		);
+		if (!ok) return;
 		setBusyVoice(voiceId);
 		try {
 			const result = await ttsDeleteVoice({ providerId, voiceId });
@@ -103,7 +110,7 @@ export function VoicePicker({
 						type="button"
 						onClick={() => previewVoice(providerId, value)}
 						disabled={disabled || loading}
-						className="rounded-md border border-border bg-surface px-2 py-1.5 text-text-muted hover:text-text-primary hover:border-primary/40 transition-colors"
+						className="rounded-lg border border-border bg-surface px-2 py-1.5 text-text-muted hover:text-text-primary hover:border-primary/40 transition-colors"
 						title="试听"
 					>
 						<PlayCircle className="w-4 h-4" />
@@ -118,7 +125,7 @@ export function VoicePicker({
 							type="button"
 							onClick={() => void handleDelete(value)}
 							disabled={busyVoice === value}
-							className="rounded-md border border-border bg-surface px-2 py-1.5 text-text-muted hover:text-error hover:border-error/40 transition-colors"
+							className="rounded-lg border border-border bg-surface px-2 py-1.5 text-text-muted hover:text-error hover:border-error/40 transition-colors"
 							title="删除该克隆音色"
 						>
 							{busyVoice === value ? (

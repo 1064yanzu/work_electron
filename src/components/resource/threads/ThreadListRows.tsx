@@ -104,7 +104,7 @@ export function ThreadGroupHeader({
 						className={`absolute h-3.5 w-3.5 text-text-secondary opacity-0 transition-[opacity,transform] duration-150 group-hover:opacity-100 ${
 							isCollapsed ? "-rotate-90" : ""
 						}`}
-						strokeWidth={2}
+						strokeWidth={1.5}
 					/>
 				</span>
 				<span
@@ -125,7 +125,7 @@ export function ThreadGroupHeader({
 			{group.isPinned && (
 				<Pin
 					className="h-3 w-3 shrink-0 text-text-light transition-opacity group-hover:opacity-0"
-					strokeWidth={1.75}
+					strokeWidth={1.5}
 				/>
 			)}
 			{group.source === "local" && group.folderPath ? (
@@ -136,11 +136,11 @@ export function ThreadGroupHeader({
 						e.stopPropagation();
 						onCreateThreadInGroup(group);
 					}}
-					className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-text-light opacity-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/[0.06] hover:text-text-primary focus-visible:opacity-100 focus-visible:outline-none active:scale-95 group-hover:opacity-100 dark:hover:bg-white/10"
+					className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-text-light opacity-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-warm-200/70 hover:text-text-primary focus-visible:opacity-100 focus-visible:outline-none active:scale-95 group-hover:opacity-100"
 					aria-label={`在 ${group.folderName} 新建对话`}
 					title="在此目录新建对话"
 				>
-					<Plus className="h-3.5 w-3.5" strokeWidth={1.75} />
+					<Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
 				</button>
 			) : null}
 			<button
@@ -150,11 +150,11 @@ export function ThreadGroupHeader({
 					e.stopPropagation();
 					onGroupContextMenu(e, group);
 				}}
-				className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-text-light opacity-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/[0.06] hover:text-text-primary focus-visible:opacity-100 active:scale-95 group-hover:opacity-100 dark:hover:bg-white/10"
+				className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-text-light opacity-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-warm-200/70 hover:text-text-primary focus-visible:opacity-100 active:scale-95 group-hover:opacity-100"
 				aria-label={`${group.folderName} 更多操作`}
 				title="更多操作"
 			>
-				<MoreHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
+				<MoreHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
 			</button>
 		</div>
 	);
@@ -211,14 +211,14 @@ export function ThreadSessionItem({
 				<Pin
 					aria-hidden="true"
 					className="absolute left-[10px] top-1/2 h-3 w-3 -translate-y-1/2 text-text-light"
-					strokeWidth={1.75}
+					strokeWidth={1.5}
 				/>
 			) : null}
 			<button
 				type="button"
 				onClick={() => onSelect(session)}
 				title={tooltip}
-				className={`block w-full ${TITLE_INDENT} py-2 pr-2.5 text-left transition-[padding] duration-150 group-hover:pr-9`}
+				className={`block w-full ${TITLE_INDENT} py-2 pr-9 text-left`}
 			>
 				{streaming ? (
 					<ShinyText
@@ -244,11 +244,11 @@ export function ThreadSessionItem({
 			<button
 				type="button"
 				onClick={(e) => onSessionContextMenu(e, session)}
-				className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-text-light opacity-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/[0.06] hover:text-text-primary focus:opacity-100 active:scale-95 group-hover:opacity-100 dark:hover:bg-white/10"
+				className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-text-light opacity-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-warm-200/70 hover:text-text-primary focus:opacity-100 active:scale-95 group-hover:opacity-100"
 				aria-label={`${title} 更多操作`}
 				title="更多操作"
 			>
-				<MoreHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} />
+				<MoreHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
 			</button>
 		</div>
 	);
@@ -276,13 +276,13 @@ export function ThreadOverflowToggle({
 			type="button"
 			onClick={() => onToggleOverflow(groupKey)}
 			// pl-2.5 + 图标 14 + gap 6 = 30，文字与对话标题落在同一条竖线上
-			className="flex w-full items-center gap-1.5 rounded-lg py-1.5 pl-2.5 pr-2.5 text-left text-xs text-text-light transition-colors hover:bg-warm-200/45 hover:text-text-secondary dark:hover:bg-white/[0.03]"
+			className="flex w-full items-center gap-1.5 rounded-lg py-1.5 pl-2.5 pr-2.5 text-left text-xs text-text-light transition-colors duration-150 hover:bg-warm-200/45 hover:text-text-secondary dark:hover:bg-white/[0.03]"
 		>
 			<ChevronDown
 				className={`h-3.5 w-3.5 shrink-0 transition-transform duration-150 ${
 					expanded ? "" : "-rotate-90"
 				}`}
-				strokeWidth={2}
+				strokeWidth={1.5}
 			/>
 			{expanded ? "收起" : `其余 ${hiddenCount} 条`}
 		</button>

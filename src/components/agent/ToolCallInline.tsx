@@ -82,7 +82,7 @@ function getReadableDescription(toolCall: ToolCall): {
 		);
 		return {
 			icon: Search,
-			prefix: isRunning ? "正在读取" : "Read",
+			prefix: isRunning ? "正在读取" : "已读取",
 			fileName: getFileName(filePath),
 			filePath: getFilePath(filePath),
 			detail: filePath,
@@ -150,14 +150,14 @@ function getReadableDescription(toolCall: ToolCall): {
 		const results = toolCall.output;
 		let resultCount = "";
 		if (Array.isArray(results)) {
-			resultCount = `${results.length} results`;
+			resultCount = `${results.length} 条结果`;
 		} else if (typeof results === "string" && results.includes("result")) {
 			const match = results.match(/(\d+)\s*results?/i);
-			if (match) resultCount = `${match[1]} results`;
+			if (match) resultCount = `${match[1]} 条结果`;
 		}
 		return {
 			icon: Search,
-			prefix: isRunning ? "正在搜索" : "Searched",
+			prefix: isRunning ? "正在搜索" : "已搜索",
 			suffix: query,
 			detail: resultCount || undefined,
 		};
@@ -213,8 +213,7 @@ function getReadableDescription(toolCall: ToolCall): {
 	if (name.includes("think")) {
 		return {
 			icon: Activity,
-			prefix: isRunning ? "思考中" : "Thought for",
-			suffix: isRunning ? undefined : "1s",
+			prefix: isRunning ? "思考中" : "已思考",
 		};
 	}
 
@@ -506,7 +505,7 @@ function ToolCallInlineImpl({
 								}
 							}}
 							className={cn(
-								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warm-200 text-xs text-text-secondary max-w-[200px] min-w-0",
+								"inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-warm-200 text-xs text-text-secondary max-w-[200px] min-w-0",
 								canPreviewFile
 									? "hover:bg-warm-300/70 cursor-pointer"
 									: "cursor-default",

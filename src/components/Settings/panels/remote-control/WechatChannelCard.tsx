@@ -95,8 +95,8 @@ export function WechatChannelCard({
 	const canEnable = channelConfig.acknowledgedRisk;
 
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-peach-500/40 bg-surface shadow-bai-card">
-			<div className="absolute top-0 left-0 right-0 h-[3px] bg-peach-500/60" />
+		<div className="relative overflow-hidden rounded-2xl border border-warning/40 bg-surface shadow-bai-card">
+			<div className="absolute top-0 left-0 right-0 h-[3px] bg-warning/60" />
 
 			<div className="p-5 space-y-5">
 				{/* 标题 + 开关 */}
@@ -104,7 +104,7 @@ export function WechatChannelCard({
 					<div className="flex items-center gap-3">
 						<div className="bai-icon-badge h-9 w-9">
 							<MessageCircle
-								className="h-4 w-4 text-peach-500"
+								className="h-4 w-4 text-warning"
 								strokeWidth={1.5}
 							/>
 						</div>
@@ -113,7 +113,7 @@ export function WechatChannelCard({
 								<SettingsSectionTitle className="mb-0">
 									个人微信通道
 								</SettingsSectionTitle>
-								<span className="inline-flex items-center gap-1 rounded-full bg-peach-500/15 px-2 py-0.5 text-xs font-medium text-peach-500">
+								<span className="inline-flex items-center gap-1 rounded-full bg-warning-muted px-2 py-0.5 text-xs font-medium text-warning">
 									<AlertTriangle className="h-3 w-3" strokeWidth={1.5} />
 									实验特性
 								</span>
@@ -417,14 +417,14 @@ export function WechatChannelCard({
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium ${
 							runtimeChannel?.running
-								? "bg-mint-500/10 text-mint-600"
+								? "bg-success-muted text-success"
 								: "bg-warm-200 text-text-muted"
 						}`}
 					>
 						<span
 							className={`h-1.5 w-1.5 rounded-full ${
 								runtimeChannel?.running
-									? "bg-mint-500 animate-pulse"
+									? "bg-success animate-pulse"
 									: "bg-warm-500"
 							}`}
 						/>

@@ -162,7 +162,7 @@ export function AutomationPanel({
 					onClick={() => setEditing("new")}
 					className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-terracotta hover:bg-terracotta/[0.1] transition duration-150"
 				>
-					<Plus className="w-3 h-3" strokeWidth={2} />
+					<Plus className="w-3 h-3" strokeWidth={1.5} />
 					新建任务
 				</button>
 			</div>
@@ -335,7 +335,7 @@ function JobCard({
 								title="取消本次运行"
 								className="p-1.5 rounded-lg text-text-light hover:text-error hover:bg-error-muted transition duration-150"
 							>
-								<Ban className="w-3.5 h-3.5" strokeWidth={1.6} />
+								<Ban className="w-3.5 h-3.5" strokeWidth={1.5} />
 							</button>
 						) : (
 							<button
@@ -344,7 +344,7 @@ function JobCard({
 								title="立即运行一次"
 								className="p-1.5 rounded-lg text-text-light hover:text-terracotta hover:bg-terracotta/[0.1] transition duration-150"
 							>
-								<Play className="w-3.5 h-3.5" strokeWidth={1.6} />
+								<Play className="w-3.5 h-3.5" strokeWidth={1.5} />
 							</button>
 						)}
 						<button
@@ -353,7 +353,7 @@ function JobCard({
 							title="编辑"
 							className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-150"
 						>
-							<Pencil className="w-3.5 h-3.5" strokeWidth={1.6} />
+							<Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
 						</button>
 						<button
 							type="button"
@@ -361,7 +361,7 @@ function JobCard({
 							title="删除"
 							className="p-1.5 rounded-lg text-text-light hover:text-error hover:bg-error-muted transition duration-150"
 						>
-							<Trash2 className="w-3.5 h-3.5" strokeWidth={1.6} />
+							<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
 						</button>
 					</div>
 				</div>

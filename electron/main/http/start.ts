@@ -1,6 +1,9 @@
 import type { DbContext } from "../db/client";
 import type { Logger } from "../logging/types";
-import { startAnthropicProxyServer } from "./startAnthropicProxyServer";
+import {
+	type AnthropicProxySupervisor,
+	startAnthropicProxySupervisor,
+} from "./anthropicProxySupervisor";
 import { startClipServer } from "./startClipServer";
 import { startHarnessMcpServer } from "./startHarnessMcpServer";
 
@@ -13,8 +16,14 @@ export type HttpStatus = {
 	/**
 	 * Anthropic 兼容代理。`token` 由主进程在拉起 Agent SDK 时通过
 	 * `ANTHROPIC_API_KEY` 环境变量下发，渲染端通常不需要用它。
+	 * 自动重启后端口可能变化，实时值请通过 `anthropicProxySupervisor.getStatus()` 读取。
 	 */
-	anthropicProxy: { port: number; baseUrl: string; token: string };
+	anthropicProxy: { port: number; baseUrl: string };
+	/**
+	 * 代理健康监督器：周期探活、自动重启、状态广播。
+	 * `getStatus()` 返回的 port/baseUrl 永远是当前活跃实例的值。
+	 */
+	anthropicProxySupervisor: AnthropicProxySupervisor;
 	/** AI Hub 反向 MCP Server（外部 CLI 通过它调用本应用） */
 	aihubMcp: { port: number; baseUrl: string; endpoint: string } | null;
 };
@@ -27,7 +36,15 @@ export async function startHttpServers({
 	db: DbContext;
 }) {
 	const clip = await startClipServer({ logger, db });
-	const anthropicProxy = await startAnthropicProxyServer({ logger, db });
+	const anthropicProxySupervisor = await startAnthropicProxySupervisor({
+		logger,
+		db,
+	});
+	const proxyStatus = anthropicProxySupervisor.getStatus();
+	const anthropicProxy = {
+		port: proxyStatus.port,
+		baseUrl: proxyStatus.baseUrl,
+	};
 
 	// 反向 MCP 起不来不能拖垮整个启动链路：它是增值能力，
 	// 端口被占 / 权限受限时应用其余部分照常可用。
@@ -46,5 +63,10 @@ export async function startHttpServers({
 		});
 	}
 
-	return { clip, anthropicProxy, aihubMcp } satisfies HttpStatus;
+	return {
+		clip,
+		anthropicProxy,
+		anthropicProxySupervisor,
+		aihubMcp,
+	} satisfies HttpStatus;
 }

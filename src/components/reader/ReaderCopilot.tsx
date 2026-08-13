@@ -1,4 +1,4 @@
-import { Loader2, Send, Sparkles, Trash2, X } from "lucide-react";
+import { BotMessageSquare, Loader2, Send, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { MarkdownRenderer } from "../ui/MarkdownRenderer";
@@ -50,7 +50,7 @@ export function ReaderCopilot({
 		>
 			<header className="reader-copilot__header">
 				<div className="reader-copilot__title">
-					<Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
+					<BotMessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />
 					AI 副驾驶
 				</div>
 				<div className="reader-copilot__actions">
@@ -78,7 +78,7 @@ export function ReaderCopilot({
 			<div ref={scrollRef} className="reader-copilot__scroll">
 				{messages.length === 0 ? (
 					<div className="reader-copilot__empty">
-						<Sparkles className="w-5 h-5" strokeWidth={1.5} />
+						<BotMessageSquare className="w-5 h-5" strokeWidth={1.5} />
 						<p>选中文字让我翻译/解释/总结，或在这里直接提问。</p>
 						<ul>
 							<li>· 你的当前章节会作为上下文传给模型</li>
@@ -91,6 +91,7 @@ export function ReaderCopilot({
 						{messages.map((m) => (
 							<li
 								key={m.id}
+								data-role={m.role}
 								className={`reader-copilot__message reader-copilot__message--${m.role}`}
 							>
 								<div className="reader-copilot__bubble">

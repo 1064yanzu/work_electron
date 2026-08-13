@@ -58,16 +58,6 @@ const PHASE_LABEL: Record<InstallProgressState["phase"], string> = {
 	error: "失败",
 };
 
-/** 基于名称生成稳定的 hue（0-360），用于头像彩色背景 */
-function nameToHue(name: string): number {
-	let hash = 0;
-	for (let i = 0; i < name.length; i++) {
-		hash = (hash << 5) - hash + name.charCodeAt(i);
-		hash |= 0;
-	}
-	return Math.abs(hash) % 360;
-}
-
 export function MarketplaceCard({ entry, progress }: Props) {
 	const [previewing, setPreviewing] = useState(false);
 	const [previewText, setPreviewText] = useState<string | null>(null);
@@ -80,7 +70,6 @@ export function MarketplaceCard({ entry, progress }: Props) {
 	const failed = progress?.phase === "error";
 
 	const initial = (entry.displayName || entry.name).slice(0, 1).toUpperCase();
-	const hue = nameToHue(entry.name);
 
 	const handleInstall = async () => {
 		await skillsMarketplaceStore.install(entry.id);
@@ -130,15 +119,9 @@ export function MarketplaceCard({ entry, progress }: Props) {
 		>
 			{/* 主行 */}
 			<div className="flex items-start gap-3 px-3 py-2.5">
-				{/* 头像 — 单字符 serif，淡彩背景；trust 用小角标在右下 */}
+				{/* 头像 — 单字符，中性底（禁装饰性彩色）；trust 用小角标在右下 */}
 				<div className="relative shrink-0">
-					<div
-						className="w-9 h-9 rounded-lg flex items-center justify-center font-serif text-base font-semibold"
-						style={{
-							backgroundColor: `oklch(0.92 0.04 ${hue})`,
-							color: `oklch(0.45 0.12 ${hue})`,
-						}}
-					>
+					<div className="w-9 h-9 rounded-lg flex items-center justify-center text-base font-semibold bg-warm-200 dark:bg-cream-800 text-text-secondary">
 						{initial}
 					</div>
 					<span
@@ -151,7 +134,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 						)}
 						title={trust.label}
 					>
-						<TrustIcon className="w-2.5 h-2.5" strokeWidth={2.5} />
+						<TrustIcon className="w-2.5 h-2.5" strokeWidth={2} />
 					</span>
 				</div>
 
@@ -203,7 +186,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							type="button"
 							onClick={handleUninstall}
 							disabled={!!installing}
-							className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-text-secondary hover:text-error hover:bg-error/8 transition disabled:opacity-50"
+							className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-text-secondary hover:text-error hover:bg-error/8 transition disabled:opacity-50"
 						>
 							<Trash2 className="w-3 h-3" />
 							卸载
@@ -214,7 +197,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 							onClick={handleInstall}
 							disabled={!!installing}
 							className={cn(
-								"inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition shrink-0",
+								"inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition shrink-0",
 								installing
 									? "bg-warm-200 text-text-muted cursor-not-allowed"
 									: "bg-primary text-primary-foreground hover:bg-primary-hover",
@@ -235,7 +218,7 @@ export function MarketplaceCard({ entry, progress }: Props) {
 					)}
 
 					{/* hover 才显示的次操作 */}
-					<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+					<div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
 						<button
 							type="button"
 							onClick={handlePreview}

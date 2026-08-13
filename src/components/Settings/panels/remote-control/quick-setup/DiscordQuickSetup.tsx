@@ -119,14 +119,14 @@ export function DiscordQuickSetup({
 						className={cn(
 							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 							tokenValid
-								? "border-mint-500 ring-2 ring-mint-500/20"
+								? "border-success ring-2 ring-success/20"
 								: trimmed
 									? "border-error/50 ring-2 ring-error/20"
 									: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
 						)}
 					/>
 					{tokenValid ? (
-						<p className="mt-1.5 inline-flex items-center gap-1 text-xs text-mint-600">
+						<p className="mt-1.5 inline-flex items-center gap-1 text-xs text-success">
 							<CheckCircle2 className="h-3 w-3" strokeWidth={1.5} />
 							Token 格式看起来没问题
 						</p>
@@ -156,7 +156,7 @@ export function DiscordQuickSetup({
 					loading={saving}
 					onClick={() => void handleConfirm()}
 				>
-					{saving ? "应用中..." : "完成配置"}
+					{saving ? "应用中…" : "完成配置"}
 				</Button>
 			</div>
 		</div>

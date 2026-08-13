@@ -62,7 +62,7 @@ export function FileTreeNode({
 				</span>
 				<span className="mr-2 shrink-0 text-text-light">
 					{entry.isDir ? (
-						<Folder className="w-4 h-4 text-terracotta/80" />
+						<Folder className="w-4 h-4 text-text-muted" />
 					) : (
 						<File className="w-4 h-4 text-text-light" />
 					)}
@@ -85,7 +85,7 @@ export function FileTreeNode({
 			}}
 			onContextMenu={(e) => onContextMenu(e, entry)}
 			className={cn(
-				"flex items-center w-full px-2 py-1.5 text-left group transition-colors text-sm",
+				"flex items-center w-full rounded-lg px-2 py-1.5 text-left group transition-colors text-sm focus-ring",
 				isSelected ? "bg-warm-200/80" : "hover:bg-warm-200/50",
 			)}
 			style={{ paddingLeft: indent }}
@@ -104,9 +104,9 @@ export function FileTreeNode({
 			<span className="mr-2 shrink-0 text-text-light group-hover:text-text-muted">
 				{entry.isDir ? (
 					isExpanded ? (
-						<FolderOpen className="w-4 h-4 text-terracotta/80" />
+						<FolderOpen className="w-4 h-4 text-text-muted" />
 					) : (
-						<Folder className="w-4 h-4 text-terracotta/80" />
+						<Folder className="w-4 h-4 text-text-muted" />
 					)
 				) : (
 					<File className="w-4 h-4 text-text-light" />
@@ -147,14 +147,14 @@ export function InlineCreateRow({
 			<span className="w-4 h-4 mr-1 shrink-0" />
 			<span className="mr-2 shrink-0 text-text-light">
 				{type === "folder" ? (
-					<Folder className="w-4 h-4 text-terracotta/80" />
+					<Folder className="w-4 h-4 text-text-muted" />
 				) : (
 					<File className="w-4 h-4 text-text-light" />
 				)}
 			</span>
 			<InlineRenameInput
 				initialValue=""
-				placeholder={type === "folder" ? "新建文件夹..." : "新建文件..."}
+				placeholder={type === "folder" ? "新建文件夹…" : "新建文件…"}
 				onSubmit={onSubmit}
 				onCancel={onCancel}
 			/>
@@ -216,7 +216,7 @@ function InlineRenameInput({
 				if (value && value !== initialValue) onSubmit(value);
 				else onCancel();
 			}}
-			className="flex-1 min-w-0 px-1.5 py-0.5 text-sm bg-surface border border-primary/40 rounded outline-none focus:ring-2 focus:ring-primary/30"
+			className="flex-1 min-w-0 px-1.5 py-0.5 text-sm bg-surface border border-primary/40 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[var(--interactive-ring)]"
 		/>
 	);
 }

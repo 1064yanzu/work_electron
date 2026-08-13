@@ -28,7 +28,7 @@ function resolveStartupBackgroundColor(): string {
 	} catch {
 		// 文件不存在（首次启动）或损坏，走兜底
 	}
-	return nativeTheme.shouldUseDarkColors ? "#1a1a1a" : "#faf9f5";
+	return nativeTheme.shouldUseDarkColors ? "#1a1a1a" : "#f2f0e9";
 }
 
 export function createMainWindow({

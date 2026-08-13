@@ -235,7 +235,7 @@ export function BrowserShell({
 						aria-label="后退"
 						title="后退"
 					>
-						<ArrowLeft className="w-4 h-4" strokeWidth={1.75} />
+						<ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
 					</IconButton>
 
 					<IconButton
@@ -246,7 +246,7 @@ export function BrowserShell({
 						aria-label="前进"
 						title="前进"
 					>
-						<ArrowRight className="w-4 h-4" strokeWidth={1.75} />
+						<ArrowRight className="w-4 h-4" strokeWidth={1.5} />
 					</IconButton>
 
 					<IconButton
@@ -254,14 +254,14 @@ export function BrowserShell({
 						variant="ghost"
 						onClick={handleRefresh}
 						aria-label={isLoading ? "停止加载" : "刷新"}
-						title={isLoading ? "刷新中..." : "刷新"}
+						title={isLoading ? "刷新中…" : "刷新"}
 					>
 						<RefreshCw
 							className={cn(
 								"w-4 h-4 transition-transform",
 								isLoading && "animate-spin",
 							)}
-							strokeWidth={1.75}
+							strokeWidth={1.5}
 						/>
 					</IconButton>
 				</div>
@@ -294,7 +294,7 @@ export function BrowserShell({
 					aria-label="在新窗口中打开"
 					title="在独立窗口打开"
 				>
-					<ExternalLink className="w-4 h-4" strokeWidth={1.75} />
+					<ExternalLink className="w-4 h-4" strokeWidth={1.5} />
 				</IconButton>
 
 				{/* 全屏按钮 */}
@@ -306,9 +306,9 @@ export function BrowserShell({
 					title={isFullscreen ? "退出全屏" : "进入全屏"}
 				>
 					{isFullscreen ? (
-						<Minimize2 className="w-4 h-4" strokeWidth={1.75} />
+						<Minimize2 className="w-4 h-4" strokeWidth={1.5} />
 					) : (
-						<Maximize2 className="w-4 h-4" strokeWidth={1.75} />
+						<Maximize2 className="w-4 h-4" strokeWidth={1.5} />
 					)}
 				</IconButton>
 			</div>

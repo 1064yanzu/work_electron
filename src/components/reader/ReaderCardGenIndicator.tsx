@@ -1,4 +1,4 @@
-import { Loader2, Sparkles, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 
 interface ReaderCardGenIndicatorProps {
 	visible: boolean;
@@ -28,7 +28,7 @@ export function ReaderCardGenIndicator({
 			>
 				<span className="reader-card-gen-indicator__icon">
 					{count > 0 ? (
-						<Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
+						<Check className="w-3.5 h-3.5" strokeWidth={1.5} />
 					) : (
 						<Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
 					)}

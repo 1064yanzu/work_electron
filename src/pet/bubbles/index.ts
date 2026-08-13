@@ -21,3 +21,4 @@ export {
 } from "./PetHistoryBubble";
 export { withAlpha, lighten } from "./utils";
 export { CloseIconButton } from "./CloseIconButton";
+export { PET_TONE_DONE, PET_TONE_ERROR, PET_TONE_APPROVAL } from "./palette";

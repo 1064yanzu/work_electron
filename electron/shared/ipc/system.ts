@@ -3,6 +3,22 @@
 
 import type { AppCloseBehavior } from "./common";
 
+/**
+ * Anthropic 兼容代理的健康快照。
+ * 主进程监督器周期探活并自动重启；状态变化会通过
+ * `anthropic-proxy-status` 事件推送同结构 payload。
+ */
+export interface AnthropicProxyHealthSnapshot {
+	healthy: boolean;
+	port: number;
+	baseUrl: string;
+	consecutiveFailures: number;
+	lastCheckedAt: number | null;
+	lastError: string | null;
+	restartCount: number;
+	restarting: boolean;
+}
+
 export interface SystemIpcSchema {
 	// ==================
 	// 系统命令
@@ -98,6 +114,16 @@ export interface SystemIpcSchema {
 	http_rotate_service_token: {
 		input: { service: "clip" | "anthropic_proxy" };
 		output: { success: boolean; token?: string; error?: string };
+	};
+	/** 立即探活 Anthropic 代理并返回健康快照（Copilot 横幅 / 设置面板用）。 */
+	anthropic_proxy_get_health: {
+		input: Record<string, never>;
+		output: AnthropicProxyHealthSnapshot;
+	};
+	/** 手动重启 Anthropic 代理。代理是所有 AI 流量的唯一出口，挂掉时用户可一键自救。 */
+	anthropic_proxy_restart: {
+		input: Record<string, never>;
+		output: { success: boolean; health: AnthropicProxyHealthSnapshot };
 	};
 
 	// ==================

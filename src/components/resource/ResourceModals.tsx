@@ -130,7 +130,7 @@ export function NewFolderModal({
 					type="text"
 					defaultValue=""
 					className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-border/60"
-					placeholder="输入文件夹名称..."
+					placeholder="输入文件夹名称…"
 					autoFocus
 					onKeyDown={(e) => {
 						if (e.key === "Enter") handleSubmit();
@@ -252,7 +252,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						value={renameFolderName}
 						onChange={(e) => setRenameFolderName(e.target.value)}
 						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-border/60"
-						placeholder="输入新名称..."
+						placeholder="输入新名称…"
 						autoFocus
 						onKeyDown={(e) => {
 							if (e.key === "Enter") handleRenameFolder();
@@ -320,7 +320,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						</button>
 						<button
 							onClick={handleMoveFolderTo}
-							className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+							className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover transition-colors"
 						>
 							移动
 						</button>
@@ -348,10 +348,10 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 								onClick={() =>
 									setSingleSourceMoveTargetId(UNASSIGNED_FOLDER_ID)
 								}
-								className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+								className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors ${
 									singleSourceMoveTargetId === UNASSIGNED_FOLDER_ID
-										? "bg-focus/8 text-focus border border-focus/30"
-										: "hover:bg-warm-200 text-text-secondary"
+										? "bg-warm-200 text-text-primary border-border"
+										: "border-transparent hover:bg-warm-200 text-text-secondary"
 								}`}
 							>
 								<FolderIcon className="w-4 h-4 shrink-0" />
@@ -362,14 +362,14 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 								<button
 									key={opt.id}
 									onClick={() => setSingleSourceMoveTargetId(opt.id)}
-									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors ${
 										singleSourceMoveTargetId === opt.id
-											? "bg-focus/8 text-focus border border-focus/30"
-											: "hover:bg-warm-200 text-text-secondary"
+											? "bg-warm-200 text-text-primary border-border"
+											: "border-transparent hover:bg-warm-200 text-text-secondary"
 									}`}
 									style={{ paddingLeft: 12 + opt.depth * 20 }}
 								>
-									<FolderIcon className="w-4 h-4 shrink-0 text-peach-500" />
+									<FolderIcon className="w-4 h-4 shrink-0 text-text-muted" />
 									<span className="text-sm font-medium truncate">
 										{opt.name}
 									</span>
@@ -389,7 +389,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						</button>
 						<button
 							onClick={handleSingleSourceMove}
-							className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
+							className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover transition-colors font-medium"
 						>
 							移动
 						</button>
@@ -412,7 +412,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 							<button
 								key={tab}
 								onClick={() => setActiveTab(tab)}
-								className={`flex-1 py-2 text-xs font-medium rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
+								className={`flex-1 py-2 text-xs font-medium rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
 									activeTab === tab
 										? "bg-surface shadow-sm text-text-primary"
 										: "text-text-muted"
@@ -432,7 +432,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						value={newSourceTitle}
 						onChange={(e) => setNewSourceTitle(e.target.value)}
 						className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-base font-medium placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-border/60"
-						placeholder="输入标题..."
+						placeholder="输入标题…"
 					/>
 
 					{activeTab === "web" && (
@@ -450,7 +450,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 							value={newSourceContent}
 							onChange={(e) => setNewSourceContent(e.target.value)}
 							className="w-full px-4 py-3 bg-warm-50/50 border-none rounded-xl text-sm h-48 resize-none placeholder:text-text-light focus:outline-none focus:ring-2 focus:ring-border/60 leading-relaxed"
-							placeholder="输入内容..."
+							placeholder="输入内容…"
 						/>
 					)}
 
@@ -458,7 +458,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 						<div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-warm-50/50 transition-colors relative group">
 							<input
 								type="file"
-								accept="*/*"
+								accept=".txt,.md,.markdown,.json,.csv,.tsv,.log,.html,.htm,.xml,.yaml,.yml"
 								className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
 								onChange={(e) => {
 									const file = e.target.files?.[0];
@@ -479,7 +479,7 @@ const ResourceModalsInner = memo(function ResourceModalsInner({
 								{selectedFile ? selectedFile.name : "点击或拖拽文件上传"}
 							</p>
 							<p className="text-xs text-text-light mt-1">
-								支持文本、PDF、Word、图片等常见格式
+								支持 .txt / .md / .json / .csv / .html 等文本格式
 							</p>
 						</div>
 					)}

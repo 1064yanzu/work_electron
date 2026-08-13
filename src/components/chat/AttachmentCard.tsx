@@ -26,17 +26,17 @@ function getFileIcon(filename: string) {
 
 	// 压缩文件
 	if (["rar", "zip", "7z", "tar", "gz"].includes(ext || "")) {
-		return <FileArchive className="w-4 h-4 text-peach-500" />;
+		return <FileArchive className="w-4 h-4 text-text-secondary" />;
 	}
 
 	// 文档类型
 	if (["doc", "docx", "pdf", "txt", "md", "rtf"].includes(ext || "")) {
-		return <FileText className="w-4 h-4 text-focus" />;
+		return <FileText className="w-4 h-4 text-text-secondary" />;
 	}
 
 	// 图片
 	if (["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"].includes(ext || "")) {
-		return <FileImage className="w-4 h-4 text-success" />;
+		return <FileImage className="w-4 h-4 text-text-secondary" />;
 	}
 
 	// 默认文件图标

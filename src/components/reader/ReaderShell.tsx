@@ -636,9 +636,17 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 	}, [settings?.theme, onPatchSettings]);
 
 	// 12. 快捷键
+	// 子浮层（复习卡 / 搜索 / 卡片编辑）打开时整体禁用，避免 ←/→ 翻章、Esc 越级关闭
 	useReaderShortcuts(
 		{
-			onClose: onRequestClose,
+			// Esc：沉浸模式先退沉浸，再退阅读器
+			onClose: () => {
+				if (readerStoreApi.getState().immersive) {
+					readerStoreApi.toggleImmersive(false);
+					return;
+				}
+				onRequestClose();
+			},
 			onPrevChapter,
 			onNextChapter,
 			onToggleImmersive: () => readerStoreApi.toggleImmersive(),
@@ -670,7 +678,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			},
 			onCycleTheme: cycleTheme,
 		},
-		Boolean(book),
+		Boolean(book) && !cardReviewOpen && !searchOpen && !editingCard,
 	);
 
 	// 13. 划词 AI 路由
@@ -787,6 +795,17 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 		}
 	}
 
+	// 书内搜索：用 useCallback 固定引用，避免搜索面板因父组件重渲染被动重查
+	const handleSearchInBook = useCallback(
+		async (q: string) => {
+			const current = readerStoreApi.getState().book;
+			return current ? readerSearchInBook(current.id, q, 50) : [];
+		},
+		// book 加载完成后刷新一次引用即可
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[book?.id],
+	);
+
 	// 切章后兜底：等 chapter 真正变成期望值，再把挂着的 pendingSeek 下发
 	useEffect(() => {
 		const pending = pendingSeekRef.current;
@@ -870,7 +889,9 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 
 				<main className="reader-main">
 					{loadingBook || !book ? (
-						<div className="reader-shell__loading-pulse" />
+						<div className="reader-engine--loading">
+							<div className="reader-shell__loading-pulse" />
+						</div>
 					) : error ? (
 						<div className="reader-error">
 							<div className="reader-error__icon">
@@ -965,7 +986,7 @@ export function ReaderShell({ bookId, onRequestClose, onOpenSettings }: Props) {
 			<ReaderSearchPanel
 				open={searchOpen}
 				onClose={() => setSearchOpen(false)}
-				onSearch={async (q) => (book ? readerSearchInBook(book.id, q, 50) : [])}
+				onSearch={handleSearchInBook}
 				onPick={(hit) => {
 					setSearchOpen(false);
 					if (hit.chapter_id) setActiveChapterId(hit.chapter_id);

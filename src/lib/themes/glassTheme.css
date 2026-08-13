@@ -290,12 +290,6 @@ html[data-color-theme="glass"] ::-webkit-scrollbar-thumb:hover {
 	background-color: var(--t-scrollbar-hover) !important;
 }
 
-/* 按钮微交互悬浮高亮 */
-html[data-color-theme="glass"] .btn-interactive:hover {
-	backdrop-filter: brightness(1.05) saturate(1.1) !important;
-	-webkit-backdrop-filter: brightness(1.05) saturate(1.1) !important;
-}
-
 /* ============================================
    7. 减少动画偏好：显式关停 infinite 漂浮动画
    全局的 animation-duration: 0.01ms 压制对 infinite alternate
@@ -346,8 +340,7 @@ html:is(.perf-degraded, .glass-perf)[data-color-theme="glass"]
 	[role="dialog"],
 	.modal-content,
 	.settings-modal,
-	.modal-backdrop,
-	.btn-interactive
+	.modal-backdrop
 ) {
 	backdrop-filter: none !important;
 	-webkit-backdrop-filter: none !important;

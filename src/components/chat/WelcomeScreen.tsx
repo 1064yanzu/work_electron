@@ -71,10 +71,7 @@ export function WelcomeScreen() {
 					/>
 				)}
 
-				<h3
-					className="text-[1.5rem] font-semibold text-text-primary leading-tight"
-					style={{ letterSpacing: "-0.02em" }}
-				>
+				<h3 className="text-2xl tracking-tight font-semibold text-text-primary leading-tight">
 					{greeting}
 				</h3>
 

@@ -73,7 +73,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 				<div className="absolute inset-0 z-40 pointer-events-none">
 					<div className="absolute inset-0 bg-surface/60 dark:bg-black/40 backdrop-blur-md" />
 					<div className="absolute inset-0 flex items-center justify-center p-6">
-						<div className="w-full max-w-sm rounded-3xl bg-surface/85 shadow-[0_8px_30px_rgb(0,0,0,0.10)] ring-1 ring-black/5 dark:ring-white/10 px-5 py-4">
+						<div className="w-full max-w-sm rounded-3xl bg-surface/85 shadow-float ring-1 ring-black/5 dark:ring-white/10 px-5 py-4">
 							<div className="flex items-center gap-4">
 								<div className="w-11 h-11 rounded-2xl bg-warm-200 flex items-center justify-center">
 									<ArrowDownToLine className="w-5 h-5 text-text-secondary" />
@@ -94,7 +94,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 
 			{queue.length > 0 && (
 				<div className="absolute bottom-3 left-3 right-3 z-30">
-					<div className="rounded-2xl bg-surface shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+					<div className="rounded-2xl bg-surface shadow-float ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
 						<div className="px-4 py-3 flex items-center justify-between">
 							<div className="flex items-center gap-2 min-w-0">
 								<span className="text-xs font-semibold text-text-primary">
@@ -116,27 +116,33 @@ export function DragAndDropImportUI<TResult = unknown>({
 							<div className="flex items-center gap-1 shrink-0">
 								{canStart && (
 									<button
+										type="button"
 										onClick={onStart}
 										className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-warm-200 transition-colors"
 										title="开始导入"
+										aria-label="开始导入"
 									>
 										<Play className="w-4 h-4" />
 									</button>
 								)}
 								{canCancel && (
 									<button
+										type="button"
 										onClick={onCancel}
 										className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-warm-200 transition-colors"
 										title="取消"
+										aria-label="取消导入"
 									>
 										<Ban className="w-4 h-4" />
 									</button>
 								)}
 								{canClear && (
 									<button
+										type="button"
 										onClick={onClear}
 										className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-warm-200 transition-colors"
 										title="清空"
+										aria-label="清空队列"
 									>
 										<Trash2 className="w-4 h-4" />
 									</button>
@@ -169,13 +175,14 @@ export function DragAndDropImportUI<TResult = unknown>({
 													{item.name}
 												</p>
 												{item.error && (
-													<p className="text-xs text-error dark:text-error mt-0.5 line-clamp-2">
+													<p className="text-xs text-error mt-0.5 line-clamp-2">
 														{item.error}
 													</p>
 												)}
 											</div>
 
 											<button
+												type="button"
 												onClick={() => onRemoveItem(item.id)}
 												disabled={
 													queueStatus === "importing" &&
@@ -183,6 +190,7 @@ export function DragAndDropImportUI<TResult = unknown>({
 												}
 												className="shrink-0 p-1 rounded-md text-text-light hover:text-text-secondary hover:bg-warm-200 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
 												title="移除"
+												aria-label={`移除 ${item.name}`}
 											>
 												<X className="w-3.5 h-3.5" />
 											</button>

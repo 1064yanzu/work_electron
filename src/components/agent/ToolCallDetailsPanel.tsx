@@ -57,12 +57,12 @@ export function ToolCallDetailsPanel({
 			) : null}
 
 			{input && Object.keys(input).length > 0 ? (
-				<Section title="Input">
+				<Section title="输入">
 					<div className="space-y-1.5">
 						{Object.entries(input).map(([key, value]) => (
 							<div key={key} className="text-xs leading-relaxed">
 								<div className="text-text-muted">{key}</div>
-								<div className="mt-1 rounded-md bg-warm-200/70 p-2 text-text-secondary break-all whitespace-pre-wrap">
+								<div className="mt-1 rounded-lg bg-warm-200/70 p-2 text-text-secondary break-all whitespace-pre-wrap">
 									{typeof value === "string"
 										? value
 										: JSON.stringify(value, null, 2)}
@@ -74,12 +74,12 @@ export function ToolCallDetailsPanel({
 			) : null}
 
 			{error ? (
-				<Section title="Error" className="border-error/30 bg-error/8">
+				<Section title="错误" className="border-error/30 bg-error/8">
 					<div className="text-xs text-error whitespace-pre-wrap">{error}</div>
 				</Section>
 			) : null}
 
-			{outputNode ? <Section title="Output">{outputNode}</Section> : null}
+			{outputNode ? <Section title="输出">{outputNode}</Section> : null}
 		</div>
 	);
 }

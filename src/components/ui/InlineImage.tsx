@@ -178,7 +178,7 @@ export const InlineImage = memo(function InlineImage({
 		return (
 			<span className="flex items-center gap-2 text-xs text-text-muted">
 				<Loader2 className="w-3 h-3 animate-spin" />
-				加载图片...
+				加载图片…
 			</span>
 		);
 	}

@@ -72,7 +72,7 @@ export function MemoryStatsGrid({ stats }: MemoryStatsGridProps) {
 							<div className="text-right">
 								<div
 									className={cn(
-										"text-[18px] font-semibold tabular-nums leading-none",
+										"text-lg font-semibold tabular-nums leading-none",
 										isWarning ? "text-error" : "text-text-primary",
 									)}
 								>
@@ -89,10 +89,7 @@ export function MemoryStatsGrid({ stats }: MemoryStatsGridProps) {
 									"h-full rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 									isWarning ? "bg-error" : "bg-primary",
 								)}
-								style={{
-									width: `${pct}%`,
-									backgroundColor: !isWarning ? style.accent : undefined,
-								}}
+								style={{ width: `${pct}%` }}
 							/>
 						</div>
 					</div>

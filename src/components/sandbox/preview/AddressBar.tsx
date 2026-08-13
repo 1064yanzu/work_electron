@@ -113,30 +113,30 @@ export function AddressBar({ url, onNavigate, disabled }: AddressBarProps) {
 	const secure = isSecure(url);
 	const parts = useMemo(() => splitUrl(url), [url]);
 
-	// 安全图标三态：本地（mint 锁）/ HTTPS（mint 锁）/ HTTP（unlock 灰）/ 空（globe 灰）
+	// 安全图标三态：本地（success 锁）/ HTTPS（success 锁）/ HTTP（unlock 灰）/ 空（globe 灰）
 	let securityIcon: React.ReactNode;
 	let securityTitle: string;
 	if (!url) {
 		securityIcon = (
 			<Globe
 				className="w-3.5 h-3.5 text-text-light flex-shrink-0"
-				strokeWidth={1.75}
+				strokeWidth={1.5}
 			/>
 		);
 		securityTitle = "无地址";
 	} else if (isLocal) {
 		securityIcon = (
 			<Lock
-				className="w-3.5 h-3.5 text-mint-500 flex-shrink-0"
-				strokeWidth={1.75}
+				className="w-3.5 h-3.5 text-success flex-shrink-0"
+				strokeWidth={1.5}
 			/>
 		);
 		securityTitle = "本地预览（受信任沙盒）";
 	} else if (secure) {
 		securityIcon = (
 			<Lock
-				className="w-3.5 h-3.5 text-mint-500 flex-shrink-0"
-				strokeWidth={1.75}
+				className="w-3.5 h-3.5 text-success flex-shrink-0"
+				strokeWidth={1.5}
 			/>
 		);
 		securityTitle = "HTTPS 加密连接";
@@ -144,7 +144,7 @@ export function AddressBar({ url, onNavigate, disabled }: AddressBarProps) {
 		securityIcon = (
 			<Unlock
 				className="w-3.5 h-3.5 text-text-muted flex-shrink-0"
-				strokeWidth={1.75}
+				strokeWidth={1.5}
 			/>
 		);
 		securityTitle = "未加密连接";
@@ -212,7 +212,7 @@ export function AddressBar({ url, onNavigate, disabled }: AddressBarProps) {
 						setInputValue(url);
 					}}
 					onKeyDown={handleKeyDown}
-					placeholder="输入网址或路径..."
+					placeholder="输入网址或路径…"
 					disabled={disabled}
 					spellCheck={false}
 					autoComplete="off"
@@ -246,9 +246,9 @@ export function AddressBar({ url, onNavigate, disabled }: AddressBarProps) {
 					tabIndex={-1}
 				>
 					{copied ? (
-						<Check className="w-3.5 h-3.5 text-mint-500" strokeWidth={2} />
+						<Check className="w-3.5 h-3.5 text-success" strokeWidth={1.5} />
 					) : (
-						<Copy className="w-3.5 h-3.5" strokeWidth={1.75} />
+						<Copy className="w-3.5 h-3.5" strokeWidth={1.5} />
 					)}
 				</button>
 			) : null}

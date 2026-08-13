@@ -71,10 +71,7 @@ export function SkeletonText({
 			{Array.from({ length: lines }).map((_, i) => (
 				<Skeleton
 					key={i}
-					className={cn(
-						"h-4",
-						i === lines - 1 && lastLineWidth && `w-[${lastLineWidth}]`,
-					)}
+					className="h-4"
 					width={i === lines - 1 ? lastLineWidth : "100%"}
 				/>
 			))}

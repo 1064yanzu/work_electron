@@ -34,9 +34,7 @@ export function SettingsPanelHeader({
 		<div className={cn("mb-11", className)}>
 			<div className="flex items-start justify-between gap-6">
 				<div className="min-w-0">
-					<h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] text-text-primary">
-						{title}
-					</h1>
+					<h1 className="type-display text-text-primary">{title}</h1>
 					{description && (
 						<p className="mt-2.5 max-w-[56ch] text-sm leading-relaxed text-text-muted">
 							{description}

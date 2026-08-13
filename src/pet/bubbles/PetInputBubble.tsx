@@ -103,7 +103,7 @@ export const PetInputBubble = forwardRef<
 						type="button"
 						onClick={onOpenMain}
 						aria-label="打开主窗口"
-						className="flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--t-text-light,#9d9d98)] transition-colors hover:bg-[color:var(--t-bg-muted,#f4f2ec)] hover:text-[color:var(--t-text-secondary,#6b6b68)]"
+						className="flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--t-text-muted,#9d9d98)] transition-colors hover:bg-[color:var(--t-bg-muted,#f4f2ec)] hover:text-[color:var(--t-text-secondary,#6b6b68)]"
 					>
 						<Home className="h-3.5 w-3.5" strokeWidth={1.8} />
 					</button>
@@ -121,7 +121,7 @@ export const PetInputBubble = forwardRef<
 					onBlur={() => setFocused(false)}
 					placeholder="想跟我说点什么？"
 					rows={2}
-					className="block w-full resize-none bg-transparent pr-8 text-sm leading-relaxed text-[color:var(--t-text-primary,#1a1a19)] placeholder:text-[color:var(--t-text-light,#9d9d98)] outline-none"
+					className="block w-full resize-none bg-transparent pr-8 text-sm leading-relaxed text-[color:var(--t-text-primary,#1a1a19)] placeholder:text-[color:var(--t-text-muted,#9d9d98)] outline-none"
 				/>
 
 				{/* 快速建议 chip — 仅未聚焦且无内容时显示 */}
@@ -154,7 +154,7 @@ export const PetInputBubble = forwardRef<
 				<div className="mt-1.5 flex items-center justify-between">
 					{/* 左下：键盘提示 / 字数提示 */}
 					<span
-						className="text-2xs tracking-wide text-[color:var(--t-text-light,#9d9d98)] transition-opacity duration-150"
+						className="text-2xs tracking-wide text-[color:var(--t-text-muted,#9d9d98)] transition-opacity duration-150"
 						style={{
 							opacity: showCount ? 1 : focused && !canSend ? 0.7 : 0,
 						}}
@@ -172,7 +172,7 @@ export const PetInputBubble = forwardRef<
 							backgroundColor: canSend
 								? accentColor
 								: "var(--t-bg-muted, #f4f2ec)",
-							color: canSend ? "#ffffff" : "var(--t-text-light, #9d9d98)",
+							color: canSend ? "#ffffff" : "var(--t-text-muted, #9d9d98)",
 							boxShadow: canSend
 								? `0 6px 14px -4px ${withAlpha(accentColor, 0.45)}`
 								: "none",
@@ -181,7 +181,7 @@ export const PetInputBubble = forwardRef<
 					>
 						<ArrowUp
 							className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-[1px] group-active:translate-y-0"
-							strokeWidth={2.6}
+							strokeWidth={1.5}
 						/>
 					</button>
 				</div>

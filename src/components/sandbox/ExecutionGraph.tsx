@@ -18,7 +18,7 @@ import {
 	useState,
 	type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { formatKeys } from "../../lib/shortcuts";
+import { formatKeys, useRegisterShortcuts } from "../../lib/shortcuts";
 import { buildExecutionGraph } from "./graph/buildExecutionGraph";
 import { GraphInspectorPanel } from "./graph/GraphInspectorPanel";
 import { nodeTypes } from "./graph/GraphNodes";
@@ -32,17 +32,6 @@ import {
 } from "./graph/types";
 import { useGraphFocus } from "./graph/useGraphFocus";
 import { useGraphSelection } from "./graph/useGraphSelection";
-
-function isTypingElement(target: EventTarget | null): boolean {
-	if (!(target instanceof HTMLElement)) return false;
-	const tag = target.tagName.toLowerCase();
-	return (
-		tag === "input" ||
-		tag === "textarea" ||
-		tag === "select" ||
-		target.isContentEditable
-	);
-}
 
 // 空态是这块画布最常见的样子（没跑任务时一直是它），
 // 除了说清「这里是什么」，还要顺手指一条路：任务从右栏对话发起。
@@ -291,31 +280,43 @@ function ExecutionGraphInner({
 		setFollow(defaultFollow);
 	}, [defaultFollow]);
 
-	useEffect(() => {
-		const handleShortcuts = (e: KeyboardEvent) => {
-			if (isTypingElement(e.target)) return;
-			if (e.key === "/") {
-				e.preventDefault();
-				searchInputRef.current?.focus();
-				searchInputRef.current?.select();
-				return;
-			}
-			if (e.altKey && e.key.toLowerCase() === "f") {
-				e.preventDefault();
-				updateFollow((v) => !v);
-			}
-		};
-		window.addEventListener("keydown", handleShortcuts);
-		return () => window.removeEventListener("keydown", handleShortcuts);
-	}, [updateFollow]);
+	useRegisterShortcuts(
+		() => [
+			{
+				id: "sandbox.graph-focus-search",
+				keys: "/",
+				label: "聚焦执行图搜索",
+				description: "把焦点移到执行图顶部的搜索框",
+				group: "沙盒",
+				scope: "sandbox",
+				handler: (e) => {
+					e.preventDefault();
+					searchInputRef.current?.focus();
+					searchInputRef.current?.select();
+				},
+			},
+			{
+				id: "sandbox.graph-toggle-follow",
+				keys: "alt+f",
+				label: "切换执行图跟随",
+				description: "开启/关闭画布自动跟随最新节点",
+				group: "沙盒",
+				scope: "sandbox",
+				handler: (e) => {
+					e.preventDefault();
+					updateFollow((v) => !v);
+				},
+			},
+		],
+		[updateFollow],
+	);
 
 	if (!source) {
 		return <EmptyGraph />;
 	}
 
 	return (
-		<div className="flex-1 relative overflow-hidden bg-gradient-to-br from-cream-50 via-white to-cream-50 dark:from-cream-900 dark:via-cream-900 dark:to-cream-900">
-			<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(217,108,70,0.11),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(82,94,111,0.08),transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top,rgba(224,123,82,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(113,125,145,0.12),transparent_55%)]" />
+		<div className="flex-1 relative overflow-hidden bg-warm-50">
 			<GraphTopToolbar
 				searchInputRef={searchInputRef}
 				searchQuery={searchQuery}
@@ -355,19 +356,19 @@ function ExecutionGraphInner({
 					variant={BackgroundVariant.Dots}
 					gap={20}
 					size={1}
-					color="rgba(148,163,184,0.25)"
+					color="var(--t-border)"
 				/>
 				<Controls
 					position="bottom-left"
 					showInteractive={false}
-					className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-md !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
+					className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-md !border !border-border !rounded-2xl !shadow-bai-pop"
 				/>
 				{selectedNodeId ? null : (
 					<MiniMap
 						position="bottom-right"
 						zoomable
 						pannable
-						className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-md !border !border-black/[0.06] dark:!border-white/[0.08] !rounded-2xl !shadow-[0_10px_30px_-18px_rgba(0,0,0,0.25)]"
+						className="!bg-surface/70 dark:!bg-dark-bg/40 !backdrop-blur-md !border !border-border !rounded-2xl !shadow-bai-pop"
 					/>
 				)}
 			</ReactFlow>

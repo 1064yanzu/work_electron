@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { ReaderKnowledgeCard } from "../../lib/api/reader";
+import { useFocusTrap } from "../ui/FocusTrap";
 
 interface ReaderCardEditProps {
 	card: ReaderKnowledgeCard | null;
@@ -12,6 +13,11 @@ export function ReaderCardEdit({ card, onSave, onClose }: ReaderCardEditProps) {
 	const [question, setQuestion] = useState("");
 	const [answer, setAnswer] = useState("");
 	const questionRef = useRef<HTMLTextAreaElement>(null);
+	// Esc 只关编辑弹窗（overlayStack 顶层消费并 preventDefault）
+	const trapRef = useFocusTrap<HTMLDivElement>({
+		active: Boolean(card),
+		onEscape: onClose,
+	});
 
 	useEffect(() => {
 		if (card) {
@@ -37,7 +43,12 @@ export function ReaderCardEdit({ card, onSave, onClose }: ReaderCardEditProps) {
 				if (e.target === e.currentTarget) onClose();
 			}}
 		>
-			<div className="reader-card-edit" role="dialog" aria-label="编辑复习卡">
+			<div
+				ref={trapRef}
+				className="reader-card-edit"
+				role="dialog"
+				aria-label="编辑复习卡"
+			>
 				<header className="reader-card-edit__header">
 					<span className="reader-card-edit__title">编辑复习卡</span>
 					<button

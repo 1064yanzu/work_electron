@@ -96,7 +96,7 @@ export function RuntimePanel({
 					className="p-1 rounded text-text-light hover:text-text-secondary transition duration-150"
 					title="刷新"
 				>
-					<RefreshCw className="w-3 h-3" strokeWidth={1.6} />
+					<RefreshCw className="w-3 h-3" strokeWidth={1.5} />
 				</button>
 			</div>
 
@@ -172,7 +172,7 @@ function RuntimeCard({
 							title="查看终端"
 							className="p-1.5 rounded-lg text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40 transition duration-150"
 						>
-							<Terminal className="w-3.5 h-3.5" strokeWidth={1.6} />
+							<Terminal className="w-3.5 h-3.5" strokeWidth={1.5} />
 						</button>
 					)}
 					{!finished && (
@@ -183,7 +183,7 @@ function RuntimeCard({
 							aria-label="中止该运行"
 							className="p-1.5 rounded-lg text-text-light hover:text-error hover:bg-error-muted transition duration-150"
 						>
-							<Ban className="w-3.5 h-3.5" strokeWidth={1.6} />
+							<Ban className="w-3.5 h-3.5" strokeWidth={1.5} />
 						</button>
 					)}
 				</div>
@@ -195,7 +195,7 @@ function RuntimeCard({
 					<div className="flex items-center gap-1.5">
 						<AlertTriangle
 							className="w-3 h-3 text-error shrink-0"
-							strokeWidth={1.8}
+							strokeWidth={1.5}
 						/>
 						<span className="text-2xs font-medium text-error">
 							{failureMeta.label}

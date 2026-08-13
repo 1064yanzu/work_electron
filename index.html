@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <!--
@@ -51,7 +51,7 @@
           if (isDark) root.classList.add("dark");
           var bg = localStorage.getItem("window-bg");
           if (!bg || !/^#[0-9a-fA-F]{6}$/.test(bg)) {
-            bg = isDark ? "#1a1a19" : "#faf9f5";
+            bg = isDark ? "#1a1a19" : "#f2f0e9";
           }
           root.style.backgroundColor = bg;
         } catch (e) {

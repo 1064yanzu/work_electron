@@ -63,7 +63,9 @@ const CELL_BASE =
 	"flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-150";
 const CELL_IDLE =
 	"text-text-muted hover:bg-warm-200/70 hover:text-text-primary dark:hover:bg-white/[0.06]";
-const CELL_ACTIVE = "bg-warm-200 text-text-primary dark:bg-white/[0.09]";
+// 激活态用签名色而非灰阶：rail 是全应用唯一的一级导航，
+// 「我现在在哪」值得用品牌色说话（参照 Claude 侧栏的激活项处理）
+const CELL_ACTIVE = "bg-primary-muted text-primary";
 
 export function SidebarRail({ onOpenSettings }: SidebarRailProps) {
 	const leftSidebarView = useWorkspaceStoreSelector(

@@ -115,7 +115,7 @@ export const SandboxVideoPreview = memo(function SandboxVideoPreview({
 	}
 
 	if (!objectUrl) {
-		return <MediaLoadingState label="正在加载本地视频..." />;
+		return <MediaLoadingState label="正在加载本地视频…" />;
 	}
 
 	return (
@@ -124,7 +124,7 @@ export const SandboxVideoPreview = memo(function SandboxVideoPreview({
 				src={objectUrl}
 				controls
 				preload="metadata"
-				className="max-h-full w-full rounded-2xl border border-white/10 bg-black shadow-[0_20px_80px_-32px_rgba(0,0,0,0.9)]"
+				className="max-h-full w-full rounded-2xl border border-white/10 bg-black shadow-float"
 			>
 				您的浏览器不支持视频播放
 			</video>
@@ -149,14 +149,14 @@ export const SandboxAudioPreview = memo(function SandboxAudioPreview({
 	}
 
 	if (!objectUrl) {
-		return <MediaLoadingState label="正在加载本地音频..." />;
+		return <MediaLoadingState label="正在加载本地音频…" />;
 	}
 
 	return (
-		<div className="flex h-full min-h-0 items-center justify-center bg-gradient-to-br from-cream-100 via-cream-50 to-amber-50 p-6 dark:from-cream-900 dark:via-cream-900 dark:to-cream-800">
-			<div className="w-full max-w-xl rounded-3xl border border-black/5 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur dark:border-white/10 dark:bg-cream-900/90">
+		<div className="flex h-full min-h-0 items-center justify-center bg-warm-100 p-6">
+			<div className="w-full max-w-xl rounded-3xl border border-black/5 bg-white/90 p-6 shadow-float backdrop-blur dark:border-white/10 dark:bg-cream-900/90">
 				<div className="mb-5 flex items-center gap-4">
-					<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400/30 to-orange-500/20 text-amber-700 dark:from-amber-400/20 dark:to-orange-500/10 dark:text-amber-200">
+					<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-warning-muted text-warning">
 						<svg
 							className="h-7 w-7"
 							fill="none"

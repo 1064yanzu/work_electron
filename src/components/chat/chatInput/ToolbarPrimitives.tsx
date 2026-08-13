@@ -20,19 +20,17 @@ import { cn } from "../../../lib/utils";
 import { Tooltip } from "../../ui/Tooltip";
 
 /** 非默认值时的着色。1% 彩色锚点，只给文字/图标，不做背景。 */
-export type ToolbarTone = "terracotta" | "peach" | "amber" | "mint";
+export type ToolbarTone = "terracotta" | "peach" | "mint";
 
 const TONE_TEXT: Record<ToolbarTone, string> = {
 	terracotta: "text-terracotta dark:text-terracotta-light",
 	peach: "text-peach-500 dark:text-peach-200",
-	amber: "text-amber-600 dark:text-amber-300",
 	mint: "text-mint-600 dark:text-mint-300",
 };
 
 const TONE_DOT: Record<ToolbarTone, string> = {
 	terracotta: "bg-terracotta",
 	peach: "bg-peach-500",
-	amber: "bg-amber-400",
 	mint: "bg-mint-500",
 };
 
@@ -116,7 +114,7 @@ export const ToolbarAction = forwardRef<HTMLButtonElement, ToolbarActionProps>(
 				)}
 			>
 				<IconSlot dotTone={dotTone}>
-					<Icon className="w-[17px] h-[17px]" strokeWidth={1.7} />
+					<Icon className="w-[17px] h-[17px]" strokeWidth={1.5} />
 				</IconSlot>
 			</button>
 		);
@@ -220,7 +218,7 @@ export const ToolbarItem = forwardRef<HTMLButtonElement, ToolbarItemProps>(
 									"shrink-0 w-3 h-3 opacity-45 transition-transform duration-150",
 									open && "rotate-180",
 								)}
-								strokeWidth={2}
+								strokeWidth={1.5}
 							/>
 						</>
 					)}

@@ -179,4 +179,31 @@ export const INTEGRATIONS_FIELDS: FieldDescriptor[] = [
 			"脚本",
 		],
 	},
+
+	// ---------- AI 代理 ----------
+	{
+		tabId: "integrations.aiProxy",
+		anchorId: "integrations.aiProxy.status",
+		label: "AI 代理健康状态",
+		description: "本机 Anthropic 兼容代理的健康监测、自动恢复与手动重启",
+		keywords: [
+			"proxy",
+			"代理",
+			"daili",
+			"anthropic",
+			"健康",
+			"health",
+			"重启",
+			"restart",
+			"端口",
+			"port",
+		],
+	},
+	{
+		tabId: "integrations.aiProxy",
+		anchorId: "integrations.aiProxy.token",
+		label: "AI 代理访问 token",
+		description: "Agent SDK 调用本地代理所需的 token，可查看或轮换",
+		keywords: ["proxy", "token", "代理", "密钥", "轮换", "rotate", "api key"],
+	},
 ];

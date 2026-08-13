@@ -60,9 +60,7 @@ export default function TerminalBlock({
 					{isRunning && (
 						<Loader2 className="w-3.5 h-3.5 text-focus animate-spin" />
 					)}
-					{isCompleted && (
-						<CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-					)}
+					{isCompleted && <CheckCircle2 className="w-3.5 h-3.5 text-success" />}
 					{isError && <XCircle className="w-3.5 h-3.5 text-error" />}
 				</div>
 			</div>
@@ -71,7 +69,7 @@ export default function TerminalBlock({
 			<div className="p-3 font-mono text-sm">
 				{/* 命令行 */}
 				<div className="flex items-start gap-2">
-					<span className="text-green-400 select-none flex-shrink-0">$</span>
+					<span className="text-success select-none flex-shrink-0">$</span>
 					<span className="text-surface break-all">{command}</span>
 				</div>
 

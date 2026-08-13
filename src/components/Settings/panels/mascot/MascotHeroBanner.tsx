@@ -103,7 +103,7 @@ export function MascotHeroBanner({
 							style={{ animationDuration: "5s" }}
 						/>
 					) : (
-						<div className="relative z-10 flex h-[170px] w-[170px] items-center justify-center rounded-full bg-warm-200 text-[28px] font-semibold text-text-secondary md:h-[200px] md:w-[200px]">
+						<div className="relative z-10 flex h-[170px] w-[170px] items-center justify-center rounded-full bg-warm-200 text-3xl font-semibold text-text-secondary md:h-[200px] md:w-[200px]">
 							{meta.label.slice(0, 2)}
 						</div>
 					)}

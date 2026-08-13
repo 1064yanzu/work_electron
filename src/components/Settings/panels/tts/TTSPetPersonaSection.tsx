@@ -100,7 +100,7 @@ export function TTSPetPersonaSection({
 				<div className="min-w-0">
 					<div className="flex items-center gap-1.5 text-xs font-medium text-text-primary">
 						<Sparkles
-							className="h-3.5 w-3.5 text-[color:var(--t-text-light,#9d9d98)]"
+							className="h-3.5 w-3.5 text-[color:var(--t-text-muted,#9d9d98)]"
 							strokeWidth={1.6}
 						/>
 						AI 个性化台词（实验）

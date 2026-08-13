@@ -120,7 +120,7 @@ export function ToolbarMenu({
 		<div
 			ref={menuRef}
 			className={cn(
-				"fixed z-[100] rounded-2xl overflow-hidden",
+				"fixed z-popover rounded-2xl overflow-hidden",
 				"bg-surface/95 backdrop-blur-md",
 				"border border-border shadow-bai-pop",
 				"animate-in fade-in slide-in-from-bottom-1 zoom-in-95 duration-150 origin-bottom-left",

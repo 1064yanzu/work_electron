@@ -98,9 +98,7 @@ function CenterGroup({ groupId }: { groupId: string }) {
 					// 一条恒亮的边框只是噪音。非活动组同时压暗一档，
 					// 让「快捷键/新标签会落在哪」一眼可辨
 					hasSplit &&
-						(isActive
-							? "ring-1 ring-inset ring-terracotta/45"
-							: "opacity-[0.88]"),
+						(isActive ? "ring-1 ring-inset ring-terracotta/45" : "opacity-90"),
 				)}
 			>
 				<CenterTabBar groupId={groupId} />

@@ -86,7 +86,7 @@ function TabUnderline({ active, label, onClick }: TabUnderlineProps) {
 			{active ? (
 				<span
 					aria-hidden="true"
-					className="absolute inset-x-0 bottom-0 h-[1.5px] rounded-full bg-text-primary"
+					className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-text-primary"
 				/>
 			) : null}
 		</button>

@@ -84,7 +84,7 @@ export function BoardPanel({ cwd }: { cwd: string | null }) {
 			{/* 作用域说明 + 落盘路径：让人知道这份白板归谁、存在哪 */}
 			<div className="px-5 pt-4 pb-3 shrink-0 space-y-2.5">
 				<div className="flex items-start gap-1.5 text-2xs text-text-light leading-relaxed">
-					<FileText className="w-3 h-3 mt-px shrink-0" strokeWidth={1.6} />
+					<FileText className="w-3 h-3 mt-px shrink-0" strokeWidth={1.5} />
 					<span className="min-w-0">
 						{cwd ? (
 							<>

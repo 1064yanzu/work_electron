@@ -135,7 +135,7 @@ export function DashboardSettings() {
 			/>
 
 			{isLoading ? (
-				<div className="py-12 text-center text-text-muted">加载中...</div>
+				<div className="py-12 text-center text-text-muted">加载中…</div>
 			) : stats ? (
 				<>
 					{/* Knowledge Stats - 知识库概览 */}

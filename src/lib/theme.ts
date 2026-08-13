@@ -126,7 +126,15 @@ class ThemeManager {
 		// 把当前背景色持久化，供下次启动消除白屏闪烁：
 		// 1) localStorage → index.html 内联脚本在 React 挂载前给 <html> 上底色
 		// 2) IPC → 主进程写 userData/window-background.json，BrowserWindow 创建时读取
-		this.persistBackgroundColor(colors["--t-bg"]);
+		// 玻璃主题的 --t-bg 是近透明 rgba（校验不过），持久化会沿用上一主题残值，
+		// 冷启动闪出旧底色 —— 特判为玻璃渐变的起点色兜底。
+		const persistBg =
+			this.currentColorThemeId === "glass"
+				? isDark
+					? "#0b0713"
+					: "#eef2f7"
+				: colors["--t-bg"];
+		this.persistBackgroundColor(persistBg);
 	}
 
 	private persistBackgroundColor(bg: string) {

@@ -199,7 +199,7 @@ export function CouncilPanel({
 						<div className="flex items-center gap-1.5 mb-1.5">
 							<Scale
 								className="w-3.5 h-3.5 text-terracotta"
-								strokeWidth={1.8}
+								strokeWidth={1.5}
 							/>
 							<h4 className="text-xs font-medium text-text-primary">
 								裁决结论
@@ -228,12 +228,12 @@ export function CouncilPanel({
 									{answer.status === "succeeded" ? (
 										<CheckCircle2
 											className="w-3.5 h-3.5 text-success shrink-0"
-											strokeWidth={1.8}
+											strokeWidth={1.5}
 										/>
 									) : (
 										<XCircle
 											className="w-3.5 h-3.5 text-error shrink-0"
-											strokeWidth={1.8}
+											strokeWidth={1.5}
 										/>
 									)}
 									<span className="text-xs font-medium text-text-primary">

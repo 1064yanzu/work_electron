@@ -10,16 +10,16 @@ function stateTone(state: string): {
 } {
 	if (state === "running")
 		return {
-			bg: "bg-mint-500/10",
-			text: "text-mint-600",
-			dot: "bg-mint-500",
+			bg: "bg-success-muted",
+			text: "text-success",
+			dot: "bg-success",
 			dotAnimate: true,
 		};
 	if (state === "waiting_interaction")
 		return {
-			bg: "bg-peach-500/10",
-			text: "text-peach-500",
-			dot: "bg-peach-500",
+			bg: "bg-warning-muted",
+			text: "text-warning",
+			dot: "bg-warning",
 			dotAnimate: true,
 		};
 	if (state === "error")

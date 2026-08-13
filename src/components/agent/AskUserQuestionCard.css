@@ -191,17 +191,13 @@
 
 .auq-countdown-fill {
 	height: 100%;
-	background: linear-gradient(
-		90deg,
-		var(--auq-accent),
-		color-mix(in srgb, var(--auq-accent), #f59e0b 35%)
-	);
+	background: var(--auq-accent);
 	border-radius: 0 2px 2px 0;
 	box-shadow: 0 0 8px var(--auq-accent-glow);
 }
 
 .auq-countdown-urgent {
-	background: linear-gradient(90deg, #f59e0b, #ef4444);
+	background: var(--t-error);
 	animation: auq-bar-pulse 1s ease-in-out infinite;
 }
 
@@ -236,11 +232,7 @@
 	width: 26px;
 	height: 26px;
 	border-radius: 8px;
-	background: linear-gradient(
-		135deg,
-		var(--auq-accent),
-		color-mix(in srgb, var(--auq-accent), #d97757 40%)
-	);
+	background: var(--auq-accent);
 	color: var(--auq-accent-fg);
 	display: flex;
 	align-items: center;
@@ -624,11 +616,7 @@
 	font-size: 11.5px;
 	font-weight: 600;
 	color: var(--auq-accent-fg);
-	background: linear-gradient(
-		135deg,
-		var(--auq-accent),
-		color-mix(in srgb, var(--auq-accent), #d97757 30%)
-	);
+	background: var(--auq-accent);
 	border: none;
 	cursor: pointer;
 	transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);

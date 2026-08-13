@@ -58,9 +58,12 @@ export async function startAnthropicProxyServer({
 	app.use("/", proxyRouter);
 	app.use("/v1", proxyRouter);
 
-	const server = await new Promise<import("node:http").Server>((resolve) => {
-		const s = app.listen(port, host, () => resolve(s));
-	});
+	const server = await new Promise<import("node:http").Server>(
+		(resolve, reject) => {
+			const s = app.listen(port, host, () => resolve(s));
+			s.once("error", reject);
+		},
+	);
 
 	const baseUrl = `http://${host}:${port}`;
 	logger.info({ msg: "anthropic proxy server started", port, host });
@@ -69,5 +72,5 @@ export async function startAnthropicProxyServer({
 		logger.info({ msg: "anthropic proxy server closed", port, host });
 	});
 
-	return { port, baseUrl, token };
+	return { port, baseUrl, token, server };
 }

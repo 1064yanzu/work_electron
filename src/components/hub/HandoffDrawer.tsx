@@ -30,6 +30,7 @@ import {
 import { cn } from "../../lib/utils";
 import { aiHubRequestStore } from "../../lib/stores/aiHubRequestStore";
 import { centerTabsStore } from "../../lib/stores/centerTabsStore";
+import { useFocusTrap } from "../ui/FocusTrap";
 import { toast } from "../ui/Toast";
 import { MODE_META, sessionTitle, type HubEntry } from "./hubUtils";
 
@@ -192,16 +193,20 @@ export function HandoffDrawer({
 		}
 	};
 
+	// 焦点陷阱：Tab 循环 + Esc（经 overlayStack 只由栈顶消费）+ 关闭后焦点回归
+	const trapRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
+
 	return (
-		<div className="absolute inset-y-0 right-0 w-[420px] max-w-full bg-surface dark:bg-cream-950 border-l border-border shadow-2xl flex flex-col animate-slide-in-right z-20">
+		<div
+			ref={trapRef}
+			className="absolute inset-y-0 right-0 w-[420px] max-w-full bg-surface dark:bg-cream-950 border-l border-border shadow-float flex flex-col animate-slide-in-right z-20"
+		>
 			{/* 头 */}
 			<div className="px-5 pt-5 pb-3 border-b border-border/60 shrink-0">
 				<div className="flex items-start justify-between gap-2">
 					<div className="min-w-0">
-						<div className="text-2xs font-semibold tracking-[0.22em] text-text-light uppercase">
-							Handoff
-						</div>
-						<h3 className="font-serif text-[17px] text-text-primary mt-1 leading-tight">
+						<div className="type-overline text-text-light">Handoff</div>
+						<h3 className="text-base text-text-primary mt-1 leading-tight">
 							接力到 {target.label}
 						</h3>
 					</div>
@@ -245,12 +250,12 @@ export function HandoffDrawer({
 							{modeMeta.lossless ? (
 								<ShieldCheck
 									className="w-3.5 h-3.5 text-success"
-									strokeWidth={1.8}
+									strokeWidth={1.5}
 								/>
 							) : (
 								<AlertTriangle
 									className="w-3.5 h-3.5 text-warning"
-									strokeWidth={1.8}
+									strokeWidth={1.5}
 								/>
 							)}
 							<span className="text-xs font-medium text-text-primary">

@@ -65,13 +65,13 @@ export function TerminalTabBar() {
 						className={`group flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer shrink-0 ${
 							isActive
 								? "bg-surface text-text-primary shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
-								: "text-text-muted hover:bg-surface/60"
-						} ${t.isRemote ? "ring-1 ring-accent/30" : ""}${
+								: "text-text-muted hover:bg-surface/60 hover:text-text-secondary"
+						} ${t.isRemote ? "ring-1 ring-info/30" : ""}${
 							t.isHarness ? " ring-1 ring-terracotta/30" : ""
 						}`}
 					>
 						{t.isRemote ? (
-							<Radio className="w-3 h-3 text-accent" />
+							<Radio className="w-3 h-3 text-info" />
 						) : t.isHarness ? (
 							<Waypoints className="w-3 h-3 text-terracotta" />
 						) : (
@@ -79,7 +79,7 @@ export function TerminalTabBar() {
 						)}
 						<span className="max-w-[140px] truncate">{t.name}</span>
 						{t.isRemote && channelLabel && (
-							<span className="px-1 py-px text-2xs font-semibold rounded bg-accent/10 text-accent uppercase tracking-wide">
+							<span className="px-1 py-px text-2xs font-semibold rounded bg-info-muted text-info uppercase tracking-wide">
 								{channelLabel}
 							</span>
 						)}
@@ -98,13 +98,21 @@ export function TerminalTabBar() {
 							}
 							placement="top"
 						>
-							<button
-								type="button"
+							<span
+								role="button"
+								tabIndex={-1}
+								aria-label="关闭终端标签"
 								onClick={(e) => handleClose(e, t.id)}
-								className="opacity-0 group-hover:opacity-100 hover:bg-warm-300 dark:hover:bg-cream-700 rounded p-0.5 transition-[color,background-color,border-color,opacity,box-shadow,transform] cursor-pointer"
+								onKeyDown={(e) => {
+									if (e.key !== "Enter" && e.key !== " ") return;
+									e.stopPropagation();
+									e.preventDefault();
+									terminalStore.destroyTerminal(t.id);
+								}}
+								className="inline-flex h-4 w-4 items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-warm-300 dark:hover:bg-cream-700 rounded transition-[color,background-color,border-color,opacity,box-shadow,transform] cursor-pointer"
 							>
-								<X className="w-2.5 h-2.5" />
-							</button>
+								<X className="w-3 h-3" />
+							</span>
 						</Tooltip>
 					</button>
 				);

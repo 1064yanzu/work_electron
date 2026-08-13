@@ -180,7 +180,7 @@ export function SettingsSwitch({
 					"inline-block h-[16px] w-[16px] transform rounded-full shadow-sm transition-transform duration-150",
 					checked
 						? "translate-x-[20px] bg-primary-foreground"
-						: "translate-x-[3px] bg-white",
+						: "translate-x-[3px] bg-surface",
 				)}
 			/>
 		</button>
@@ -435,7 +435,7 @@ export function SettingsSlider({
 					style={{ backgroundColor: "var(--t-bg-muted, #F4F2EC)" }}
 				/>
 				<div
-					className="pointer-events-none absolute h-[5px] rounded-full transition-[width] duration-150"
+					className="pointer-events-none absolute h-[5px] rounded-full"
 					style={{ width: `${pct}%`, backgroundColor: accent }}
 				/>
 				<div

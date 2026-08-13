@@ -290,11 +290,11 @@ function CustomMascotCard({
 			<div className="absolute right-3 top-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 				{onEdit && (
 					<IconButton onClick={onEdit} ariaLabel="编辑">
-						<Pencil className="h-3 w-3" strokeWidth={2.2} />
+						<Pencil className="h-3 w-3" strokeWidth={2} />
 					</IconButton>
 				)}
 				<IconButton onClick={onDelete} ariaLabel="删除" danger>
-					<Trash2 className="h-3 w-3" strokeWidth={2.2} />
+					<Trash2 className="h-3 w-3" strokeWidth={2} />
 				</IconButton>
 			</div>
 
@@ -315,14 +315,14 @@ function CustomMascotCard({
 							className="h-full w-full object-contain p-1"
 						/>
 					) : (
-						<span className="text-[20px] font-bold opacity-40">
+						<span className="text-xl font-bold opacity-40">
 							{mascot.label.slice(0, 2)}
 						</span>
 					)}
 					{/* badge：是否带 atlas / loading */}
 					{(mascot.hasAtlas || mascot.hasLoading) && (
 						<span
-							className="absolute -bottom-1 right-1 inline-flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-2xs font-semibold shadow-sm"
+							className="absolute -bottom-1 right-1 inline-flex items-center gap-0.5 rounded-full bg-surface px-1.5 py-0.5 text-2xs font-semibold shadow-sm"
 							style={{ color: accentColor }}
 						>
 							{mascot.hasAtlas && "atlas"}
@@ -357,7 +357,7 @@ function SelectedBadge({ accentColor }: { accentColor: string }) {
 			style={{ backgroundColor: accentColor }}
 			aria-label="已选"
 		>
-			<Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+			<Check className="h-3.5 w-3.5 text-white" strokeWidth={1.5} />
 		</span>
 	);
 }
@@ -546,7 +546,7 @@ function OffCard({ selected, onSelect }: OffCardProps) {
 		>
 			{selected && (
 				<span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-text-secondary text-surface shadow-sm">
-					<Check className="h-3.5 w-3.5" strokeWidth={3} />
+					<Check className="h-3.5 w-3.5" strokeWidth={1.5} />
 				</span>
 			)}
 			<div className="flex h-24 w-24 items-center justify-center rounded-full bg-warm-200/60">

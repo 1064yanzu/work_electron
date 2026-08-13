@@ -39,8 +39,8 @@ type StatusTileProps = {
 };
 
 const TONE_ICON_CLASS: Record<StatusTileTone, string> = {
-	emerald: "text-mint-600 bg-mint-500/10",
-	amber: "text-peach-500 bg-peach-500/10",
+	emerald: "text-success bg-success-muted",
+	amber: "text-warning bg-warning-muted",
 	rose: "text-error bg-error/8",
 	sky: "text-violetx-500 bg-violetx-500/10",
 	zinc: "text-text-muted bg-warm-200",
@@ -144,7 +144,7 @@ export function OverviewSection({
 									className={cn(
 										"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
 										enabled
-											? "bg-mint-500/10 text-mint-600"
+											? "bg-success-muted text-success"
 											: "bg-warm-200 text-text-muted",
 									)}
 								>

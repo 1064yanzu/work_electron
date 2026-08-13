@@ -10,8 +10,8 @@ import {
 	SettingsField,
 	SettingsNumberInput,
 	SettingsRow,
+	SettingsSwitch,
 } from "../../ui/SettingsPrimitives";
-import { Toggle } from "../../components";
 
 interface ChatSettings {
 	replayEnabled: boolean;
@@ -65,12 +65,10 @@ export function SessionPersistenceSection({
 				label="启用回放"
 				description="切换到绑定 Agent Session 的会话时，从后端消息记录回放到聊天窗口。"
 				action={
-					<Toggle
+					<SettingsSwitch
 						checked={chatSettings.replayEnabled}
-						onChange={() =>
-							void agentChatSettingsStore.setReplayEnabled(
-								!chatSettings.replayEnabled,
-							)
+						onChange={(next) =>
+							void agentChatSettingsStore.setReplayEnabled(next)
 						}
 					/>
 				}
@@ -79,12 +77,10 @@ export function SessionPersistenceSection({
 				label="启用消息落库"
 				description="将 user / assistant 消息写入 agent_messages（后端不可用时自动降级）。"
 				action={
-					<Toggle
+					<SettingsSwitch
 						checked={chatSettings.persistEnabled}
-						onChange={() =>
-							void agentChatSettingsStore.setPersistEnabled(
-								!chatSettings.persistEnabled,
-							)
+						onChange={(next) =>
+							void agentChatSettingsStore.setPersistEnabled(next)
 						}
 					/>
 				}
@@ -93,12 +89,10 @@ export function SessionPersistenceSection({
 				label="落库 Trace 事件"
 				description="将工具调用 / 任务等 trace 事件也写入数据库，用于更完整回放。"
 				action={
-					<Toggle
+					<SettingsSwitch
 						checked={chatSettings.persistTraceEnabled}
-						onChange={() =>
-							void agentChatSettingsStore.setPersistTraceEnabled(
-								!chatSettings.persistTraceEnabled,
-							)
+						onChange={(next) =>
+							void agentChatSettingsStore.setPersistTraceEnabled(next)
 						}
 					/>
 				}
@@ -107,12 +101,10 @@ export function SessionPersistenceSection({
 				label="Blocks 优先渲染"
 				description="包含 blocks 的消息按结构化方式渲染，回放更一致；可随时关闭回退旧渲染。"
 				action={
-					<Toggle
+					<SettingsSwitch
 						checked={chatSettings.blocksFirstEnabled}
-						onChange={() =>
-							void agentChatSettingsStore.setBlocksFirstEnabled(
-								!chatSettings.blocksFirstEnabled,
-							)
+						onChange={(next) =>
+							void agentChatSettingsStore.setBlocksFirstEnabled(next)
 						}
 					/>
 				}
@@ -121,12 +113,10 @@ export function SessionPersistenceSection({
 				label="就地展示思考 / 工具调用"
 				description="在对话正文按时间线插入思考与工具卡片，不再单独显示运行过程面板。"
 				action={
-					<Toggle
+					<SettingsSwitch
 						checked={chatSettings.inlineTraceEnabled}
-						onChange={() =>
-							void agentChatSettingsStore.setInlineTraceEnabled(
-								!chatSettings.inlineTraceEnabled,
-							)
+						onChange={(next) =>
+							void agentChatSettingsStore.setInlineTraceEnabled(next)
 						}
 					/>
 				}

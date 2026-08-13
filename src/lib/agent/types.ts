@@ -168,22 +168,6 @@ export type ThinkingPhase =
 	| "reflecting" // 反思检查
 	| "concluding"; // 总结输出
 
-// 思考阶段配置
-export const THINKING_PHASE_CONFIG: Record<
-	ThinkingPhase,
-	{
-		emoji: string;
-		label: string;
-		color: string;
-	}
-> = {
-	analyzing: { emoji: "🔍", label: "分析问题", color: "text-purple-500" },
-	planning: { emoji: "📋", label: "制定计划", color: "text-blue-500" },
-	executing: { emoji: "⚙️", label: "执行中", color: "text-amber-500" },
-	reflecting: { emoji: "🤔", label: "检查结果", color: "text-teal-500" },
-	concluding: { emoji: "✨", label: "整理答案", color: "text-green-500" },
-};
-
 // 思考步骤记录
 export interface AgentThinkingStep {
 	id: string;
@@ -286,27 +270,27 @@ export const ERROR_CATEGORY_CONFIG: Record<
 		color: string;
 	}
 > = {
-	network: { label: "网络错误", icon: "Wifi", color: "text-red-500" },
-	timeout: { label: "请求超时", icon: "Clock", color: "text-amber-500" },
-	permission: { label: "权限不足", icon: "Lock", color: "text-orange-500" },
+	network: { label: "网络错误", icon: "Wifi", color: "text-error" },
+	timeout: { label: "请求超时", icon: "Clock", color: "text-warning" },
+	permission: { label: "权限不足", icon: "Lock", color: "text-warning" },
 	parameter: {
 		label: "参数错误",
 		icon: "AlertTriangle",
-		color: "text-yellow-500",
+		color: "text-error",
 	},
 	not_found: {
 		label: "资源不存在",
 		icon: "FileQuestion",
-		color: "text-cream-500",
+		color: "text-warning",
 	},
 	rate_limit: {
 		label: "请求过于频繁",
 		icon: "Gauge",
-		color: "text-purple-500",
+		color: "text-warning",
 	},
-	server: { label: "服务器错误", icon: "Server", color: "text-red-600" },
-	syntax: { label: "代码语法错误", icon: "Code", color: "text-pink-500" },
-	unknown: { label: "未知错误", icon: "HelpCircle", color: "text-cream-400" },
+	server: { label: "服务器错误", icon: "Server", color: "text-error" },
+	syntax: { label: "代码语法错误", icon: "Code", color: "text-error" },
+	unknown: { label: "未知错误", icon: "HelpCircle", color: "text-error" },
 };
 
 // Agent 事件（用于实时更新 UI）

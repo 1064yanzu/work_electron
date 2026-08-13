@@ -92,7 +92,7 @@ export function FeishuChannelCard({
 	}, []);
 
 	return (
-		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_2px_8px_rgb(0,0,0,0.04)] ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
+		<div className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-bai-card ring-1 ring-black/[0.03] dark:ring-white/[0.02]">
 			<div className="p-5 space-y-5">
 				{/* 标题 + 开关（品牌识别靠单色 logo 图标，容器保持中性） */}
 				<div className="flex items-center justify-between gap-3">
@@ -464,7 +464,7 @@ export function FeishuChannelCard({
 							span2
 						/>
 					</div>
-					<div className="rounded-xl border border-peach-500/30 bg-peach-500/10 px-3 py-2 text-xs leading-relaxed text-text-secondary">
+					<div className="rounded-xl border border-warning/30 bg-warning-muted px-3 py-2 text-xs leading-relaxed text-text-secondary">
 						需要的飞书权限：<code>docx:document</code> /{" "}
 						<code>docx:document:write_only</code> /{" "}
 						<code>docs:document.content:read</code> / <code>drive:drive</code>{" "}
@@ -493,7 +493,7 @@ export function FeishuChannelCard({
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium ${
 							runtimeChannel?.running
-								? "bg-mint-500/10 text-mint-600"
+								? "bg-success-muted text-success"
 								: "bg-warm-200 text-text-muted"
 						}`}
 					>
@@ -507,7 +507,7 @@ export function FeishuChannelCard({
 					<span className="text-text-muted">·</span>
 					<span
 						className={`font-medium ${
-							runtimeChannel?.connected ? "text-mint-600" : "text-text-muted"
+							runtimeChannel?.connected ? "text-success" : "text-text-muted"
 						}`}
 					>
 						{runtimeChannel?.connected ? "已连接" : "未连接"}

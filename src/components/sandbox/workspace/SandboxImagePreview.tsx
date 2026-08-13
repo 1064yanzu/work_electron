@@ -51,14 +51,14 @@ export const SandboxImagePreview = memo(function SandboxImagePreview({
 		return (
 			<div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-cream-50 via-white to-cream-50 dark:from-cream-900 dark:via-cream-900 dark:to-cream-900">
 				<Loader2 className="w-6 h-6 animate-spin text-text-light" />
-				<p className="mt-2 text-sm text-text-light">加载中...</p>
+				<p className="mt-2 text-sm text-text-light">加载中…</p>
 			</div>
 		);
 	}
 
 	return (
 		<div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-cream-50 via-white to-cream-50 dark:from-cream-900 dark:via-cream-900 dark:to-cream-900">
-			<div className="rounded-3xl bg-surface/85 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] shadow-[0_18px_60px_-35px_rgba(0,0,0,0.35)] ring-1 ring-black/[0.02] dark:ring-white/[0.06] p-3 animate-scale-in">
+			<div className="rounded-3xl bg-surface/85 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] shadow-float ring-1 ring-black/[0.02] dark:ring-white/[0.06] p-3 animate-scale-in">
 				<button
 					type="button"
 					onClick={() => setIsLightboxOpen(true)}
@@ -68,7 +68,7 @@ export const SandboxImagePreview = memo(function SandboxImagePreview({
 					<img
 						src={dataUrl}
 						alt={fileName}
-						className="max-w-full max-h-[62vh] object-contain rounded-2xl shadow-[0_10px_30px_-20px_rgba(0,0,0,0.25)] cursor-zoom-in transition-transform duration-150 group-hover:scale-[1.01]"
+						className="max-w-full max-h-[62vh] object-contain rounded-2xl shadow-bai-pop cursor-zoom-in transition-transform duration-150 group-hover:scale-[1.01]"
 					/>
 				</button>
 			</div>

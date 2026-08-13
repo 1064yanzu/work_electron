@@ -115,7 +115,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 			setUrl(normalized);
 
 			if (!options?.silentToast) {
-				toast.info("正在外部窗口打开...", 1200);
+				toast.info("正在外部窗口打开…", 1200);
 			}
 
 			if (recordHistory) {
@@ -305,7 +305,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 							onClick={goBack}
 							disabled={historyIndex <= 0}
 							aria-label="后退"
-							className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 disabled:opacity-30 transition-colors"
+							className="p-2 rounded-lg hover:bg-warm-200 disabled:opacity-30 transition-colors"
 						>
 							<ArrowLeft className="w-4 h-4 text-text-secondary" />
 						</button>
@@ -315,7 +315,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 							onClick={goForward}
 							disabled={historyIndex >= history.length - 1}
 							aria-label="前进"
-							className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 disabled:opacity-30 transition-colors"
+							className="p-2 rounded-lg hover:bg-warm-200 disabled:opacity-30 transition-colors"
 						>
 							<ArrowRight className="w-4 h-4 text-text-secondary" />
 						</button>
@@ -325,7 +325,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 							onClick={refresh}
 							disabled={!url || navigationStatus === "opening"}
 							aria-label="刷新"
-							className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 disabled:opacity-30 transition-colors"
+							className="p-2 rounded-lg hover:bg-warm-200 disabled:opacity-30 transition-colors"
 						>
 							{navigationStatus === "opening" ? (
 								<Loader2 className="w-4 h-4 text-primary animate-spin" />
@@ -344,7 +344,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 								setNavigationStatus("idle");
 							}}
 							aria-label="返回主页"
-							className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+							className="p-2 rounded-lg hover:bg-warm-200 transition-colors"
 						>
 							<Home className="w-4 h-4 text-text-secondary" />
 						</button>
@@ -382,7 +382,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 								<button
 									onClick={() => void loadReaderMode()}
 									aria-label="阅读模式"
-									className={`p-2 rounded-lg transition-colors ${readerContent ? "bg-primary/10 text-primary" : "hover:bg-black/5 dark:hover:bg-surface/10 text-text-secondary"}`}
+									className={`p-2 rounded-lg transition-colors ${readerContent ? "bg-primary/10 text-primary" : "hover:bg-warm-200 text-text-secondary"}`}
 								>
 									<BookOpen className="w-4 h-4" />
 								</button>
@@ -391,14 +391,14 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 								<button
 									onClick={() => void openInNewWindow()}
 									aria-label="在外部窗口打开"
-									className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-surface/10 transition-colors"
+									className="p-2 rounded-lg hover:bg-warm-200 transition-colors"
 								>
 									<ExternalLink className="w-4 h-4 text-text-secondary" />
 								</button>
 							</Tooltip>
 							<button
 								onClick={() => void saveAsSource()}
-								className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-surface hover:bg-cream-700 dark:hover:bg-warm-300 text-white rounded-lg text-xs font-medium transition-colors"
+								className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-medium transition-colors"
 							>
 								<Plus className="w-3.5 h-3.5" />
 								保存为资料
@@ -457,7 +457,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 								</div>
 							</header>
 
-							<div className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-a:text-primary">
+							<div className="prose prose-stone dark:prose-invert max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-a:text-primary">
 								<div className="whitespace-pre-wrap text-text-secondary leading-relaxed">
 									{readerContent.content}
 								</div>
@@ -492,7 +492,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 								{isReaderLoading ? (
 									<div className="inline-flex items-center gap-2 text-xs text-text-muted">
 										<Loader2 className="w-3.5 h-3.5 animate-spin" />
-										加载阅读模式中...
+										加载阅读模式中…
 									</div>
 								) : null}
 							</div>
@@ -564,7 +564,7 @@ export default function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 
 							<div className="mt-6 p-4 bg-surface/50 rounded-xl text-text-secondary text-sm text-center border border-border">
 								{navigationStatus === "opening"
-									? "正在打开外部窗口..."
+									? "正在打开外部窗口…"
 									: navigationStatus === "success"
 										? "已按外部窗口策略执行"
 										: "输入网址或搜索词后按 Enter，将在独立窗口中打开"}

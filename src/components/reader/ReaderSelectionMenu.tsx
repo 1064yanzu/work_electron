@@ -3,9 +3,10 @@ import {
 	Copy,
 	Highlighter,
 	Languages,
+	Lightbulb,
 	MessageSquare,
-	Sparkles,
 	Volume2,
+	X,
 } from "lucide-react";
 
 import type { ReaderEngineSelection } from "./engines/types";
@@ -49,11 +50,14 @@ export function ReaderSelectionMenu({
 	onClose,
 }: ReaderSelectionMenuProps) {
 	if (!selection) return null;
+	// 菜单以 translate(-50%) 居中定位，clamp 时预留半宽（约 210px），
+	// 避免选区在行首/行尾时菜单被推出视口
+	const MENU_HALF_WIDTH = 210;
 	const top = Math.max(8, selection.rect.top - 12);
 	const left = Math.max(
-		8,
+		8 + MENU_HALF_WIDTH,
 		Math.min(
-			window.innerWidth - 8,
+			window.innerWidth - 8 - MENU_HALF_WIDTH,
 			selection.rect.left + selection.rect.width / 2,
 		),
 	);
@@ -85,7 +89,7 @@ export function ReaderSelectionMenu({
 			<div className="reader-selection-menu__divider" />
 			<div className="reader-selection-menu__actions">
 				<MenuAction icon={Languages} label="翻译" onClick={onTranslate} />
-				<MenuAction icon={Sparkles} label="解释" onClick={onExplain} />
+				<MenuAction icon={Lightbulb} label="解释" onClick={onExplain} />
 				<MenuAction icon={MessageSquare} label="问 AI" onClick={onAsk} />
 				<MenuAction icon={Brain} label="生成卡片" onClick={onGenerateCards} />
 				<MenuAction
@@ -102,7 +106,7 @@ export function ReaderSelectionMenu({
 				aria-label="关闭"
 				onClick={onClose}
 			>
-				×
+				<X className="w-3.5 h-3.5" strokeWidth={1.5} />
 			</button>
 		</div>
 	);

@@ -369,7 +369,7 @@ export function RemoteControlSettings() {
 		return (
 			<SettingsPageContainer width="wide">
 				<div className="flex h-52 items-center justify-center text-text-muted">
-					加载远程控制配置中...
+					加载远程控制配置中…
 				</div>
 			</SettingsPageContainer>
 		);

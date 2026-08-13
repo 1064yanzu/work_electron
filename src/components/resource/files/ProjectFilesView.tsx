@@ -16,6 +16,7 @@ import { isReaderSupportedFile } from "../../../lib/reader/formats";
 import { readerImportFiles } from "../../../lib/api/reader";
 import { openReader } from "../../reader/ReaderApp";
 import { isBinaryPreviewFile } from "../../editor/FileTypePreview";
+import { useRegisterShortcuts } from "../../../lib/shortcuts";
 import { ContextMenu, type ContextMenuItem } from "../../ui/ContextMenu";
 import { toast } from "../../ui/Toast";
 import { FileTreeHeader } from "./FileTreeHeader";
@@ -390,38 +391,69 @@ export function ProjectFilesView() {
 	}, [activeSessionId]);
 
 	// 键盘快捷键：F2 重命名 / Delete 删除 / Enter 打开
-	useEffect(() => {
-		const onKey = (e: KeyboardEvent) => {
-			const target = e.target as HTMLElement | null;
-			const tag = target?.tagName?.toLowerCase();
-			const isTyping =
-				tag === "input" ||
-				tag === "textarea" ||
-				tag === "select" ||
-				Boolean(target?.isContentEditable);
-			if (isTyping) return;
-			if (!selectedPath) return;
-			// 仅在面板被悬停或包含 active 元素时响应——否则会与全局快捷键冲突
+	// 走 shortcuts 注册中心（面板挂载时注册，卸载即失效）；
+	// when 守卫：有选中项 + 面板被悬停或持有焦点时才消费按键，否则放行给其他快捷键。
+	useRegisterShortcuts(() => {
+		const getActiveEntry = () => {
+			if (!selectedPath) return null;
 			const el = containerRef.current;
-			if (!el) return;
+			if (!el) return null;
+			// 仅在面板被悬停或包含 active 元素时响应——否则会与全局快捷键冲突
 			if (!el.contains(document.activeElement) && !el.matches(":hover")) {
-				return;
+				return null;
 			}
-			const entry = findEntryByPath(entriesByDir, selectedPath);
-			if (!entry) return;
-			if (e.key === "F2") {
-				e.preventDefault();
-				startRename(entry);
-			} else if (e.key === "Delete" || (e.key === "Backspace" && e.metaKey)) {
-				e.preventDefault();
-				void removeEntry(entry);
-			} else if (e.key === "Enter") {
-				e.preventDefault();
-				void handleToggleOrOpen(entry);
-			}
+			return findEntryByPath(entriesByDir, selectedPath);
 		};
-		window.addEventListener("keydown", onKey);
-		return () => window.removeEventListener("keydown", onKey);
+		return [
+			{
+				id: "files.rename-entry",
+				keys: "f2",
+				label: "重命名文件",
+				description: "重命名文件树中选中的文件或文件夹",
+				group: "工作区",
+				when: () => Boolean(getActiveEntry()),
+				handler: () => {
+					const entry = getActiveEntry();
+					if (entry) startRename(entry);
+				},
+			},
+			{
+				id: "files.delete-entry",
+				keys: "delete",
+				label: "删除文件",
+				description: "删除文件树中选中的文件或文件夹",
+				group: "工作区",
+				when: () => Boolean(getActiveEntry()),
+				handler: () => {
+					const entry = getActiveEntry();
+					if (entry) void removeEntry(entry);
+				},
+			},
+			{
+				id: "files.delete-entry-alt",
+				keys: "mod+backspace",
+				label: "删除文件",
+				group: "工作区",
+				hidden: true,
+				when: () => Boolean(getActiveEntry()),
+				handler: () => {
+					const entry = getActiveEntry();
+					if (entry) void removeEntry(entry);
+				},
+			},
+			{
+				id: "files.open-entry",
+				keys: "enter",
+				label: "打开文件",
+				description: "打开文件树中选中的文件（目录则展开/折叠）",
+				group: "工作区",
+				when: () => Boolean(getActiveEntry()),
+				handler: () => {
+					const entry = getActiveEntry();
+					if (entry) void handleToggleOrOpen(entry);
+				},
+			},
+		];
 	}, [
 		entriesByDir,
 		selectedPath,
@@ -616,7 +648,7 @@ export function ProjectFilesView() {
 				onRefresh={refreshRoot}
 			/>
 
-			<div ref={scrollRef} className="flex-1 overflow-y-auto py-2">
+			<div ref={scrollRef} className="flex-1 overflow-y-auto px-2 py-2">
 				{!projectPath ? (
 					<FileTreeEmptyState
 						variant="no-path"

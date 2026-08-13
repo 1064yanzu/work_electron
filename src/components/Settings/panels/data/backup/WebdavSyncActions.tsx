@@ -59,7 +59,7 @@ export function WebdavSyncActions({
 						{isSyncing ? (
 							<>
 								<RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
-								<span className="text-text-secondary">正在同步...</span>
+								<span className="text-text-secondary">正在同步…</span>
 							</>
 						) : syncConfig.webdav_last_sync_error ? (
 							<>

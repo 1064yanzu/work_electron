@@ -26,7 +26,9 @@ import {
 	useState,
 } from "react";
 import { getSourceDetail, updateNote, updateSource } from "../../lib/api";
+import { ContextMenu } from "../ui/ContextMenu";
 import { EmptyState } from "../ui/EmptyState";
+import { Skeleton } from "../ui/Skeleton";
 import { readerOpenFromSource } from "../../lib/api/reader";
 import { EVENTS, events } from "../../lib/events";
 import { openReader } from "../reader/ReaderApp";
@@ -79,11 +81,12 @@ export const SourceDetailView = forwardRef<
 	const [editHtmlContent, setEditHtmlContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
 
-	// 划词引用
+	// 划词引用（below：顶部空间不足时翻转到选区下方）
 	const [selectionPopup, setSelectionPopup] = useState<{
 		x: number;
 		y: number;
 		text: string;
+		below: boolean;
 	} | null>(null);
 
 	// 右键菜单状态
@@ -193,10 +196,18 @@ export const SourceDetailView = forwardRef<
 		const range = selection.getRangeAt(0);
 		const rect = range.getBoundingClientRect();
 
+		// 视口钳制：顶部放不下气泡时翻转到选区下方；水平方向也留出边距
+		const below = rect.top < 48;
+		const x = Math.min(
+			Math.max(rect.left + rect.width / 2, 80),
+			window.innerWidth - 80,
+		);
+
 		setSelectionPopup({
-			x: rect.left + rect.width / 2,
-			y: rect.top - 10,
+			x,
+			y: below ? rect.bottom + 10 : rect.top - 10,
 			text,
+			below,
 		});
 	}, []);
 
@@ -336,7 +347,9 @@ export const SourceDetailView = forwardRef<
 					style={{
 						left: selectionPopup.x,
 						top: selectionPopup.y,
-						transform: "translate(-50%, -100%)",
+						transform: selectionPopup.below
+							? "translate(-50%, 0)"
+							: "translate(-50%, -100%)",
 					}}
 				>
 					<button
@@ -349,42 +362,30 @@ export const SourceDetailView = forwardRef<
 				</div>
 			)}
 
-			{/* 右键菜单 */}
+			{/* 右键菜单 — 复用全局 ContextMenu（智能定位 / overlayStack / 键盘导航） */}
 			{contentContextMenu && (
-				<>
-					<div
-						className="fixed inset-0 z-40"
-						onClick={() => setContentContextMenu(null)}
-					/>
-					<div
-						className="fixed z-50 bg-surface rounded-2xl shadow-bai-pop border border-border py-1.5 min-w-[160px] animate-in fade-in zoom-in-95 duration-150"
-						style={{ left: contentContextMenu.x, top: contentContextMenu.y }}
-					>
-						<button
-							onClick={() => {
-								handleInsertSelection();
-								setContentContextMenu(null);
-							}}
-							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 flex items-center gap-2"
-						>
-							<Quote className="w-4 h-4" />
-							引用到编辑器
-						</button>
-						<button
-							onClick={() => {
+				<ContextMenu
+					x={contentContextMenu.x}
+					y={contentContextMenu.y}
+					items={[
+						{
+							label: "引用到编辑器",
+							icon: <Quote className="w-4 h-4" />,
+							onClick: handleInsertSelection,
+						},
+						{
+							label: "复制",
+							icon: <Copy className="w-4 h-4" />,
+							onClick: () => {
 								const selection = window.getSelection();
 								if (selection) {
 									navigator.clipboard.writeText(selection.toString());
 								}
-								setContentContextMenu(null);
-							}}
-							className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-warm-200 flex items-center gap-2"
-						>
-							<Copy className="w-4 h-4" />
-							复制
-						</button>
-					</div>
-				</>
+							},
+						},
+					]}
+					onClose={() => setContentContextMenu(null)}
+				/>
 			)}
 
 			{/* Header */}
@@ -403,7 +404,7 @@ export const SourceDetailView = forwardRef<
 						<input
 							value={editTitle}
 							onChange={(e) => setEditTitle(e.target.value)}
-							className="w-full px-2 py-1 text-sm font-semibold bg-warm-200 rounded focus:outline-none focus:ring-2 focus:ring-border/60"
+							className="w-full px-2 py-1 text-sm font-semibold bg-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-border/60"
 							placeholder="标题"
 						/>
 					) : (
@@ -462,8 +463,14 @@ export const SourceDetailView = forwardRef<
 				onContextMenu={handleContentContextMenu}
 			>
 				{isLoadingDetail ? (
-					<div className="flex items-center justify-center h-48">
-						<Loader2 className="w-5 h-5 animate-spin text-text-light" />
+					<div className="p-6 max-w-3xl mx-auto space-y-4" aria-busy="true">
+						<Skeleton className="h-6 w-2/3" />
+						<div className="space-y-2.5 pt-2">
+							<Skeleton className="h-4 w-full" />
+							<Skeleton className="h-4 w-full" />
+							<Skeleton className="h-4 w-11/12" />
+							<Skeleton className="h-4 w-3/5" />
+						</div>
 					</div>
 				) : (
 					<div className="p-6 space-y-6 max-w-3xl mx-auto">
@@ -489,7 +496,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.BrowserClip && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-success/8 text-success rounded text-2xs font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200 text-text-secondary rounded-lg text-2xs font-medium">
 											<Globe className="w-2.5 h-2.5" />
 											浏览器剪存
 										</span>
@@ -497,7 +504,7 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.WebSearch && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-focus/8 text-focus rounded text-2xs font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200 text-text-secondary rounded-lg text-2xs font-medium">
 											<Search className="w-2.5 h-2.5" />
 											网络搜索
 										</span>
@@ -505,14 +512,14 @@ export const SourceDetailView = forwardRef<
 								{isSource &&
 									(previewSource as Source).source_type ===
 										SourceOrigin.Import && (
-										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200/70 text-text-secondary rounded text-2xs font-medium">
+										<span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-warm-200/70 text-text-secondary rounded-lg text-2xs font-medium">
 											<ArrowDownToLine className="w-2.5 h-2.5" />
 											本地导入
 										</span>
 									)}
 								{isSource && (
 									<span
-										className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium ${getScopeBadgeClassName(previewSource as Source)}`}
+										className={`inline-flex items-center px-1.5 py-0.5 rounded-lg text-2xs font-medium ${getScopeBadgeClassName(previewSource as Source)}`}
 									>
 										{getScopeLabel(previewSource as Source)}
 									</span>
@@ -523,7 +530,7 @@ export const SourceDetailView = forwardRef<
 										.map((tag) => (
 											<span
 												key={`${previewSource.id}-detail-tag-${tag}`}
-												className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-warm-200/80 text-text-secondary"
+												className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-2xs font-medium bg-warm-200/80 text-text-secondary"
 											>
 												#{tag}
 											</span>
@@ -581,7 +588,7 @@ export const SourceDetailView = forwardRef<
 											value={editContent}
 											onChange={(e) => setEditContent(e.target.value)}
 											className="w-full h-[60vh] p-4 bg-warm-50/50 border border-border rounded-xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-border/60 resize-none font-mono"
-											placeholder="输入内容..."
+											placeholder="输入内容…"
 										/>
 									)}
 								</div>
@@ -744,7 +751,7 @@ export const SourceDetailView = forwardRef<
 						)}
 						<button
 							onClick={handleCopyToEditor}
-							className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+							className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors"
 						>
 							<PenLine className="w-4 h-4" />
 							添加到编辑器

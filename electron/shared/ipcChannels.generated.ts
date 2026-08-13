@@ -65,6 +65,8 @@ export const IPC_CHANNELS = [
 	"aihub_set_bounds",
 	"aihub_sites_list",
 	"aihub_sites_save",
+	"anthropic_proxy_get_health",
+	"anthropic_proxy_restart",
 	"app_get_close_behavior",
 	"app_get_version",
 	"app_set_close_behavior",

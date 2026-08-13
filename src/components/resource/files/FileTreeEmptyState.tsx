@@ -1,4 +1,6 @@
-import { Folder, FolderOpen, RefreshCcw } from "lucide-react";
+import { FolderOpen } from "lucide-react";
+import { IllustratedEmptyState } from "../../ui/EmptyState";
+import { Skeleton } from "../../ui/Skeleton";
 
 interface FileTreeEmptyStateProps {
 	variant: "no-path" | "loading" | "empty";
@@ -11,44 +13,46 @@ export function FileTreeEmptyState({
 	onOpenFolder,
 }: FileTreeEmptyStateProps) {
 	if (variant === "loading") {
+		// 树形骨架：模拟"目录 + 缩进子项"的形状，单一 shimmer 指示
 		return (
-			<div className="text-center py-10 px-6 mt-10">
-				<RefreshCcw className="w-5 h-5 text-text-light mx-auto mb-3 animate-spin" />
-				<p className="text-xs text-text-light">加载中…</p>
+			<div className="space-y-2.5 px-4 py-3" aria-busy="true">
+				<Skeleton className="h-4 w-3/4" />
+				<Skeleton className="ml-4 h-4 w-2/3" />
+				<Skeleton className="ml-4 h-4 w-1/2" />
+				<Skeleton className="h-4 w-3/5" />
 			</div>
 		);
 	}
 
 	if (variant === "empty") {
 		return (
-			<div className="text-center py-10 px-6 mt-10">
-				<p className="text-sm text-text-muted font-medium">文件夹为空</p>
-				<p className="text-xs text-text-light mt-2">
-					点击头部的 + 按钮新建文件或文件夹
-				</p>
-			</div>
+			<IllustratedEmptyState
+				illustration="folder"
+				title="文件夹为空"
+				description="用头部的「新建文件」「新建文件夹」按钮开始创建"
+				className="px-4"
+			/>
 		);
 	}
 
 	return (
-		<div className="text-center py-10 px-6 mt-10">
-			<Folder className="w-10 h-10 text-text-light mx-auto mb-4" />
-			<p className="text-sm text-text-muted font-medium">无工作路径</p>
-			<p className="text-xs text-text-light mt-2">
-				从「对话」中选择一条已绑定目录的对话，
-				<br />
-				或为当前对话绑定一个目录：
-			</p>
-			{onOpenFolder ? (
-				<button
-					type="button"
-					onClick={onOpenFolder}
-					className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-warm-50 hover:bg-warm-200 text-text-secondary transition-colors cursor-pointer"
-				>
-					<FolderOpen className="w-3.5 h-3.5" />
-					打开文件夹
-				</button>
-			) : null}
-		</div>
+		<IllustratedEmptyState
+			illustration="folder"
+			title="无工作路径"
+			description="从「对话」中选择一条已绑定目录的对话，或为当前对话绑定一个目录"
+			className="px-4"
+			action={
+				onOpenFolder ? (
+					<button
+						type="button"
+						onClick={onOpenFolder}
+						className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
+					>
+						<FolderOpen className="h-3.5 w-3.5" strokeWidth={1.5} />
+						打开文件夹
+					</button>
+				) : undefined
+			}
+		/>
 	);
 }

@@ -1,7 +1,7 @@
 /**
  * StatusDot — 统一状态小圆点
  * 用于通道 / 会话 / 配对状态的一致视觉表达。
- * B.AI 暖调：保留 mint(在线) / peach(警告) / error 语义色 / violetx 中性 / warm 灰。
+ * 语义色全部走主题 token：success(在线) / warning(警告) / error / info / warm 灰。
  */
 
 import { cn } from "../../../../lib/utils";
@@ -10,20 +10,20 @@ export type StatusTone = "emerald" | "amber" | "rose" | "sky" | "zinc";
 
 const TONE_CLASS: Record<StatusTone, { solid: string; ring: string }> = {
 	emerald: {
-		solid: "bg-mint-500",
-		ring: "ring-mint-500/20",
+		solid: "bg-success",
+		ring: "ring-success/20",
 	},
 	amber: {
-		solid: "bg-peach-500",
-		ring: "ring-peach-500/20",
+		solid: "bg-warning",
+		ring: "ring-warning/20",
 	},
 	rose: {
 		solid: "bg-error",
 		ring: "ring-error/20",
 	},
 	sky: {
-		solid: "bg-violetx-500",
-		ring: "ring-violetx-500/20",
+		solid: "bg-info",
+		ring: "ring-info/20",
 	},
 	zinc: {
 		solid: "bg-warm-500",
@@ -79,10 +79,10 @@ export function StatusPill({
 	className?: string;
 }) {
 	const toneText: Record<StatusTone, string> = {
-		emerald: "text-mint-600 bg-mint-500/10",
-		amber: "text-peach-500 bg-peach-500/10",
+		emerald: "text-success bg-success/10",
+		amber: "text-warning bg-warning/10",
 		rose: "text-error bg-error/8",
-		sky: "text-violetx-500 bg-violetx-500/10",
+		sky: "text-info bg-info/10",
 		zinc: "text-text-muted bg-warm-200",
 	};
 	return (

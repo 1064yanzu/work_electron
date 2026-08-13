@@ -69,7 +69,7 @@ export function PlanModeToggle({
 				active={planMode}
 				tone="terracotta"
 				title={`运行模式：${current.label} —— ${current.description}`}
-				icon={<CurrentIcon className="w-4 h-4" strokeWidth={1.7} />}
+				icon={<CurrentIcon className="w-4 h-4" strokeWidth={1.5} />}
 			/>
 
 			{isOpen && (
@@ -95,7 +95,7 @@ export function PlanModeToggle({
 											? "text-terracotta dark:text-terracotta-light"
 											: "text-text-muted",
 									)}
-									strokeWidth={1.7}
+									strokeWidth={1.5}
 								/>
 							}
 						/>

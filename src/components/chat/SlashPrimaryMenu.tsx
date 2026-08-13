@@ -36,8 +36,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "选择文件添加到上下文",
 		icon: FileText,
 		shortcut: "f",
-		gradient: "bg-focus/8 text-focus",
-		iconColor: "text-focus",
+		gradient: "bg-warm-200 text-text-secondary",
+		iconColor: "text-text-secondary",
 	},
 	{
 		id: "folder",
@@ -45,9 +45,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "选择整个文件夹",
 		icon: Folder,
 		shortcut: "d",
-		gradient:
-			"bg-peach-100 dark:bg-peach-500/10 text-peach-500 dark:text-amber-400",
-		iconColor: "text-peach-500 dark:text-amber-400",
+		gradient: "bg-warm-200 text-text-secondary",
+		iconColor: "text-text-secondary",
 	},
 	{
 		id: "prompt",
@@ -73,8 +72,8 @@ export const slashCategories: SlashCategory[] = [
 		description: "执行快捷操作",
 		icon: Zap,
 		shortcut: "a",
-		gradient: "bg-error/8 text-error",
-		iconColor: "text-error",
+		gradient: "bg-warm-200 text-text-secondary",
+		iconColor: "text-text-secondary",
 	},
 ];
 
@@ -178,7 +177,7 @@ export function SlashPrimaryMenu({
 		return (
 			<div
 				ref={menuRef}
-				className="absolute left-0 bottom-full mb-2 w-[280px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50"
+				className="absolute left-0 bottom-full mb-2 w-[280px] bg-surface rounded-2xl shadow-bai-pop overflow-hidden z-50"
 			>
 				<div className="px-4 py-8 text-center">
 					<p className="text-sm text-text-muted">未找到匹配的命令类型</p>
@@ -190,7 +189,7 @@ export function SlashPrimaryMenu({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[280px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+			className="absolute left-0 bottom-full mb-2 w-[280px] bg-surface rounded-2xl shadow-bai-pop overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 		>
 			{/* 头部标签 */}
 			<div className="px-4 pt-3 pb-1">

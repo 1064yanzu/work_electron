@@ -75,11 +75,11 @@ export function SkillCard({
 					"rounded-xl overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 					hideHeader ? "border-none ring-0 bg-transparent" : "",
 					isActive && !hideHeader
-						? "bg-surface/80 ring-2 ring-focus/30 shadow-sm border-l-[3px] border-l-focus/50"
+						? "bg-surface/80 ring-2 ring-focus/30 shadow-sm"
 						: hasError && !hideHeader
-							? "bg-surface/80 ring-2 ring-error/30 shadow-sm border-l-[3px] border-l-error/50"
+							? "bg-surface/80 ring-2 ring-error/30 shadow-sm"
 							: !hideHeader
-								? "bg-surface/60 ring-1 ring-border/30 border-l-[3px] border-l-border"
+								? "bg-surface/60 ring-1 ring-border/30"
 								: "",
 				)}
 			>
@@ -126,7 +126,7 @@ export function SkillCard({
 							</div>
 							{skill.detectedScene && (
 								<div className="text-xs text-text-light">
-									场景: {skill.detectedScene}
+									场景：{skill.detectedScene}
 								</div>
 							)}
 						</div>
@@ -178,7 +178,7 @@ export function SkillCard({
 				{/* 错误显示 */}
 				{skill.error && (
 					<div className="px-3 py-1.5 bg-error/[0.04] text-xs text-error border-t border-error/10">
-						错误: {skill.error}
+						错误：{skill.error}
 					</div>
 				)}
 			</div>
@@ -234,7 +234,7 @@ export function SkillCard({
 			{/* 加载的文件 */}
 			{skill.loadedFiles.length > 0 && (
 				<div className="px-3 py-2 bg-warm-50/30 border-t border-border/50">
-					<div className="text-xs text-text-muted mb-1">已读取文件:</div>
+					<div className="text-xs text-text-muted mb-1">已读取文件：</div>
 					<div className="flex flex-wrap gap-2">
 						{skill.loadedFiles.map((file, i) => (
 							<div
@@ -257,7 +257,7 @@ export function SkillCard({
 			{/* 错误显示 */}
 			{skill.error && (
 				<div className="px-3 py-2 bg-error/8 text-error text-xs border-t border-error/16">
-					错误: {skill.error}
+					错误：{skill.error}
 				</div>
 			)}
 		</div>

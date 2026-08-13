@@ -21,6 +21,8 @@ import {
 	readerUpdateCard,
 } from "../../lib/api/reader";
 import type { ReaderBook, ReaderKnowledgeCard } from "../../lib/api/reader";
+import { confirmDialog } from "../ui/ConfirmDialog";
+import { Select } from "../ui/Select";
 import { toast } from "../ui/Toast";
 import { Tooltip } from "../ui/Tooltip";
 import { ReaderCardEdit } from "../reader/ReaderCardEdit";
@@ -51,11 +53,18 @@ function KnowledgeCardsViewBase({
 	const [filterTag, setFilterTag] = useState<string | null>(null);
 	const [filterDue, setFilterDue] = useState(false);
 	const [search, setSearch] = useState("");
+	// 输入 300ms 防抖后才触发查询，避免每个字符打一次后端
+	const [debouncedSearch, setDebouncedSearch] = useState("");
 
 	const [editing, setEditing] = useState<ReaderKnowledgeCard | null>(null);
 	const [reviewOpen, setReviewOpen] = useState(false);
 	const [reviewIndex, setReviewIndex] = useState(0);
 	const [reviewMode, setReviewMode] = useState<"all" | "due">("all");
+
+	useEffect(() => {
+		const t = setTimeout(() => setDebouncedSearch(search), 300);
+		return () => clearTimeout(t);
+	}, [search]);
 
 	const reload = useCallback(async () => {
 		setLoading(true);
@@ -65,7 +74,7 @@ function KnowledgeCardsViewBase({
 					book_id: filterBook,
 					tag: filterTag,
 					due_only: filterDue ? true : null,
-					search: search.trim() || null,
+					search: debouncedSearch.trim() || null,
 				}),
 				readerListBooks({ limit: 200 }),
 				readerListCardTags({ book_id: filterBook }),
@@ -78,7 +87,7 @@ function KnowledgeCardsViewBase({
 		} finally {
 			setLoading(false);
 		}
-	}, [filterBook, filterTag, filterDue, search]);
+	}, [filterBook, filterTag, filterDue, debouncedSearch]);
 
 	useEffect(() => {
 		void reload();
@@ -125,6 +134,7 @@ function KnowledgeCardsViewBase({
 		setReviewOpen(true);
 	};
 
+	// 原始删除（复习浮层内部已弹过确认，直接执行）
 	const handleDelete = useCallback(async (id: string) => {
 		try {
 			await readerDeleteCard(id);
@@ -133,6 +143,19 @@ function KnowledgeCardsViewBase({
 			toast.error(`删除失败：${e instanceof Error ? e.message : String(e)}`);
 		}
 	}, []);
+
+	// 网格上的删除按钮：先弹危险确认
+	const handleDeleteWithConfirm = useCallback(
+		async (id: string) => {
+			const ok = await confirmDialog.danger(
+				"确定删除这张复习卡？删除后不可恢复。",
+				"删除复习卡",
+			);
+			if (!ok) return;
+			await handleDelete(id);
+		},
+		[handleDelete],
+	);
 
 	const handleEditSave = useCallback(
 		async (id: string, question: string, answer: string) => {
@@ -258,21 +281,36 @@ function KnowledgeCardsViewBase({
 						</Tooltip>
 					) : null}
 				</label>
-				<div className="card-library__filter-pills">
-					<FilterPill
-						active={!filterBook}
-						label="全部书"
-						onClick={() => setFilterBook(null)}
+				{/* 书量 ≤12 用胶囊平铺；更多时切换为下拉选择，避免截断丢书 */}
+				{books.length > 12 ? (
+					<Select
+						variant="compact"
+						value={filterBook ?? ""}
+						onChange={(e) => setFilterBook(e.target.value || null)}
+						options={[
+							{ value: "", label: `全部书（${books.length}）` },
+							...books.map((b) => ({ value: b.id, label: b.title })),
+						]}
+						containerClassName="max-w-xs"
+						aria-label="按书筛选"
 					/>
-					{books.slice(0, 12).map((b) => (
+				) : (
+					<div className="card-library__filter-pills">
 						<FilterPill
-							key={b.id}
-							active={filterBook === b.id}
-							label={b.title}
-							onClick={() => setFilterBook(filterBook === b.id ? null : b.id)}
+							active={!filterBook}
+							label="全部书"
+							onClick={() => setFilterBook(null)}
 						/>
-					))}
-				</div>
+						{books.map((b) => (
+							<FilterPill
+								key={b.id}
+								active={filterBook === b.id}
+								label={b.title}
+								onClick={() => setFilterBook(filterBook === b.id ? null : b.id)}
+							/>
+						))}
+					</div>
+				)}
 				{tags.length > 0 ? (
 					<div className="card-library__filter-pills">
 						<FilterPill
@@ -301,7 +339,8 @@ function KnowledgeCardsViewBase({
 			</section>
 
 			<section className="card-library__body">
-				{loading ? (
+				{/* loading 只控制首屏骨架；已有数据时保持网格不卸载，避免闪空 */}
+				{loading && cards.length === 0 ? (
 					<div className="card-library__loading">
 						<Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
 						加载中...
@@ -350,7 +389,7 @@ function KnowledgeCardsViewBase({
 											<button
 												type="button"
 												className="reader-card-row__action"
-												onClick={() => handleDelete(card.id)}
+												onClick={() => void handleDeleteWithConfirm(card.id)}
 											>
 												<Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
 											</button>

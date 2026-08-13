@@ -2,7 +2,8 @@
  * parser worker（Electron utilityProcess 入口）。
  *
  * 承接主进程移出来的重 CPU 解析：EPUB 解析/翻章（JSDOM）、
- * Readability 正文抽取。通过 process.parentPort 与主进程收发消息，
+ * PDF 全文抽取（pdf-parse）、Readability 正文抽取。
+ * 通过 process.parentPort 与主进程收发消息，
  * 协议见 workers/parserHost.ts：
  *   请求  { id, method, params }
  *   响应  { id, ok: true, result } | { id, ok: false, error }
@@ -13,6 +14,7 @@
 
 import { extractArticleFromHtml } from "../kb/extractArticleFromHtml";
 import { getEpubChapter, parseEpub } from "../reader/formats/epubParser";
+import { parsePdfBook } from "../reader/formats/pdfParser";
 import type { ReaderTocItem } from "../../shared/ipc-schema";
 
 type WorkerRequest = {
@@ -34,6 +36,8 @@ async function handle(
 				String(params.chapterId ?? ""),
 				(params.toc as ReaderTocItem[] | undefined) ?? [],
 			);
+		case "pdf_parse":
+			return parsePdfBook(String(params.filePath));
 		case "extract_article":
 			return extractArticleFromHtml({
 				html: String(params.html ?? ""),

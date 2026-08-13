@@ -9,6 +9,7 @@ import type { PointerEvent } from "react";
 import { Check, AlertTriangle, HelpCircle, Trash2 } from "lucide-react";
 import { PetBubbleShell, type PetBubblePlacement } from "./PetBubbleShell";
 import { CloseIconButton } from "./CloseIconButton";
+import { PET_TONE_APPROVAL, PET_TONE_DONE, PET_TONE_ERROR } from "./palette";
 import { withAlpha } from "./utils";
 import type { PetNotificationItem } from "../usePetEventBridge";
 
@@ -25,20 +26,20 @@ export interface PetHistoryBubbleProps {
 }
 
 const TYPE_ICON = {
-	done: { Icon: Check, tone: "#3F9C6E" },
-	error: { Icon: AlertTriangle, tone: "#D9694B" },
-	approval: { Icon: HelpCircle, tone: "#8B6FB8" },
+	done: { Icon: Check, tone: PET_TONE_DONE },
+	error: { Icon: AlertTriangle, tone: PET_TONE_ERROR },
+	approval: { Icon: HelpCircle, tone: PET_TONE_APPROVAL },
 } as const;
 
 function formatTimeAgo(createdAt: number): string {
 	const diff = Date.now() - createdAt;
 	const mins = Math.floor(diff / 60_000);
 	if (mins < 1) return "刚刚";
-	if (mins < 60) return `${mins}m 前`;
+	if (mins < 60) return `${mins} 分钟前`;
 	const hours = Math.floor(mins / 60);
-	if (hours < 24) return `${hours}h 前`;
+	if (hours < 24) return `${hours} 小时前`;
 	const days = Math.floor(hours / 24);
-	return `${days}d 前`;
+	return `${days} 天前`;
 }
 
 export function PetHistoryBubble({
@@ -76,7 +77,7 @@ export function PetHistoryBubble({
 							title="清空"
 							onClick={onClear}
 							className="flex items-center justify-center h-5 w-5 rounded transition-colors hover:opacity-70"
-							style={{ color: "var(--t-text-light, #9d9d98)" }}
+							style={{ color: "var(--t-text-muted, #9d9d98)" }}
 						>
 							<Trash2 className="h-3 w-3" />
 						</button>
@@ -87,7 +88,7 @@ export function PetHistoryBubble({
 
 			{/* 列表 */}
 			{visible.length === 0 ? (
-				<div className="py-3 text-center text-xs text-[color:var(--t-text-light,#9d9d98)]">
+				<div className="py-3 text-center text-xs text-[color:var(--t-text-muted,#9d9d98)]">
 					暂无记录
 				</div>
 			) : (
@@ -103,14 +104,14 @@ export function PetHistoryBubble({
 										color: tone,
 									}}
 								>
-									<Icon className="h-[9px] w-[9px]" strokeWidth={2.8} />
+									<Icon className="h-[9px] w-[9px]" strokeWidth={2} />
 								</span>
 								<div className="flex-1 min-w-0">
 									<p className="text-xs leading-snug text-[color:var(--t-text-primary,#1a1a19)] line-clamp-2">
 										{item.message}
 									</p>
 								</div>
-								<span className="shrink-0 text-2xs text-[color:var(--t-text-light,#9d9d98)] mt-0.5">
+								<span className="shrink-0 text-2xs text-[color:var(--t-text-muted,#9d9d98)] mt-0.5">
 									{formatTimeAgo(item.createdAt)}
 								</span>
 							</div>

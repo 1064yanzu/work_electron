@@ -48,10 +48,10 @@ export function TokenDisplay({
 		>
 			<span className="opacity-60">Tokens:</span>
 			<span className="font-mono">{formatTokenCount(totalTokens)}</span>
-			<span className="text-success/70 font-mono">
+			<span className="text-text-muted font-mono">
 				↑{formatTokenCount(promptTokens)}
 			</span>
-			<span className="text-orange-500/70 font-mono">
+			<span className="text-text-muted font-mono">
 				↓{formatTokenCount(completionTokens)}
 			</span>
 			{hasCacheInfo && (

@@ -7,7 +7,7 @@
  *   - 运行状态小圆点（emerald/pulse / zinc / rose）
  *   - 启用开关（无需进入详情即可开启）
  *
- * 选中态：暖色 ring + 左侧强调条。
+ * 选中态：暖色 ring + 底色。
  */
 
 import type { LucideIcon } from "lucide-react";
@@ -53,7 +53,7 @@ export function ChannelNav({
 	return (
 		<nav
 			className={cn(
-				"flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-surface/70 p-1.5 shadow-[0_1px_4px_rgba(0,0,0,0.03)]/50",
+				"flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-surface/70 p-1.5 shadow-bai-card",
 				className,
 			)}
 			aria-label="通道选择"
@@ -81,20 +81,10 @@ export function ChannelNav({
 						className={cn(
 							"group relative flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-left transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 							isActive
-								? "bg-surface ring-1 ring-primary/40 shadow-[0_1px_4px_rgba(217,108,70,0.10)] dark:ring-primary/50"
+								? "bg-surface ring-1 ring-primary/40 shadow-bai-card dark:ring-primary/50"
 								: "hover:bg-warm-200/60",
 						)}
 					>
-						{/* 左侧强调条 */}
-						<span
-							className={cn(
-								"absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
-								isActive
-									? "bg-primary opacity-100"
-									: "bg-primary opacity-0 group-hover:opacity-40",
-							)}
-						/>
-
 						{/* 图标 */}
 						<span
 							className={cn(
@@ -120,7 +110,7 @@ export function ChannelNav({
 										className={cn(
 											"inline-flex items-center rounded-full px-1.5 py-0.5 text-2xs font-medium",
 											item.badge.tone === "amber"
-												? "bg-peach-500/10 text-peach-500"
+												? "bg-warning-muted text-warning"
 												: item.badge.tone === "sky"
 													? "bg-violetx-500/10 text-violetx-500"
 													: "bg-warm-200 text-text-muted",
@@ -146,7 +136,7 @@ export function ChannelNav({
 						>
 							{item.locked ? (
 								<span
-									className="inline-flex items-center gap-1 rounded-full bg-peach-500/10 px-1.5 py-0.5 text-2xs text-peach-500"
+									className="inline-flex items-center gap-1 rounded-full bg-warning-muted px-1.5 py-0.5 text-2xs text-warning"
 									title={item.lockedHint}
 								>
 									<Lock className="h-3 w-3" />

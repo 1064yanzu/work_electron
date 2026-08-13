@@ -441,10 +441,10 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 									strokeDasharray={`${completedLen} ${circumference - completedLen}`}
 									strokeDashoffset={completedOffset}
 									strokeLinecap="round"
-									className="transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-700"
+									className="transition-[stroke-dasharray,stroke-dashoffset,color,background-color,border-color,opacity,box-shadow,transform] duration-400"
 								/>
 							)}
-							{/* 运行段 */}
+							{/* 运行段 — stroke 为签名色 terracotta（无对应 CSS 变量，跨主题恒定，故保留 hex） */}
 							{runningLen > 0 && (
 								<circle
 									cx="35"
@@ -456,7 +456,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 									strokeDasharray={`${runningLen} ${circumference - runningLen}`}
 									strokeDashoffset={runningOffset}
 									strokeLinecap="round"
-									className="transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-700"
+									className="transition-[stroke-dasharray,stroke-dashoffset,color,background-color,border-color,opacity,box-shadow,transform] duration-400"
 								/>
 							)}
 							{/* 失败段 */}
@@ -471,7 +471,7 @@ const SwarmOverviewNode = memo(function SwarmOverviewNode(
 									strokeDasharray={`${failedLen} ${circumference - failedLen}`}
 									strokeDashoffset={failedOffset}
 									strokeLinecap="round"
-									className="transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-700"
+									className="transition-[stroke-dasharray,stroke-dashoffset,color,background-color,border-color,opacity,box-shadow,transform] duration-400"
 								/>
 							)}
 						</svg>

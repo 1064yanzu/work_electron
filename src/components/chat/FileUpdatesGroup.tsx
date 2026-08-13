@@ -17,7 +17,7 @@ export function FileUpdatesGroup({ updates }: { updates: FileUpdate[] }) {
 	}, [updates]);
 
 	return (
-		<div className="my-2 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+		<div className="my-2 overflow-hidden rounded-xl bg-surface ring-1 ring-border/80 shadow-bai-card">
 			<button
 				type="button"
 				onClick={() => setExpanded((v) => !v)}
@@ -35,12 +35,12 @@ export function FileUpdatesGroup({ updates }: { updates: FileUpdate[] }) {
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
 					{stats.additions > 0 && (
-						<span className="text-xs font-mono font-medium text-text-secondary bg-surface/70 px-1.5 py-0.5 rounded">
+						<span className="text-xs font-mono font-medium text-text-secondary bg-surface/70 px-1.5 py-0.5 rounded-lg">
 							+{stats.additions}
 						</span>
 					)}
 					{stats.deletions > 0 && (
-						<span className="text-xs font-mono font-medium text-text-secondary bg-surface/70 px-1.5 py-0.5 rounded">
+						<span className="text-xs font-mono font-medium text-text-secondary bg-surface/70 px-1.5 py-0.5 rounded-lg">
 							-{stats.deletions}
 						</span>
 					)}

@@ -404,10 +404,8 @@ export function HubView() {
 			<div className="px-5 pt-5 pb-3 shrink-0">
 				<div className="flex items-start justify-between gap-3">
 					<div className="min-w-0">
-						<div className="text-2xs font-semibold tracking-[0.22em] text-text-light uppercase">
-							AI Harness Hub
-						</div>
-						<h2 className="font-serif text-2xl leading-tight text-text-primary mt-1 tracking-tight">
+						<div className="type-overline text-text-light">AI Harness Hub</div>
+						<h2 className="text-2xl leading-tight text-text-primary mt-1 tracking-tight">
 							跨入口工作台
 						</h2>
 						<p className="text-xs text-text-muted mt-1.5">
@@ -651,7 +649,7 @@ function PanelTab({
 			className={cn(
 				"px-2.5 py-1 rounded-md text-xs font-medium transition duration-150",
 				active
-					? "bg-terracotta/[0.12] text-terracotta"
+					? "bg-terracotta/8 text-terracotta"
 					: "text-text-muted hover:text-text-secondary hover:bg-warm-200/60 dark:hover:bg-cream-800/40",
 			)}
 		>

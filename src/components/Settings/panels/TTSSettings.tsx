@@ -11,7 +11,8 @@
  *  - 保存：updateTtsSettings → store 更新 → 组件 re-render
  */
 import { Bot, BookOpen, Cat, Loader2, Plus, Volume2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useFocusTrap } from "../../ui/FocusTrap";
 import { Select } from "../../ui/Select";
 import {
 	loadTtsSettings,
@@ -52,18 +53,17 @@ const PET_FILTER_OPTIONS: Array<{ value: TTSScenePetFilter; label: string }> = [
 	{ value: "thinking", label: "长时思考" },
 ];
 
-const SCENE_ACCENTS = {
-	reader: "#1B6FA8", // 阅读器：efficiency 蓝
-	chat: "#8B7FD9", // 对话：violetx
-	pet: "#D96C46", // 桌宠：品牌橙
-};
-
 export function TTSSettings() {
 	const settings = useTtsStoreSelector((s) => s.settings);
 	const isLoading = useTtsStoreSelector((s) => s.isLoadingSettings);
 	const { providers: llmProviders, isLoading: isLoadingLlmProviders } =
 		useSettingsStore();
 	const [showAddMenu, setShowAddMenu] = useState(false);
+	const closeAddMenu = useCallback(() => setShowAddMenu(false), []);
+	const addMenuRef = useFocusTrap<HTMLDivElement>({
+		active: showAddMenu,
+		onEscape: closeAddMenu,
+	});
 
 	useEffect(() => {
 		void loadTtsSettings();
@@ -208,7 +208,6 @@ export function TTSSettings() {
 			{/* 场景：阅读器 */}
 			<TTSSceneSection
 				icon={BookOpen}
-				accentColor={SCENE_ACCENTS.reader}
 				title="阅读器朗读"
 				description="在阅读器中朗读章节内容，可通过快捷键或工具栏触发。"
 				enabled={settings.scene_reader_enabled}
@@ -222,7 +221,6 @@ export function TTSSettings() {
 			{/* 场景：对话 */}
 			<TTSSceneSection
 				icon={Bot}
-				accentColor={SCENE_ACCENTS.chat}
 				title="对话朗读"
 				description="在 AI 对话中朗读助手回复；可手动点按或开启自动播报。"
 				enabled={settings.scene_chat_enabled}
@@ -253,7 +251,6 @@ export function TTSSettings() {
 			{/* 场景：桌宠 */}
 			<TTSSceneSection
 				icon={Cat}
-				accentColor={SCENE_ACCENTS.pet}
 				title="桌宠语音通知"
 				description="桌宠收到通知/提醒时用语音播报，支持类型过滤与详略控制。"
 				enabled={settings.scene_pet_enabled}
@@ -383,8 +380,8 @@ export function TTSSettings() {
 									onClick={() => setShowAddMenu(false)}
 								/>
 								<div
-									className="absolute right-0 top-full z-20 mt-1 w-[340px] overflow-hidden rounded-2xl border border-border shadow-bai-pop"
-									style={{ backgroundColor: "var(--t-bg-surface)" }}
+									ref={addMenuRef}
+									className="absolute right-0 top-full z-20 mt-1 w-[340px] overflow-hidden rounded-2xl border border-border bg-surface shadow-bai-pop animate-in fade-in zoom-in-95 duration-150"
 								>
 									{TTS_PROVIDER_TEMPLATES.map((tpl) => {
 										const exists =
@@ -396,7 +393,7 @@ export function TTSSettings() {
 												type="button"
 												disabled={exists}
 												onClick={() => handleAddProvider(tpl.type)}
-												className="block w-full border-b border-border px-3.5 py-2.5 text-left transition hover:bg-surface disabled:opacity-40 last:border-0"
+												className="block w-full border-b border-border px-3.5 py-2.5 text-left transition hover:bg-warm-200/70 disabled:opacity-40 last:border-0"
 											>
 												<div className="flex items-center gap-2 text-xs font-semibold text-text-primary">
 													{tpl.label}

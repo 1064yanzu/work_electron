@@ -192,7 +192,7 @@ export function SourceListView({
 								}
 								setCurrentFolder(item.id);
 							}}
-							className={`px-1.5 py-0.5 rounded hover:bg-warm-300 transition-colors ${
+							className={`px-1.5 py-0.5 rounded-lg hover:bg-warm-300 transition-colors ${
 								index === breadcrumbPath.length - 1
 									? "text-text-primary font-medium"
 									: "text-text-muted"
@@ -279,7 +279,7 @@ export function SourceListView({
 						className={`group cursor-pointer p-3 flex flex-col rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 border relative ${
 							isDragOver
 								? "bg-focus/16 border-focus ring-2 ring-focus/50 scale-[1.02]"
-								: "bg-warm-200/60 hover:bg-warm-200 border-border/50 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5"
+								: "bg-warm-200/60 hover:bg-warm-200 border-border/50 hover:shadow-float hover:-translate-y-0.5"
 						}`}
 					>
 						<div
@@ -288,7 +288,7 @@ export function SourceListView({
 							}`}
 						>
 							<FolderIcon
-								className={`w-5 h-5 ${isDragOver ? "text-focus" : "text-peach-500"}`}
+								className={`w-5 h-5 ${isDragOver ? "text-focus" : "text-text-muted"}`}
 							/>
 						</div>
 						<div className="mt-2 pointer-events-none">
@@ -303,7 +303,7 @@ export function SourceListView({
 									e.stopPropagation();
 									handleFolderContextMenu(e, folder);
 								}}
-								className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 text-text-light hover:text-text-secondary hover:bg-surface/50 dark:hover:bg-black/20 rounded transition-[color,background-color,border-color,opacity,box-shadow,transform] pointer-events-auto"
+								className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 text-text-light hover:text-text-secondary hover:bg-surface/50 dark:hover:bg-black/20 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] pointer-events-auto"
 							>
 								<MoreHorizontal className="w-3.5 h-3.5" />
 							</button>
@@ -372,7 +372,7 @@ export function SourceListView({
 					className={`group cursor-pointer p-2 flex items-center gap-3 rounded-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
 						isDragOver
 							? "bg-focus/16 ring-2 ring-focus/50"
-							: "hover:bg-warm-200/70 hover:pl-3"
+							: "hover:bg-warm-200/70"
 					}`}
 				>
 					<div
@@ -381,7 +381,7 @@ export function SourceListView({
 						}`}
 					>
 						<FolderIcon
-							className={`w-4 h-4 ${isDragOver ? "text-focus" : "text-peach-500"}`}
+							className={`w-4 h-4 ${isDragOver ? "text-focus" : "text-text-muted"}`}
 						/>
 					</div>
 					<div className="flex-1 min-w-0 ml-1 pointer-events-none">
@@ -396,7 +396,7 @@ export function SourceListView({
 								e.stopPropagation();
 								handleFolderContextMenu(e, folder);
 							}}
-							className="opacity-0 group-hover:opacity-100 p-1 text-text-light hover:text-text-secondary hover:bg-warm-200 rounded transition-[color,background-color,border-color,opacity,box-shadow,transform] shrink-0 pointer-events-auto"
+							className="opacity-0 group-hover:opacity-100 p-1 text-text-light hover:text-text-secondary hover:bg-warm-200 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] shrink-0 pointer-events-auto"
 						>
 							<MoreHorizontal className="w-3.5 h-3.5" />
 						</button>
@@ -661,7 +661,17 @@ export function SourceListView({
 					<IllustratedEmptyState
 						illustration="folder"
 						title="暂无资料"
-						description="点击下方按钮添加"
+						description="导入 URL、文本或本地文件，开始积累你的资料库"
+						action={
+							<button
+								type="button"
+								onClick={() => setIsAddModalOpen(true)}
+								className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
+							>
+								<Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+								导入资料
+							</button>
+						}
 					/>
 				) : (
 					<div

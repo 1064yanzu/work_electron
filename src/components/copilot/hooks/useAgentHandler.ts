@@ -1,58 +1,66 @@
 // Agent 模式消息处理 Hook
 
-import { agentExecutor } from "../../../lib/agent/executor";
-import type { AgentMessage } from "../../../lib/agent/claudeAgentService";
+import type { SlashCommand } from "@/components/chat/SlashCommand";
+import type { ChatStoreLike } from "@/components/copilot/types";
 import {
 	encodeChatMessageToAgentContentJson,
 	persistChatMessageToAgentSession,
-} from "../../../lib/agent/chatBridge";
-import { ensurePersistentSession } from "../../../lib/agent/persistence";
-import { agentStore } from "../../../lib/agent/store";
-import { chatStore as chatStoreInstance } from "../../../lib/chat/store";
-import {
-	filterThoughtBlocksForPersistence,
-	StreamBlocksBuilder,
-} from "../../../lib/chat/streamBlocksBuilder";
-import type { ChatMessageBlock } from "../../../lib/chat/types";
-import { createMessage } from "../../../lib/chat/types";
-import { buildFileUpdateFromToolInput } from "../../../lib/chat/fileUpdateFromTool";
-import { EVENTS, events } from "../../../lib/events";
-import { workspaceStore } from "../../../lib/workspaceStore";
-import { buildConversationMessagesForAgentRun } from "../../../lib/agent/context/conversationMessages";
-import { isSdkSessionId } from "../../../lib/agent/context/sessionId";
-import { getSourceDetail } from "../../../lib/api";
-import { sessionStore } from "../../../lib/agent/sessionManager";
-import { takeFork as takeForkIntent } from "../../../lib/slashCommands/forkIntentStore";
-import {
-	parseDocProtocolFinal,
-	buildAgentConversationContext,
-	guessFallbackSearchQuery,
-} from "../../../lib/chat/docProtocol";
-import {
-	normalizeRuntimeText,
-	getTaskImageArtifactPaths,
-	replaceDataImageMarkdownWithPaths,
-} from "../../../lib/chat/streamHelpers";
-import {
-	isTextCoveredByFinalText,
-	joinTextBlocks,
-} from "../../../lib/chat/blockTextMerge";
-import { AGENT_STREAM_UPDATE_INTERVAL_MS } from "../constants";
-import type { ChatStoreLike } from "../types";
-import type { SlashCommand } from "../../chat/SlashCommand";
-import { planModeStore } from "../../../lib/agent/planModeStore";
-import { setPlan } from "../../../lib/agent/planModeStore";
-import { parsePlanFromAgentOutput } from "../../../lib/agent/planModePrompt";
+} from "@/lib/agent/chatBridge";
+import { buildConversationMessagesForAgentRun } from "@/lib/agent/context/conversationMessages";
+import { isSdkSessionId } from "@/lib/agent/context/sessionId";
+import { agentExecutor } from "@/lib/agent/executor";
+import { parsePlanFromAgentOutput } from "@/lib/agent/planModePrompt";
+import { planModeStore, setPlan } from "@/lib/agent/planModeStore";
 import {
 	buildAgentInterruptionNote,
 	buildAgentNoTextCompletionSummary,
 	toFriendlyAgentRuntimeError,
-} from "../../../lib/agent/runtimeText";
+} from "@/lib/agent/runtimeText";
+import { sessionStore } from "@/lib/agent/sessionManager";
+import { agentStore } from "@/lib/agent/store";
+import {
+	buildAgentConversationContext,
+	guessFallbackSearchQuery,
+	parseDocProtocolFinal,
+} from "@/lib/chat/docProtocol";
+import { chatStore as chatStoreInstance } from "@/lib/chat/store";
+import {
+	filterThoughtBlocksForPersistence,
+	StreamBlocksBuilder,
+} from "@/lib/chat/streamBlocksBuilder";
+import {
+	getTaskImageArtifactPaths,
+	normalizeRuntimeText,
+	replaceDataImageMarkdownWithPaths,
+} from "@/lib/chat/streamHelpers";
+import { createMessage } from "@/lib/chat/types";
+import { EVENTS, events } from "@/lib/events";
+import { takeFork as takeForkIntent } from "@/lib/slashCommands/forkIntentStore";
+import { workspaceStore } from "@/lib/workspaceStore";
+import {
+	buildAttachedFilesForUI,
+	resolveAttachmentsFromContexts,
+} from "./agentHandler/attachments";
+import {
+	type AgentBlocksDeps,
+	buildAgentFinalBlocks,
+	buildAgentSkillBlocks,
+	type SkillBlockHolder,
+} from "./agentHandler/blocks";
+import { buildCompletionAssistantMessage } from "./agentHandler/completionMessage";
+import { createAgentChunkHandler } from "./agentHandler/docProtocolChunks";
+import { createInlineToolMessageHandler } from "./agentHandler/inlineToolMessages";
+import {
+	bindAgentSession,
+	prepareUserMessage,
+} from "./agentHandler/sessionBinding";
+import { createStreamingMessageController } from "./agentHandler/streamingMessage";
+import { createAgentWatchdogProbe } from "./agentHandler/watchdogProbe";
 import {
 	AGENT_WATCHDOG_IDLE_FINALIZE_MS,
 	AGENT_WATCHDOG_STALLED_EXECUTION_MS,
-	createAgentWatchdog,
 	appendStallFinalizeNote,
+	createAgentWatchdog,
 } from "./agentWatchdog";
 
 interface UseAgentHandlerOptions {
@@ -98,27 +106,7 @@ export function useAgentHandler({
 		forceForkSession: boolean,
 		parentSdkSessionIdForRun: string | undefined,
 	) => {
-		// 绑定/创建后端 Agent Session（用于持久化与回放）
-		let boundAgentSessionId: string | undefined = session.agentSessionId;
-		try {
-			const ensuredSession = await ensurePersistentSession({
-				sessionId: boundAgentSessionId,
-				title: session.title,
-			});
-			if (ensuredSession.sessionId !== boundAgentSessionId) {
-				chatStore.setSessionAgentSessionId(
-					session.id,
-					ensuredSession.sessionId,
-				);
-			}
-			boundAgentSessionId = ensuredSession.sessionId;
-		} catch (e) {
-			// 后端不可用时自动降级（仍可跑前端内存态 Agent）
-			console.warn(
-				"[CopilotSidebar] Agent Session 持久化初始化失败，将降级为本地执行",
-				e,
-			);
-		}
+		const boundAgentSessionId = await bindAgentSession({ chatStore, session });
 
 		// 如果当前 session 尚无 cwd，从 sessionStore 获取当前工作目录并记录
 		if (!session.cwd) {
@@ -129,55 +117,22 @@ export function useAgentHandler({
 		}
 
 		// 创建或获取用户消息
-		let userMessage: NonNullable<
-			ChatStoreLike["activeSession"]
-		>["messages"][number];
-		const shouldGenerateTitle =
-			!skipUserMessage && session.messages.length === 0;
-		if (!skipUserMessage) {
-			// 正常情况：创建新的用户消息
-			userMessage = createMessage("user", userTextForChat);
-			chatStore.addMessage(session.id, userMessage);
-			if (shouldGenerateTitle) {
-				onFirstUserMessage?.(
-					session.id,
-					content,
-					session.model || activeModel || undefined,
-				);
-			}
-			if (
-				chatSettings.persistEnabled &&
-				boundAgentSessionId &&
-				!boundAgentSessionId.startsWith("local-")
-			) {
-				void persistChatMessageToAgentSession(
-					boundAgentSessionId,
-					userMessage,
-				).then((record) => {
-					if (record?.id) {
-						chatStore.updateMessage(session.id, userMessage.id, {
-							metadata: { agentMessageId: record.id },
-						});
-					}
-				});
-			}
-		} else {
-			// 重新生成：使用现有的最后一条用户消息
-			const existingUserMsg = session.messages
-				.filter((m) => m.role === "user")
-				.pop();
-			if (!existingUserMsg) {
-				console.error("[CopilotSidebar] 重新生成时找不到用户消息");
-				return;
-			}
-			userMessage = existingUserMsg;
-		}
+		const userMessage = prepareUserMessage({
+			chatStore,
+			session,
+			content,
+			userTextForChat,
+			skipUserMessage,
+			activeModel,
+			persistEnabled: chatSettings.persistEnabled,
+			boundAgentSessionId,
+			onFirstUserMessage,
+		});
+		if (!userMessage) return;
 		chatStore.setStatus("streaming");
 
 		let detachAgentEvent: (() => void) | null = null;
 		let currentTaskId: string | null = null;
-		let streamingMsgId: string | null = null;
-		let docProtocolMode: "none" | "create" | "update" = "none";
 		let forcedFinalized = false;
 		let lastActivityAt = Date.now();
 
@@ -185,12 +140,36 @@ export function useAgentHandler({
 			lastActivityAt = Date.now();
 		};
 
-		let lastSkillExecutionBlock: ChatMessageBlock | null = null;
+		const lastSkillBlockHolder: SkillBlockHolder = { current: null };
 		const streamBuilder = new StreamBlocksBuilder({
 			thoughtMaxChars: 64 * 1024,
 		});
 
 		const getStreamText = () => streamBuilder.getText();
+
+		const blockDeps: AgentBlocksDeps = {
+			streamBuilder,
+			getCurrentTaskId: () => currentTaskId,
+			lastSkillBlockHolder,
+		};
+		const buildSkillBlocks = () => buildAgentSkillBlocks(blockDeps);
+		const buildFinalBlocks = (
+			finalText: string,
+			protocol: ReturnType<typeof parseDocProtocolFinal>,
+		) => buildAgentFinalBlocks(finalText, protocol, blockDeps);
+
+		const streaming = createStreamingMessageController({
+			chatStore,
+			sessionId: session.id,
+			activeModel,
+			getStreamText,
+			buildSkillBlocks,
+		});
+		const {
+			ensureStreamingMessage,
+			updateStreamingMessage,
+			scheduleStreamingUpdate,
+		} = streaming;
 
 		// Watchdog：判定逻辑与计时都在 ./agentWatchdog 里，这里只负责采集快照 +
 		// 把收口动作接回 finalizeFromRawText（后者定义在下方的 try 块里，
@@ -202,32 +181,13 @@ export function useAgentHandler({
 				idleFinalizeMs: AGENT_WATCHDOG_IDLE_FINALIZE_MS,
 				stalledExecutionMs: AGENT_WATCHDOG_STALLED_EXECUTION_MS,
 			},
-			probe: () => {
-				if (forcedFinalized) return null;
-				if (!streamingMsgId) return null;
-				const live = agentStore.getState();
-				const liveTaskStatus = live.currentTask?.status;
-				return {
-					silenceMs: Date.now() - lastActivityAt,
-					stillRunning: Boolean(
-						live.isExecuting ||
-							live.isWaitingForLLM ||
-							liveTaskStatus === "planning" ||
-							liveTaskStatus === "executing" ||
-							(live.currentSkill &&
-								live.currentSkill.status !== "completed" &&
-								live.currentSkill.status !== "error"),
-					),
-					hasRunningTools: streamBuilder
-						.getBlocks()
-						.some(
-							(b) =>
-								b.type === "tool_call" &&
-								(b.status === "running" || b.status === "pending"),
-						),
-					hasText: getStreamText().trim().length > 0,
-				};
-			},
+			probe: createAgentWatchdogProbe({
+				isFinalized: () => forcedFinalized,
+				getStreamingMsgId: () => streaming.getStreamingMsgId(),
+				getLastActivityAt: () => lastActivityAt,
+				streamBuilder,
+				getStreamText,
+			}),
 			onFinalize: (action) => {
 				watchdogFinalize?.(
 					getStreamText(),
@@ -237,199 +197,6 @@ export function useAgentHandler({
 				);
 			},
 		});
-
-		const buildSkillBlocks = () => {
-			const blocks: ChatMessageBlock[] = streamBuilder.getBlocks();
-
-			// 如果任务步骤（TodoWrite）已生成，用专门的 task_list 卡片承接
-			if (currentTaskId) {
-				const task = agentStore.getState().currentTask;
-				const todos = task?.metadata ? (task.metadata as any).todos : undefined;
-				const hasTodos = Array.isArray(todos) && todos.length > 0;
-				if (hasTodos) {
-					blocks.unshift({ type: "task_list", taskId: currentTaskId } as any);
-				}
-			}
-
-			const currentSkill = agentStore.getState().currentSkill;
-			if (currentSkill) {
-				const skillBlock = {
-					type: "skill_execution",
-					skillName: currentSkill.skillName,
-					skillPath: currentSkill.skillPath,
-					status: currentSkill.status,
-					steps: currentSkill.steps,
-					loadedFiles: currentSkill.loadedFiles,
-					detectedScene: currentSkill.detectedScene,
-				} as any;
-				lastSkillExecutionBlock = skillBlock;
-				blocks.push(skillBlock);
-			}
-
-			return blocks;
-		};
-
-		const buildFinalBlocks = (
-			finalText: string,
-			protocol: ReturnType<typeof parseDocProtocolFinal>,
-		): ChatMessageBlock[] => {
-			const taskImagePaths = getTaskImageArtifactPaths(
-				agentStore.getState().currentTask?.artifacts,
-			);
-			const blocks: ChatMessageBlock[] = streamBuilder.getBlocks().map((b) => {
-				if (b.type !== "text") return b;
-				return {
-					type: "text",
-					text: replaceDataImageMarkdownWithPaths(
-						normalizeRuntimeText(b.text),
-						taskImagePaths,
-					),
-				} as const;
-			});
-
-			// Keep Todo list card after completion
-			if (currentTaskId) {
-				const task = agentStore.getState().currentTask;
-				const todos = task?.metadata ? (task.metadata as any).todos : undefined;
-				const hasTodos = Array.isArray(todos) && todos.length > 0;
-				if (hasTodos) {
-					blocks.unshift({ type: "task_list", taskId: currentTaskId } as any);
-				}
-			}
-
-			if (protocol.kind === "create" || protocol.kind === "update") {
-				blocks.push({
-					type: "file_update",
-					update: protocol.fileUpdate,
-				} as any);
-			}
-
-			// Prefer last seen skill block to avoid it disappearing after completion
-			const currentSkill = agentStore.getState().currentSkill;
-			if (currentSkill) {
-				lastSkillExecutionBlock = {
-					type: "skill_execution",
-					skillName: currentSkill.skillName,
-					skillPath: currentSkill.skillPath,
-					status: currentSkill.status,
-					steps: currentSkill.steps,
-					loadedFiles: currentSkill.loadedFiles,
-					detectedScene: currentSkill.detectedScene,
-				} as any;
-			}
-			if (lastSkillExecutionBlock) blocks.push(lastSkillExecutionBlock);
-
-			const normalizedFinal = replaceDataImageMarkdownWithPaths(
-				normalizeRuntimeText(finalText),
-				taskImagePaths,
-			);
-			const existingText = joinTextBlocks(blocks);
-			if (
-				normalizedFinal.trim() &&
-				isTextCoveredByFinalText(existingText, normalizedFinal)
-			) {
-				// 已流式输出的文本与工具卡片有时序对应关系；最终快照覆盖它时只去重，不重排。
-			} else if (
-				normalizedFinal.trim() &&
-				normalizedFinal.trim() !== existingText.trim()
-			) {
-				blocks.push({ type: "text", text: normalizedFinal } as any);
-			}
-
-			// 将任务里的图片产物回填到消息 blocks，确保图片消息与中间栏产物保持一致
-			const hasImageMarkdownInText =
-				/!\[[^\]]*]\((?!data:)[^)]+\.(png|jpg|jpeg|gif|webp|svg|bmp|ico|tif|tiff)(\?[^)]*)?\)/i.test(
-					normalizedFinal,
-				);
-			if (currentTaskId && !hasImageMarkdownInText) {
-				const task = agentStore.getState().currentTask;
-				const existingImagePaths = new Set(
-					blocks
-						.filter(
-							(b): b is Extract<ChatMessageBlock, { type: "image" }> =>
-								b.type === "image",
-						)
-						.map((b) => String(b.path || "").trim()),
-				);
-				const imageBlocks =
-					task?.artifacts
-						?.filter(
-							(a) =>
-								a.type === "image" &&
-								typeof a.url === "string" &&
-								a.url.trim().length > 0 &&
-								!a.url.trim().startsWith("data:image/") &&
-								!a.url.trim().startsWith("http://") &&
-								!a.url.trim().startsWith("https://"),
-						)
-						.map((a) => ({
-							type: "image" as const,
-							path: String(a.url),
-							title: a.title || "图片",
-						}))
-						.filter((b) => {
-							const p = String(b.path || "").trim();
-							if (!p) return false;
-							if (existingImagePaths.has(p)) return false;
-							existingImagePaths.add(p);
-							return true;
-						}) || [];
-
-				blocks.push(...imageBlocks);
-			}
-
-			return blocks;
-		};
-
-		let lastUpdateTime = 0;
-		let pendingUpdate = false;
-
-		const ensureStreamingMessage = () => {
-			if (streamingMsgId) return;
-			const streamingMsg = createMessage("assistant", "", {
-				isStreaming: true,
-				model: activeModel ?? undefined,
-				metadata: {
-					blocks: buildSkillBlocks(),
-				},
-			});
-			streamingMsgId = streamingMsg.id;
-			chatStore.addMessage(session.id, streamingMsg);
-			lastUpdateTime = Date.now();
-		};
-
-		const updateStreamingMessage = () => {
-			if (streamingMsgId) {
-				chatStore.updateMessage(session.id, streamingMsgId, {
-					content: getStreamText(),
-					metadata: {
-						blocks: buildSkillBlocks(),
-					},
-				});
-			}
-			pendingUpdate = false;
-		};
-
-		const scheduleStreamingUpdate = () => {
-			const now = Date.now();
-			if (now - lastUpdateTime >= AGENT_STREAM_UPDATE_INTERVAL_MS) {
-				updateStreamingMessage();
-				lastUpdateTime = now;
-				return;
-			}
-			if (!pendingUpdate) {
-				pendingUpdate = true;
-				setTimeout(
-					() => {
-						if (pendingUpdate) {
-							updateStreamingMessage();
-							lastUpdateTime = Date.now();
-						}
-					},
-					AGENT_STREAM_UPDATE_INTERVAL_MS - (now - lastUpdateTime),
-				);
-			}
-		};
 
 		const persistSessionMessageById = (messageId: string) => {
 			if (
@@ -464,126 +231,18 @@ export function useAgentHandler({
 		const getCurrentInlineTaskId = () =>
 			currentTaskId || agentStore.getState().currentTask?.id || "agent-task";
 
-		const normalizeSdkToolCallId = (toolCallId: string | undefined) => {
-			const raw = String(toolCallId || "").trim();
-			if (!raw) return "";
-			return raw.startsWith("sdk-tool-") ? raw : `sdk-tool-${raw}`;
-		};
-
 		const getCurrentWorkingDirectory = () =>
 			session.cwd || sessionStore.getCurrentSession()?.cwd || undefined;
 
-		const toolNameByInlineId = new Map<string, string>();
-		const toolInputByInlineId = new Map<string, Record<string, unknown>>();
-		const placeholderShownForToolCallId = new Set<string>();
-
-		const upsertInlineFileUpdate = (
-			message: AgentMessage,
-			status: "running" | "completed" | "error",
-			forceEmptyInput = false,
-		) => {
-			const toolCallId = normalizeSdkToolCallId(message.toolCallId);
-			if (!toolCallId) return false;
-			const mergedInput = forceEmptyInput
-				? null
-				: message.toolInput || toolInputByInlineId.get(toolCallId) || null;
-			const mergedToolName =
-				message.toolName || toolNameByInlineId.get(toolCallId);
-			const update = buildFileUpdateFromToolInput({
-				toolName: mergedToolName,
-				toolCallId,
-				toolInput: mergedInput,
-				status,
-				baseDir: getCurrentWorkingDirectory(),
-			});
-			if (!update) return false;
-			ensureStreamingMessage();
-			streamBuilder.upsertFileUpdate(update);
-			updateStreamingMessage();
-			return true;
-		};
-
-		const handleSdkInlineMessage = (message: AgentMessage) => {
-			if (message.type === "tool_call") {
-				const toolCallId = normalizeSdkToolCallId(message.toolCallId);
-				if (!toolCallId) return;
-				if (message.toolName)
-					toolNameByInlineId.set(toolCallId, message.toolName);
-				if (message.toolInput)
-					toolInputByInlineId.set(toolCallId, message.toolInput);
-
-				// 第一次见到这个 tool_call：先显示占位卡片（"创建文件中…"），
-				// 让用户能立刻感知到工具开始执行。
-				// 即便 SDK 在 content_block_start 就给出完整 input，也强制经历一次占位帧。
-				const isFirstSighting = !placeholderShownForToolCallId.has(toolCallId);
-				if (isFirstSighting) {
-					placeholderShownForToolCallId.add(toolCallId);
-					const placeholderShown = upsertInlineFileUpdate(
-						message,
-						"running",
-						true,
-					);
-					// 下一帧再用真实 input 更新（让占位至少经过一次渲染）
-					if (placeholderShown && message.toolInput) {
-						requestAnimationFrame(() => {
-							upsertInlineFileUpdate(message, "running");
-						});
-					}
-				}
-
-				const didShowFileUpdate =
-					isFirstSighting || upsertInlineFileUpdate(message, "running");
-				if (chatSettings.inlineTraceEnabled) {
-					ensureStreamingMessage();
-					streamBuilder.startToolCall({
-						type: "tool_call",
-						taskId: getCurrentInlineTaskId(),
-						toolCallId,
-						name: message.toolName,
-						status: "running",
-						input: message.toolInput,
-					});
-					updateStreamingMessage();
-				} else if (didShowFileUpdate) {
-					touchActivity();
-				}
-				return;
-			}
-
-			if (message.type === "tool_input_update") {
-				const toolCallId = normalizeSdkToolCallId(message.toolCallId);
-				if (!toolCallId) return;
-				if (message.toolInput)
-					toolInputByInlineId.set(toolCallId, message.toolInput);
-				if (chatSettings.inlineTraceEnabled) {
-					streamBuilder.updateToolCall(toolCallId, (block) => ({
-						...block,
-						input: message.toolInput || block.input,
-					}));
-				}
-				upsertInlineFileUpdate(message, "running");
-				if (chatSettings.inlineTraceEnabled) updateStreamingMessage();
-				return;
-			}
-
-			if (message.type === "tool_result") {
-				const toolCallId = normalizeSdkToolCallId(message.toolCallId);
-				if (!toolCallId) return;
-				const status = message.status === "error" ? "error" : "completed";
-				if (chatSettings.inlineTraceEnabled) {
-					streamBuilder.updateToolCall(toolCallId, (block) => ({
-						...block,
-						status,
-						output: message.toolOutput,
-						error: message.status === "error" ? message.content : block.error,
-					}));
-				}
-				const didShowFileUpdate = upsertInlineFileUpdate(message, status);
-				if (chatSettings.inlineTraceEnabled || didShowFileUpdate) {
-					updateStreamingMessage();
-				}
-			}
-		};
+		const handleSdkInlineMessage = createInlineToolMessageHandler({
+			streamBuilder,
+			inlineTraceEnabled: chatSettings.inlineTraceEnabled,
+			getCurrentInlineTaskId,
+			getCurrentWorkingDirectory,
+			ensureStreamingMessage,
+			updateStreamingMessage,
+			touchActivity,
+		});
 
 		ensureStreamingMessage();
 
@@ -628,6 +287,7 @@ export function useAgentHandler({
 					queueCreateProposal(protocol.eventPayload);
 				}
 
+				const streamingMsgId = streaming.getStreamingMsgId();
 				if (streamingMsgId) {
 					chatStore.updateMessage(session.id, streamingMsgId, {
 						content: result,
@@ -683,88 +343,15 @@ export function useAgentHandler({
 			);
 			// 获取用户附加的上下文（文档、资料等）
 			const contexts = workspaceStore.getState().contexts;
-			const attachedContexts: Array<{ title: string; content: string }> = [];
-			const attachedFiles: Array<{
-				title: string;
-				path: string;
-				type: "file" | "document";
-				mimeType?: string;
-				size?: number;
-				isBinary?: boolean;
-			}> = [];
-
-			const resolvedContexts = await Promise.all(
-				contexts.map(async (ctx) => {
-					let content = ctx.content;
-					if (!content && ctx.sourceId) {
-						try {
-							const detail = await getSourceDetail(ctx.sourceId);
-							content = detail.note?.content || detail.source.description || "";
-							debugLog(
-								"[CopilotSidebar] 加载资料内容:",
-								ctx.title,
-								content.slice(0, 100),
-							);
-						} catch (err) {
-							console.error("[CopilotSidebar] 加载资料内容失败:", err);
-						}
-					}
-					return { ...ctx, content };
-				}),
-			);
-			for (const ctx of resolvedContexts) {
-				const content = ctx.content || "";
-				const filePath = ctx.filePath;
-				const fileSize = ctx.size;
-				if (filePath) {
-					const isText =
-						(typeof ctx.mimeType === "string" &&
-							ctx.mimeType.startsWith("text/")) ||
-						content.trim().length > 0;
-					attachedFiles.push({
-						title: ctx.title,
-						path: filePath,
-						type: ctx.type === "source" ? "document" : "file",
-						mimeType: ctx.mimeType,
-						size: fileSize,
-						isBinary: !isText,
-					});
-				}
-
-				if (!filePath && content.trim()) {
-					attachedContexts.push({ title: ctx.title, content });
-				}
-			}
-
-			debugLog("[CopilotSidebar] 附件聚合统计:", {
-				contextCount: contexts.length,
-				attachedFiles: attachedFiles.map((f) => ({
-					title: f.title,
-					type: f.type,
-					path: f.path,
-					size: f.size,
-				})),
-				attachedContextsCount: attachedContexts.length,
-			});
+			const { attachedContexts, attachedFiles } =
+				await resolveAttachmentsFromContexts(contexts, debugLog);
 
 			// 将附件信息更新到用户消息的 metadata 中（以便在 UI 中显示）
 			if (attachedFiles.length > 0 || attachedContexts.length > 0) {
-				const attachedFilesForUI = [
-					...attachedFiles.map((f) => ({
-						title: f.title,
-						path: f.path,
-						type: f.type,
-						size: f.size,
-					})),
-					// 从 attachedContexts 中提取（这些是小型上下文）
-					...attachedContexts
-						.filter((c) => !attachedFiles.find((f) => f.title === c.title))
-						.map((c) => ({
-							title: c.title,
-							path: "",
-							type: "document" as const,
-						})),
-				];
+				const attachedFilesForUI = buildAttachedFilesForUI(
+					attachedFiles,
+					attachedContexts,
+				);
 
 				if (attachedFilesForUI.length > 0) {
 					chatStore.updateMessage(session.id, userMessage.id, {
@@ -782,6 +369,7 @@ export function useAgentHandler({
 					currentTaskId = event.task.id;
 					// 让托管模式在运行中也能"跟着会话走"：一旦拿到 taskId / sandboxDir，立刻写入流式消息 metadata
 					ensureStreamingMessage();
+					const streamingMsgId = streaming.getStreamingMsgId();
 					if (streamingMsgId) {
 						const sandboxDir = (event.task?.metadata as any)?.sandboxDir as
 							| string
@@ -801,32 +389,12 @@ export function useAgentHandler({
 				// agentStore 事件仍用于任务面板/中间栏状态，但不再作为正文卡片的时序源。
 			});
 
-			const onChunk = (chunk: string) => {
-				touchActivity();
-				streamBuilder.appendVisibleTextChunk(chunk);
-				const snapshot = getStreamText();
-				if (docProtocolMode === "none") {
-					if (snapshot.includes(":::update-doc")) {
-						docProtocolMode = "update";
-						events.emit(EVENTS.AI_DOC_UPDATE_START, {});
-					} else if (snapshot.includes(":::create-doc")) {
-						docProtocolMode = "create";
-						events.emit(EVENTS.AI_DOC_CREATE_START, {});
-					}
-				}
-				if (docProtocolMode === "update") {
-					const startIdx = snapshot.indexOf(":::update-doc");
-					if (startIdx >= 0) {
-						const after = snapshot.slice(startIdx + ":::update-doc".length);
-						const endRel = after.indexOf(":::");
-						const partial = (
-							endRel >= 0 ? after.slice(0, endRel) : after
-						).trim();
-						events.emit(EVENTS.AI_DOC_UPDATE_STREAM, partial);
-					}
-				}
-				scheduleStreamingUpdate();
-			};
+			const onChunk = createAgentChunkHandler({
+				streamBuilder,
+				getStreamText,
+				touchActivity,
+				scheduleStreamingUpdate,
+			});
 
 			// 如果有存活的 run，用 followup 模式（不重开进程，利用 prompt cache）
 			const agentRun = agentExecutor.canFollowup
@@ -888,7 +456,15 @@ export function useAgentHandler({
 										: undefined,
 								onChunk, // 流式输出回调
 								onMessage: handleSdkInlineMessage,
-								onThoughtChunk: (chunk, meta) => {
+								onThoughtChunk: (
+									chunk: string,
+									meta?: {
+										title?: string;
+										source?: string;
+										phase?: string;
+										durationMs?: number;
+									},
+								) => {
 									touchActivity();
 									streamBuilder.appendThoughtChunk(chunk, meta);
 									scheduleStreamingUpdate();
@@ -905,6 +481,8 @@ export function useAgentHandler({
 			clearWatchdog();
 			if (forcedFinalized) return;
 			streamBuilder.flushParser();
+
+			const streamingMsgId = streaming.getStreamingMsgId();
 
 			// 如果有流式消息，更新最终内容并标记为完成
 			if (streamingMsgId) {
@@ -1036,7 +614,7 @@ export function useAgentHandler({
 					| string
 					| undefined;
 				if (backendTaskId && boundAgentSessionId) {
-					await (await import("../../../lib/agent/api")).updateAgentTask(
+					await (await import("@/lib/agent/api")).updateAgentTask(
 						backendTaskId,
 						{
 							status: "succeeded",
@@ -1050,104 +628,15 @@ export function useAgentHandler({
 
 			// 如果是 Skill 执行（已通过 onChunk 创建了流式消息），跳过创建新消息
 			if (!streamingMsgId) {
-				const assistantMessage = createMessage("assistant", result, {
-					isStreaming: false,
-					model: activeModel ?? undefined,
-					metadata:
-						protocol.kind === "create" || protocol.kind === "update"
-							? { fileUpdates: [protocol.fileUpdate] }
-							: undefined,
+				const assistantMessage = buildCompletionAssistantMessage({
+					result,
+					protocol,
+					activeModel,
+					inlineTraceEnabled: chatSettings.inlineTraceEnabled,
+					currentTaskId,
+					finalState,
+					currentSkill: agentStore.getState().currentSkill,
 				});
-
-				const finalSkillState = agentStore.getState().currentSkill;
-				const skillBlocks = finalSkillState
-					? [
-							{
-								type: "skill_execution" as const,
-								skillName: finalSkillState.skillName,
-								skillPath: finalSkillState.skillPath,
-								status: finalSkillState.status,
-								steps: finalSkillState.steps,
-								loadedFiles: finalSkillState.loadedFiles,
-								detectedScene: finalSkillState.detectedScene,
-							},
-						]
-					: [];
-
-				const baseBlocks: any[] = [
-					...(assistantMessage.content.trim()
-						? [{ type: "text" as const, text: assistantMessage.content }]
-						: []),
-					...skillBlocks,
-				];
-
-				// 成功时也把工具调用轨迹挂到消息 blocks，方便用户端直接看到 code_execute 等执行情况
-				if (currentTaskId) {
-					const toolCalls = finalState.currentTask?.toolCalls || [];
-					const toolCallBlocks = toolCalls.map((tc) => ({
-						type: "tool_call" as const,
-						taskId: currentTaskId,
-						toolCallId: tc.id,
-						name: tc.name,
-						status: tc.status,
-					}));
-
-					const imageBlocks = toolCalls
-						.flatMap((tc) => {
-							const output = tc.output as any;
-							const paths = Array.isArray(output?.image_paths)
-								? (output.image_paths as string[])
-								: [];
-							return paths
-								.filter(
-									(p) =>
-										typeof p === "string" &&
-										p.trim().length > 0 &&
-										!p.trim().startsWith("data:image/") &&
-										!p.trim().startsWith("http://") &&
-										!p.trim().startsWith("https://"),
-								)
-								.map((p) => ({
-									type: "image" as const,
-									path: p,
-									title: tc.name || "图片",
-								}));
-						})
-						.filter((b) => !!b.path);
-
-					// 去重，避免多次收集同一张图
-					const uniqueImageBlocks: typeof imageBlocks = [];
-					const seenImg = new Set<string>();
-					for (const b of imageBlocks) {
-						if (seenImg.has(b.path)) continue;
-						seenImg.add(b.path);
-						uniqueImageBlocks.push(b);
-					}
-					const fileUpdateBlocks = Array.isArray(
-						(assistantMessage.metadata as any)?.fileUpdates,
-					)
-						? (assistantMessage.metadata as any).fileUpdates.map(
-								(update: any) => ({ type: "file_update" as const, update }),
-							)
-						: [];
-					assistantMessage.metadata = {
-						...(assistantMessage.metadata || {}),
-						...(chatSettings.inlineTraceEnabled
-							? {}
-							: { trace: { type: "agent_task", taskId: currentTaskId } }),
-						blocks: [
-							...baseBlocks,
-							...uniqueImageBlocks,
-							...(chatSettings.inlineTraceEnabled ? [] : toolCallBlocks),
-							...fileUpdateBlocks,
-						],
-					};
-				} else if (baseBlocks.length > 0) {
-					assistantMessage.metadata = {
-						...(assistantMessage.metadata || {}),
-						blocks: baseBlocks,
-					};
-				}
 				chatStore.addMessage(session.id, assistantMessage);
 				if (protocol.kind === "update") {
 					events.emit(EVENTS.AI_DOC_UPDATE_END, protocol.eventPayload);

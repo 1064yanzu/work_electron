@@ -16,6 +16,7 @@ import {
 	SettingsButton,
 	SettingsTextInput,
 } from "../../../ui/SettingsPrimitives";
+import { getProviderColorProps } from "../../../utils";
 
 export interface ProviderListProps {
 	providers: Provider[];
@@ -49,7 +50,7 @@ export function ProviderList({
 				<SettingsTextInput
 					value={searchQuery}
 					onChange={onSearchChange}
-					placeholder="搜索模型平台..."
+					placeholder="搜索模型平台…"
 					prefix={
 						<Search className="h-4 w-4 text-text-light" strokeWidth={1.8} />
 					}
@@ -65,6 +66,7 @@ export function ProviderList({
 				) : (
 					filtered.map((provider) => {
 						const active = selectedId === provider.id;
+						const colorProps = getProviderColorProps(provider.color);
 						return (
 							<button
 								key={provider.id}
@@ -80,9 +82,10 @@ export function ProviderList({
 							>
 								<div
 									className={cn(
-										"flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white shadow-sm",
-										provider.color,
+										"flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-sm",
+										colorProps.className,
 									)}
+									style={colorProps.style}
 								>
 									{getProviderIcon(provider.templateId) ? (
 										<img

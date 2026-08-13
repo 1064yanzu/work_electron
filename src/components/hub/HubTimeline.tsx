@@ -17,9 +17,10 @@ import {
 	Share2,
 	Trash2,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useState } from "react";
 import type { HarnessSessionRow } from "../../lib/api";
 import { cn } from "../../lib/utils";
+import { ContextMenu } from "../ui/ContextMenu";
 import type { HubEntry } from "./hubUtils";
 import {
 	SESSION_DRAG_MIME,
@@ -226,82 +227,52 @@ function HandoffMenu({
 	labelOf: (harness: string) => string;
 	onHandoff: (session: HarnessSessionRow, target: HubEntry) => void;
 }) {
-	const [open, setOpen] = useState(false);
-	const containerRef = useRef<HTMLDivElement>(null);
-	const menuId = useId();
-
-	useEffect(() => {
-		if (!open) return;
-		const onPointerDown = (event: MouseEvent) => {
-			if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
-		};
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") setOpen(false);
-		};
-		document.addEventListener("mousedown", onPointerDown);
-		document.addEventListener("keydown", onKeyDown);
-		return () => {
-			document.removeEventListener("mousedown", onPointerDown);
-			document.removeEventListener("keydown", onKeyDown);
-		};
-	}, [open]);
+	// 复用全局 ContextMenu（智能定位 / overlayStack Esc / 键盘遍历），
+	// 不再手写点击外部关闭与裸挂 keydown
+	const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 
 	if (targets.length === 0) return null;
 
 	return (
-		<div ref={containerRef} className="relative">
+		<>
 			<button
 				type="button"
 				title="移交到…"
 				aria-label={`把「${sessionTitle(session)}」移交到其他入口`}
 				aria-haspopup="menu"
-				aria-expanded={open}
-				aria-controls={open ? menuId : undefined}
+				aria-expanded={menuPos !== null}
 				onClick={(event) => {
 					event.stopPropagation();
-					setOpen((v) => !v);
+					const rect = event.currentTarget.getBoundingClientRect();
+					setMenuPos((prev) =>
+						prev ? null : { x: rect.left, y: rect.bottom + 4 },
+					);
 				}}
 				className={cn(
 					"p-1.5 rounded-lg transition duration-150",
-					open
-						? "text-terracotta bg-terracotta/[0.12]"
+					menuPos
+						? "text-terracotta bg-terracotta/8"
 						: "text-text-light hover:text-text-secondary hover:bg-warm-200/70 dark:hover:bg-cream-800/40",
 				)}
 			>
 				<Share2 className="w-3 h-3" />
 			</button>
 
-			{open && (
-				<div
-					id={menuId}
-					role="menu"
-					aria-label="选择接力目标"
-					className="absolute right-0 top-full z-30 mt-1 min-w-[160px] rounded-xl border border-border bg-surface py-1 shadow-lg"
-					onClick={(event) => event.stopPropagation()}
-				>
-					<div className="px-3 py-1.5 text-2xs uppercase tracking-wide text-text-light">
-						移交到
-					</div>
-					{targets.map((entry) => (
-						<button
-							key={entry.id}
-							type="button"
-							role="menuitem"
-							onClick={() => {
-								setOpen(false);
-								onHandoff(session, entry);
-							}}
-							className="block w-full px-3 py-1.5 text-left text-xs text-text-primary transition duration-150 hover:bg-warm-200/60 dark:hover:bg-cream-800/40"
-						>
-							{entry.label}
-							<span className="ml-1.5 text-2xs text-text-light">
-								{labelOf(entry.harness)}
-							</span>
-						</button>
-					))}
-				</div>
-			)}
-		</div>
+			{menuPos ? (
+				<ContextMenu
+					x={menuPos.x}
+					y={menuPos.y}
+					items={[
+						{ label: "移交到", heading: true, onClick: () => {} },
+						...targets.map((entry) => ({
+							label: `${entry.label} · ${labelOf(entry.harness)}`,
+							onClick: () => onHandoff(session, entry),
+						})),
+					]}
+					onClose={() => setMenuPos(null)}
+				/>
+			) : null}
+		</>
 	);
 }
 

@@ -334,8 +334,8 @@ function EmptyState({ query }: { query: string }) {
 	return (
 		<div className="px-4 py-4">
 			<p className="text-xs leading-relaxed text-text-secondary">
-				没有找到与{" "}
-				<span className="font-medium text-text-primary">"{query}"</span>{" "}
+				没有找到与
+				<span className="font-medium text-text-primary">「{query}」</span>
 				相关的设置项。
 			</p>
 			<p className="mt-1 text-xs leading-relaxed text-text-muted">

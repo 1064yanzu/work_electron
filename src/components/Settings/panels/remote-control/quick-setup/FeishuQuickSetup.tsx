@@ -227,7 +227,7 @@ export function FeishuQuickSetup({
 						用飞书 / Lark 扫码创建应用
 					</h3>
 					<p className="mt-0.5 text-xs leading-relaxed text-text-secondary">
-						授权后会自动为你创建一个"个人 Agent"类型的飞书应用，
+						授权后会自动为你创建一个「个人 Agent」类型的飞书应用，
 						<br />
 						并把凭证、域名、配对策略一并配置好。全程无需离开本界面。
 					</p>
@@ -341,7 +341,7 @@ function LoadingView() {
 	return (
 		<div className="flex flex-col items-center justify-center gap-3 py-10">
 			<Loader2 className="h-6 w-6 animate-spin text-primary" />
-			<div className="text-sm text-text-secondary">正在生成二维码...</div>
+			<div className="text-sm text-text-secondary">正在生成二维码…</div>
 		</div>
 	);
 }
@@ -364,7 +364,7 @@ function ReadyView({
 		<div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
 			{/* QR 码 */}
 			<div className="mx-auto flex flex-col items-center md:mx-0">
-				<div className="rounded-2xl bg-surface p-3 ring-1 ring-border shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
+				<div className="rounded-2xl bg-surface p-3 ring-1 ring-border shadow-bai-card">
 					<img
 						src={qrDataUrl}
 						alt="飞书扫码授权"
@@ -373,7 +373,7 @@ function ReadyView({
 				</div>
 				<div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
 					<Loader2 className="h-3 w-3 animate-spin" />
-					等待扫码...
+					等待扫码…
 				</div>
 			</div>
 
@@ -384,10 +384,10 @@ function ReadyView({
 						打开手机上的 <b>飞书 App</b>
 					</StepLine>
 					<StepLine index={2}>
-						点击右上角<b>"+"</b> → 扫一扫
+						点击右上角<b>「+」</b> → 扫一扫
 					</StepLine>
 					<StepLine index={3}>
-						扫描左侧二维码，在飞书中点"<b>授权</b>"
+						扫描左侧二维码，在飞书中点「<b>授权</b>」
 					</StepLine>
 					<StepLine index={4}>
 						本界面会自动完成应用配置
@@ -409,7 +409,7 @@ function ReadyView({
 						<div
 							className={cn(
 								"h-full rounded-full transition-[width,background-color] duration-1000 ease-linear",
-								progress > 0.3 ? "bg-primary" : "bg-peach-500",
+								progress > 0.3 ? "bg-primary" : "bg-warning",
 							)}
 							style={{ width: `${progress * 100}%` }}
 						/>
@@ -456,10 +456,10 @@ function EndStateView({
 }) {
 	const iconClass =
 		tone === "emerald"
-			? "text-mint-600 bg-mint-500/15"
+			? "text-success bg-success-muted"
 			: tone === "rose"
 				? "text-error bg-error/8"
-				: "text-peach-500 bg-peach-500/15";
+				: "text-warning bg-warning-muted";
 	return (
 		<div className="flex flex-col items-center gap-3 py-10 text-center">
 			<div
@@ -496,7 +496,7 @@ function SuccessView({
 }) {
 	return (
 		<div className="flex flex-col items-center gap-4 py-8 text-center">
-			<div className="flex h-14 w-14 items-center justify-center rounded-full bg-mint-500/15 text-mint-600">
+			<div className="flex h-14 w-14 items-center justify-center rounded-full bg-success-muted text-success">
 				<CheckCircle2 className="h-7 w-7" strokeWidth={1.5} />
 			</div>
 			<div className="space-y-1">

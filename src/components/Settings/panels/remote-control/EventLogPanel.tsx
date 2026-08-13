@@ -8,8 +8,8 @@ const LEVEL_STYLES: Record<string, { text: string; badge: string }> = {
 		badge: "bg-warm-200 text-text-muted",
 	},
 	warn: {
-		text: "text-peach-500",
-		badge: "bg-peach-500/10 text-peach-500",
+		text: "text-warning",
+		badge: "bg-warning-muted text-warning",
 	},
 	error: {
 		text: "text-error",
@@ -104,7 +104,7 @@ export function EventLogPanel() {
 			{expanded && (
 				<div className="max-h-52 overflow-y-auto border-t border-border font-mono text-xs">
 					{unsupportedHint ? (
-						<div className="px-4 py-3 text-xs text-peach-500 bg-peach-500/10 border-b border-peach-500/20">
+						<div className="px-4 py-3 text-xs text-warning bg-warning-muted border-b border-warning/20">
 							{unsupportedHint}
 						</div>
 					) : null}

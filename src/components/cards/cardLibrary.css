@@ -2,13 +2,32 @@
    知识卡片库（全局，跨书）
    =========================================================== */
 
+/* 卡片库复用了一批 reader 作用域类（reader-icon-btn / reader-card-row__action /
+   reader-card-tag-chip / ReaderCardReview / ReaderCardEdit），而 --reader-* 变量
+   只在 ReaderShell 内联注入。这里给两种形态的根容器补一套别名，
+   全部映射到全局 --t-* token，保证 hover 反馈与暗色适配。 */
+.card-library-overlay,
+.card-library {
+	--reader-bg: var(--t-bg-surface, #faf9f5);
+	--reader-bg-soft: var(--t-bg-muted, rgba(0, 0, 0, 0.04));
+	--reader-fg: var(--t-text-primary, #1a1a19);
+	--reader-fg-muted: var(--t-text-secondary, rgba(0, 0, 0, 0.55));
+	--reader-fg-light: var(--t-text-muted, rgba(0, 0, 0, 0.45));
+	--reader-border: var(--t-border, rgba(0, 0, 0, 0.08));
+	--reader-accent: #d96c46;
+	--reader-accent-soft: rgba(217, 108, 70, 0.12);
+	--reader-selection: rgba(217, 108, 70, 0.18);
+	--reader-shadow: var(--shadow-pop, 0 8px 32px rgba(31, 27, 22, 0.08));
+	--reader-danger: var(--t-error, #c45454);
+}
+
 .card-library-overlay {
 	position: fixed;
 	inset: 0;
-	z-index: 90;
+	z-index: 100;
 	background: var(--t-bg, #faf9f5);
 	overflow: hidden;
-	animation: card-library-fade 220ms ease;
+	animation: card-library-fade 150ms ease;
 }
 
 @keyframes card-library-fade {
@@ -41,7 +60,7 @@
 	justify-content: space-between;
 	gap: 16px;
 	padding-bottom: 16px;
-	border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+	border-bottom: 1px solid var(--t-border, rgba(0, 0, 0, 0.08));
 }
 
 .card-library__title {
@@ -50,7 +69,7 @@
 	gap: 10px;
 	font-size: 16px;
 	font-weight: 600;
-	color: var(--t-fg, #1a1a1a);
+	color: var(--t-text-primary, #1a1a1a);
 }
 
 .card-library__count {
@@ -59,8 +78,8 @@
 	min-width: 24px;
 	padding: 1px 8px;
 	border-radius: 10px;
-	background: rgba(0, 0, 0, 0.06);
-	color: rgba(0, 0, 0, 0.55);
+	background: var(--t-bg-muted, rgba(0, 0, 0, 0.06));
+	color: var(--t-text-secondary, rgba(0, 0, 0, 0.55));
 	font-size: 11px;
 	font-weight: 500;
 	font-variant-numeric: tabular-nums;
@@ -84,7 +103,7 @@
 	font-size: 13px;
 	font-weight: 600;
 	cursor: pointer;
-	transition: filter 140ms ease;
+	transition: filter 150ms ease;
 }
 
 .card-library__primary-btn:hover:not(:disabled) {
@@ -102,18 +121,18 @@
 	gap: 6px;
 	padding: 7px 14px;
 	border-radius: 10px;
-	border: 1px solid rgba(0, 0, 0, 0.08);
+	border: 1px solid var(--t-border, rgba(0, 0, 0, 0.08));
 	background: transparent;
-	color: rgba(0, 0, 0, 0.7);
+	color: var(--t-text-secondary, rgba(0, 0, 0, 0.7));
 	font-size: 13px;
 	cursor: pointer;
 	transition:
-		background-color 140ms ease,
-		border-color 140ms ease;
+		background-color 150ms ease,
+		border-color 150ms ease;
 }
 
 .card-library__ghost-btn:hover {
-	background: rgba(0, 0, 0, 0.04);
+	background: var(--t-bg-muted, rgba(0, 0, 0, 0.04));
 }
 
 /* ----- 筛选区 ----- */
@@ -130,17 +149,17 @@
 	gap: 8px;
 	padding: 8px 12px;
 	border-radius: 10px;
-	border: 1px solid rgba(0, 0, 0, 0.08);
-	background: rgba(0, 0, 0, 0.025);
-	color: rgba(0, 0, 0, 0.55);
+	border: 1px solid var(--t-border, rgba(0, 0, 0, 0.08));
+	background: var(--t-bg-muted, rgba(0, 0, 0, 0.025));
+	color: var(--t-text-secondary, rgba(0, 0, 0, 0.55));
 	transition:
-		background-color 140ms ease,
-		border-color 140ms ease;
+		background-color 150ms ease,
+		border-color 150ms ease;
 }
 
 .card-library__search:focus-within {
 	border-color: rgba(217, 108, 70, 0.45);
-	background: #fff;
+	background: var(--t-bg-surface, #fff);
 }
 
 .card-library__search input {
@@ -149,7 +168,7 @@
 	outline: none;
 	background: transparent;
 	font-size: 13px;
-	color: rgba(0, 0, 0, 0.85);
+	color: var(--t-text-primary, rgba(0, 0, 0, 0.85));
 	font-family: inherit;
 }
 
@@ -161,8 +180,8 @@
 	height: 18px;
 	border-radius: 999px;
 	border: none;
-	background: rgba(0, 0, 0, 0.08);
-	color: rgba(0, 0, 0, 0.55);
+	background: var(--t-bg-muted, rgba(0, 0, 0, 0.08));
+	color: var(--t-text-secondary, rgba(0, 0, 0, 0.55));
 	cursor: pointer;
 }
 
@@ -178,9 +197,9 @@
 	gap: 4px;
 	padding: 4px 10px;
 	border-radius: 999px;
-	border: 1px solid rgba(0, 0, 0, 0.08);
+	border: 1px solid var(--t-border, rgba(0, 0, 0, 0.08));
 	background: transparent;
-	color: rgba(0, 0, 0, 0.6);
+	color: var(--t-text-secondary, rgba(0, 0, 0, 0.6));
 	font-size: 12px;
 	cursor: pointer;
 	max-width: 200px;
@@ -188,13 +207,13 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	transition:
-		background-color 140ms ease,
-		border-color 140ms ease,
-		color 140ms ease;
+		background-color 150ms ease,
+		border-color 150ms ease,
+		color 150ms ease;
 }
 
 .card-library__pill:hover {
-	background: rgba(0, 0, 0, 0.04);
+	background: var(--t-bg-muted, rgba(0, 0, 0, 0.04));
 }
 
 .card-library__pill.is-active {
@@ -219,7 +238,7 @@
 	justify-content: center;
 	gap: 8px;
 	min-height: 200px;
-	color: rgba(0, 0, 0, 0.45);
+	color: var(--t-text-muted, rgba(0, 0, 0, 0.45));
 	font-size: 13px;
 	text-align: center;
 	padding: 40px 24px;
@@ -241,13 +260,13 @@
 	gap: 8px;
 	padding: 14px 14px 12px;
 	border-radius: 14px;
-	border: 1px solid rgba(0, 0, 0, 0.08);
-	background: #fff;
+	border: 1px solid var(--t-border, rgba(0, 0, 0, 0.08));
+	background: var(--t-bg-surface, #fff);
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 	transition:
-		box-shadow 160ms ease,
-		transform 160ms ease,
-		border-color 160ms ease;
+		box-shadow 150ms ease,
+		transform 150ms ease,
+		border-color 150ms ease;
 }
 
 /* 左侧条纹伪元素已移除：accent 语义由 hover 时的 terracotta 边框染色承担 */
@@ -260,7 +279,7 @@
 .card-library__card-q {
 	font-size: 13.5px;
 	font-weight: 600;
-	color: rgba(0, 0, 0, 0.85);
+	color: var(--t-text-primary, rgba(0, 0, 0, 0.85));
 	line-height: 1.45;
 	display: -webkit-box;
 	-webkit-line-clamp: 2;
@@ -270,7 +289,7 @@
 
 .card-library__card-a {
 	font-size: 12px;
-	color: rgba(0, 0, 0, 0.55);
+	color: var(--t-text-secondary, rgba(0, 0, 0, 0.55));
 	line-height: 1.55;
 	display: -webkit-box;
 	-webkit-line-clamp: 3;
@@ -285,7 +304,7 @@
 	gap: 6px;
 	margin-top: 4px;
 	font-size: 11px;
-	color: rgba(0, 0, 0, 0.45);
+	color: var(--t-text-muted, rgba(0, 0, 0, 0.45));
 }
 
 .card-library__card-book {
@@ -305,10 +324,11 @@
 	display: flex;
 	gap: 2px;
 	opacity: 0;
-	transition: opacity 140ms ease;
+	transition: opacity 150ms ease;
 }
 
-.card-library__card:hover .card-library__card-actions {
+.card-library__card:hover .card-library__card-actions,
+.card-library__card:focus-within .card-library__card-actions {
 	opacity: 1;
 }
 

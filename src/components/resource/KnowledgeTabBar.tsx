@@ -20,7 +20,7 @@ export function KnowledgeTabBar({ active, onSelect }: KnowledgeTabBarProps) {
 		<div
 			role="tablist"
 			aria-label="知识视图切换"
-			className="flex shrink-0 items-center gap-1 px-2 pb-1.5 pt-2.5"
+			className="flex shrink-0 items-center gap-1 px-3 pb-1.5 pt-2.5"
 		>
 			{KNOWLEDGE_TABS.map((tab) => {
 				const isActive = tab.id === active;

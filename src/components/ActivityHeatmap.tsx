@@ -118,10 +118,10 @@ export function ActivityHeatmap({ data, startDate }: ActivityHeatmapProps) {
 				<span>少</span>
 				<div className="flex gap-1">
 					<div className="w-3 h-3 rounded-sm bg-warm-200" />
-					<div className="w-3 h-3 rounded-sm bg-green-200" />
-					<div className="w-3 h-3 rounded-sm bg-green-400" />
-					<div className="w-3 h-3 rounded-sm bg-green-600" />
-					<div className="w-3 h-3 rounded-sm bg-green-800" />
+					<div className="w-3 h-3 rounded-sm bg-terracotta/25" />
+					<div className="w-3 h-3 rounded-sm bg-terracotta/50" />
+					<div className="w-3 h-3 rounded-sm bg-terracotta/75" />
+					<div className="w-3 h-3 rounded-sm bg-terracotta" />
 				</div>
 				<span>多</span>
 			</div>

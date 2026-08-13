@@ -44,6 +44,7 @@ function InputDialogView({
 	const [value, setValue] = useState(defaultValue);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isClosing, setIsClosing] = useState(false);
 	const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
 	useEffect(() => {
@@ -53,7 +54,8 @@ function InputDialogView({
 
 	const closeWithValue = useCallback(
 		(nextValue: string | null) => {
-			onClose(nextValue);
+			setIsClosing(true);
+			window.setTimeout(() => onClose(nextValue), 150);
 		},
 		[onClose],
 	);
@@ -103,15 +105,24 @@ function InputDialogView({
 	);
 
 	return (
-		<div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+		<div className="fixed inset-0 z-modal flex items-center justify-center p-4">
 			<button
 				type="button"
-				className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
+				className={cn(
+					"absolute inset-0 bg-text-primary/20 backdrop-blur-sm transition-opacity",
+					"animate-in fade-in duration-150",
+					isClosing ? "opacity-0" : "opacity-100",
+				)}
 				onClick={handleCancel}
 				aria-label="关闭输入对话框"
 			/>
 			<FocusTrap
-				className="relative w-full max-w-[440px] rounded-3xl border border-border bg-surface shadow-bai-pop overflow-hidden"
+				className={cn(
+					"relative w-full max-w-[440px] rounded-2xl border border-border bg-surface shadow-bai-pop overflow-hidden",
+					"animate-in fade-in zoom-in-95 duration-150",
+					"transition-[opacity,transform] duration-150",
+					isClosing ? "scale-[0.98] opacity-0" : "opacity-100",
+				)}
 				onEscape={handleCancel}
 				initialFocusRef={inputRef as any}
 			>
@@ -132,7 +143,7 @@ function InputDialogView({
 							)}
 						</div>
 						<div className="min-w-0 flex-1 pt-0.5">
-							<h3 className="text-[17px] font-semibold text-text-primary tracking-tight">
+							<h3 className="text-base font-semibold text-text-primary tracking-tight">
 								{title}
 							</h3>
 							{message ? (
@@ -184,7 +195,7 @@ function InputDialogView({
 						<button
 							type="button"
 							onClick={handleCancel}
-							className="rounded-xl px-5 py-2.5 text-sm font-medium text-text-secondary transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-black/5 dark:hover:bg-white/5"
+							className="rounded-xl px-5 py-2.5 text-sm font-medium text-text-secondary transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-warm-200"
 						>
 							{cancelText}
 						</button>
@@ -195,11 +206,11 @@ function InputDialogView({
 							className={cn(
 								"rounded-xl px-5 py-2.5 text-sm font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100",
 								variant === "danger"
-									? "bg-error text-white hover:bg-error shadow-error/20"
+									? "bg-error text-white hover:bg-error/90 shadow-error/20"
 									: "bg-primary text-primary-foreground hover:bg-primary-hover shadow-black/10",
 							)}
 						>
-							{isSubmitting ? "处理中..." : confirmText}
+							{isSubmitting ? "处理中…" : confirmText}
 						</button>
 					</div>
 				</div>

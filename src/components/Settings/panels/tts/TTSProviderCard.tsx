@@ -29,6 +29,7 @@ import {
 	SettingsTextArea,
 	SettingsTextInput,
 } from "../../ui/SettingsPrimitives";
+import { Collapsible } from "../../../ui/Collapsible";
 import { VoiceCloneModal } from "../../../tts/VoiceCloneModal";
 import {
 	findTemplateByType,
@@ -50,14 +51,6 @@ interface TTSProviderCardProps {
 	onSelectAsDefault?: (voiceId: string) => void;
 }
 
-const PROVIDER_ACCENTS: Record<string, string> = {
-	system: "#6FBF99",
-	openai_compatible: "#8B7FD9",
-	elevenlabs: "#E89A75",
-	volcano: "#D96C46",
-	mimo: "#F5A623",
-};
-
 export function TTSProviderCard({
 	provider,
 	onPatch,
@@ -76,7 +69,6 @@ export function TTSProviderCard({
 	const [showCloneModal, setShowCloneModal] = useState(false);
 	const [voicesOpen, setVoicesOpen] = useState(true);
 	const voicesState = useTTSVoices(provider.id);
-	const accent = PROVIDER_ACCENTS[provider.type] ?? "var(--t-primary)";
 
 	const handleTest = async () => {
 		setTesting(true);
@@ -126,14 +118,7 @@ export function TTSProviderCard({
 			{/* Header */}
 			<div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
 				<div className="flex min-w-0 items-start gap-3">
-					<span
-						className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-bold uppercase"
-						style={{
-							backgroundColor: `${accent}14`,
-							borderColor: `${accent}33`,
-							color: accent,
-						}}
-					>
+					<span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-warm-200 text-sm font-bold uppercase text-text-muted">
 						{provider.type === "openai_compatible"
 							? "AI"
 							: provider.type === "elevenlabs"
@@ -153,14 +138,14 @@ export function TTSProviderCard({
 								className={cn(
 									"inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-semibold",
 									provider.is_enabled
-										? "bg-mint-500/10 text-mint-600"
+										? "bg-success/10 text-success"
 										: "bg-warm-200 text-text-muted",
 								)}
 							>
 								<span
 									className={cn(
 										"h-1 w-1 rounded-full",
-										provider.is_enabled ? "bg-mint-500" : "bg-text-muted/60",
+										provider.is_enabled ? "bg-success" : "bg-text-muted/60",
 									)}
 								/>
 								{provider.is_enabled ? "已启用" : "已停用"}
@@ -259,7 +244,6 @@ export function TTSProviderCard({
 							{template.apiBasePresets &&
 								template.apiBasePresets.length > 0 && (
 									<ApiBasePresetChips
-										accent={accent}
 										current={provider.api_base}
 										presets={template.apiBasePresets}
 										onPick={(value) => onPatch({ api_base: value })}
@@ -344,20 +328,14 @@ export function TTSProviderCard({
 			{/* 音色管理（仅非 system） */}
 			{!isSystem && (
 				<div className="border-t border-border">
-					<div className="flex w-full items-center justify-between gap-3 px-5 py-3 transition hover:bg-surface">
+					<div className="flex w-full items-center justify-between gap-3 px-5 py-3 transition hover:bg-warm-50">
 						<button
 							type="button"
 							onClick={() => setVoicesOpen((v) => !v)}
 							className="flex flex-1 items-center gap-2.5 text-left"
 							aria-expanded={voicesOpen}
 						>
-							<span
-								className="inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-2xs font-semibold tabular-nums"
-								style={{
-									backgroundColor: `${accent}14`,
-									color: accent,
-								}}
-							>
+							<span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-warm-200 px-1.5 text-2xs font-semibold tabular-nums text-text-muted">
 								{voicesState.voices.length}
 							</span>
 							<span className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
@@ -397,7 +375,7 @@ export function TTSProviderCard({
 							</button>
 						</div>
 					</div>
-					{voicesOpen && (
+					<Collapsible open={voicesOpen}>
 						<div className="border-t border-border bg-surface px-5 py-4">
 							<TTSVoiceList
 								providerId={provider.id}
@@ -406,10 +384,9 @@ export function TTSProviderCard({
 								selectedVoiceId={defaultVoiceId}
 								isDefaultProvider={isDefaultProvider}
 								onSelectAsDefault={onSelectAsDefault}
-								accentColor={accent}
 							/>
 						</div>
-					)}
+					</Collapsible>
 				</div>
 			)}
 
@@ -456,12 +433,10 @@ function FormField({
  * - chip 只是把对应 base url 写入输入框，输入框依然允许手动覆盖。
  */
 function ApiBasePresetChips({
-	accent,
 	current,
 	presets,
 	onPick,
 }: {
-	accent: string;
 	current: string | undefined;
 	presets: TTSApiBasePreset[];
 	onPick: (value: string) => void;
@@ -488,33 +463,19 @@ function ApiBasePresetChips({
 						className={cn(
 							"inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
 							active
-								? "shadow-[0_0_0_1px_currentColor_inset]"
+								? "border-primary/40 bg-primary/8 text-primary"
 								: "border-border bg-surface text-text-secondary hover:border-warm-500 hover:text-text-primary",
 						)}
-						style={
-							active
-								? {
-										backgroundColor: `${accent}14`,
-										borderColor: `${accent}66`,
-										color: accent,
-									}
-								: undefined
-						}
 					>
 						<span>{preset.label}</span>
 						{preset.hint && (
 							<span
 								className={cn(
 									"rounded-full px-1.5 py-px text-2xs uppercase tracking-wider",
-									active ? "opacity-80" : "bg-warm-200 text-text-muted",
-								)}
-								style={
 									active
-										? {
-												backgroundColor: `${accent}1f`,
-											}
-										: undefined
-								}
+										? "bg-primary/10 opacity-80"
+										: "bg-warm-200 text-text-muted",
+								)}
 							>
 								{preset.hint}
 							</span>

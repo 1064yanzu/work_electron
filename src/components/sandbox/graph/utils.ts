@@ -48,7 +48,7 @@ export function statusPill(status: string): {
 		case "running":
 			return {
 				label: "运行中",
-				cls: "text-info",
+				cls: "text-terracotta",
 			};
 		case "completed":
 			return {
@@ -77,13 +77,13 @@ export function taskStatusPill(status: AgentTask["status"]): {
 		case "planning":
 			return {
 				label: "规划中",
-				cls: "text-info",
+				cls: "text-terracotta",
 				spinning: true,
 			};
 		case "executing":
 			return {
 				label: "执行中",
-				cls: "text-info",
+				cls: "text-terracotta",
 				spinning: true,
 			};
 		case "waiting":

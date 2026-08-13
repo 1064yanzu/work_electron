@@ -31,11 +31,14 @@ export function useReaderShortcuts(
 	useEffect(() => {
 		if (!enabled) return;
 		const onKeyDown = (e: KeyboardEvent) => {
+			// 子浮层（复习卡 / 搜索 / 编辑等）已消费的按键不再处理
+			if (e.defaultPrevented) return;
 			if (isTypingTarget(e.target)) return;
 
 			const meta = e.metaKey || e.ctrlKey;
 
 			if (e.key === "Escape") {
+				e.preventDefault();
 				handlers.onClose();
 				return;
 			}

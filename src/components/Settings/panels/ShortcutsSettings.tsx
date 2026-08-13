@@ -156,7 +156,7 @@ export function ShortcutsSettings() {
 							<button
 								type="button"
 								onClick={() => shortcutRegistry.openCheatSheet()}
-								className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-warm-200 px-3.5 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-warm-200 active:scale-[0.98]"
+								className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-warm-200 px-3.5 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-warm-300 active:scale-[0.98]"
 							>
 								<SquareSlash className="h-3.5 w-3.5" strokeWidth={1.5} />
 								打开速查表（{modKey}+/）

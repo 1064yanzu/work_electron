@@ -4,7 +4,7 @@
  * 与 SettingsFormControls / SettingsPrimitives 视觉对齐。
  * Settings 内部不再需要手撸 button / span — 全部用这些组件。
  */
-import { type LucideIcon } from "lucide-react";
+import { Loader2, type LucideIcon } from "lucide-react";
 import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from "react";
 import { cn } from "../../../lib/utils";
 
@@ -37,8 +37,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 		"disabled:bg-warm-200 disabled:text-text-light disabled:shadow-none",
 	),
 	secondary: cn(
-		"border border-border bg-surface text-text-secondary shadow-[0_1px_2px_rgba(0,0,0,0.03)]",
-		"hover:border-warm-500 hover:bg-warm-50 hover:text-text-primary hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
+		"border border-border bg-surface text-text-secondary shadow-bai-card",
+		"hover:border-warm-500 hover:bg-warm-50 hover:text-text-primary",
 	),
 	ghost: cn(
 		"border border-transparent text-text-secondary",
@@ -46,7 +46,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 	),
 	danger: cn(
 		"border border-transparent text-text-light",
-		"hover:border-[rgba(181,51,51,0.32)] hover:bg-[rgba(181,51,51,0.08)] hover:text-error",
+		"hover:border-error/30 hover:bg-error/8 hover:text-error",
 	),
 	"danger-solid": cn("bg-error text-white shadow-bai-card", "hover:opacity-90"),
 	subtle: cn(
@@ -94,7 +94,7 @@ export const SettingsButton = forwardRef<
 			)}
 		>
 			{loading ? (
-				<span className="inline-flex h-3 w-3 animate-spin rounded-full border-[1.5px] border-current border-t-transparent" />
+				<Loader2 className="h-3 w-3 animate-spin" />
 			) : (
 				Icon && <Icon className="h-3 w-3" strokeWidth={1.5} />
 			)}
@@ -128,20 +128,20 @@ interface SettingsBadgeProps {
 const TONE_CLASSES: Record<BadgeTone, string> = {
 	neutral: "bg-warm-200 text-text-muted border-border/60",
 	primary: "bg-primary/10 text-primary border-primary/20",
-	success: "bg-mint-300/30 text-mint-600 border-mint-300/60",
-	warning: "bg-peach-100 text-peach-500 border-peach-200/70",
-	error: "bg-[rgba(181,51,51,0.08)] text-error border-[rgba(181,51,51,0.28)]",
-	info: "bg-violetx-300/30 text-violetx-600 border-violetx-300/60",
+	success: "bg-success/10 text-success border-success/20",
+	warning: "bg-warning/10 text-warning border-warning/20",
+	error: "bg-error/8 text-error border-error/30",
+	info: "bg-info/10 text-info border-info/20",
 	violet: "bg-violetx-300/30 text-violetx-600 border-violetx-300/60",
 };
 
 const TONE_DOT: Record<BadgeTone, string> = {
 	neutral: "bg-text-muted",
 	primary: "bg-primary",
-	success: "bg-mint-500",
-	warning: "bg-peach-500",
+	success: "bg-success",
+	warning: "bg-warning",
 	error: "bg-error",
-	info: "bg-violetx-500",
+	info: "bg-info",
 	violet: "bg-violetx-500",
 };
 
@@ -192,15 +192,15 @@ interface SettingsHintProps {
 
 const HINT_TONE: Record<HintTone, string> = {
 	info: "border-border bg-surface text-text-secondary",
-	warning: "border-peach-200/70 bg-peach-100/60",
-	success: "border-mint-300/60 bg-mint-300/15",
-	error: "border-[rgba(181,51,51,0.28)] bg-[rgba(181,51,51,0.06)]",
+	warning: "border-warning/20 bg-warning/8",
+	success: "border-success/20 bg-success/8",
+	error: "border-error/30 bg-error/8",
 };
 
 const HINT_ICON_TONE: Record<HintTone, string> = {
 	info: "text-text-muted",
-	warning: "text-peach-500",
-	success: "text-mint-600",
+	warning: "text-warning",
+	success: "text-success",
 	error: "text-error",
 };
 

@@ -90,6 +90,7 @@ import {
 } from "./threads/ThreadListRows";
 import { workspaceStore } from "../../lib/workspaceStore";
 import { useRegisterShortcuts } from "../../lib/shortcuts";
+import { SidebarViewHeader } from "./sidebar/SidebarViewHeader";
 
 /** 行数超过该阈值才启用虚拟化；小列表保留普通渲染（折叠动画等体感不变） */
 const VIRTUALIZE_ROW_THRESHOLD = 60;
@@ -524,60 +525,62 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 	return (
 		<div className="flex flex-col h-full bg-transparent">
-			{/* Header：一行搞定——左栏 rail 已经标着「对话」，这里不再重复大标题。
-			    搜索框静止时是无填充的一行文字，hover/focus 才浮现浅底。 */}
-			<div className="shrink-0 px-2 pt-3.5 pb-2">
-				<div className="flex items-center gap-1">
-					<div className="group/search relative flex-1">
-						<Search
-							className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-light"
-							strokeWidth={1.75}
-						/>
-						<input
-							ref={searchInputRef}
-							type="text"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							placeholder={
-								totalSessionCount > 0
-									? `搜索 ${totalSessionCount} 条对话`
-									: "搜索对话"
-							}
-							className="h-8 w-full rounded-lg bg-transparent pl-8 pr-7 text-sm text-text-primary transition-colors duration-150 placeholder:text-text-light hover:bg-warm-200/45 focus:bg-warm-200/70 focus:outline-none dark:hover:bg-white/[0.04] dark:focus:bg-white/[0.07]"
-						/>
-						{searchQuery && (
-							<button
-								type="button"
-								onClick={() => setSearchQuery("")}
-								className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-text-light transition-colors hover:bg-black/[0.06] hover:text-text-secondary dark:hover:bg-white/10"
-								aria-label="清空搜索"
-							>
-								<X className="h-3 w-3" strokeWidth={2} />
-							</button>
-						)}
-					</div>
-					<button
-						type="button"
-						onClick={handleCreateThread}
-						className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-light transition-colors duration-150 hover:bg-warm-200/70 hover:text-text-primary dark:hover:bg-white/[0.06]"
-						title="新建对话（选择工作目录）"
-						aria-label="新建对话"
-					>
-						<Plus className="h-4 w-4" strokeWidth={1.75} />
-					</button>
+			{/* Header：统一走 SidebarViewHeader（h-header + border-b + px-3）。
+			    「搜索即头部」交互保留——搜索框直接放进 h-header 行，
+			    静止时是无填充的一行文字，hover/focus 才浮现浅底。 */}
+			<SidebarViewHeader>
+				<div className="group/search relative min-w-0 flex-1">
+					<Search
+						className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-light"
+						strokeWidth={1.5}
+					/>
+					<input
+						ref={searchInputRef}
+						type="text"
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						placeholder={
+							totalSessionCount > 0
+								? `搜索 ${totalSessionCount} 条对话`
+								: "搜索对话"
+						}
+						className="h-8 w-full rounded-lg bg-transparent pl-8 pr-7 text-sm text-text-primary transition-colors duration-150 placeholder:text-text-light hover:bg-warm-200/45 focus:bg-warm-200/70 focus:outline-none dark:hover:bg-white/[0.04] dark:focus:bg-white/[0.07]"
+					/>
+					{searchQuery && (
+						<button
+							type="button"
+							onClick={() => setSearchQuery("")}
+							className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-lg text-text-light transition-colors hover:bg-warm-200/70 hover:text-text-secondary"
+							aria-label="清空搜索"
+						>
+							<X className="h-3 w-3" strokeWidth={1.5} />
+						</button>
+					)}
 				</div>
+				<button
+					type="button"
+					onClick={handleCreateThread}
+					className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-light transition-colors duration-150 hover:bg-warm-200/70 hover:text-text-primary dark:hover:bg-white/[0.06]"
+					title="新建对话（选择工作目录）"
+					aria-label="新建对话"
+				>
+					<Plus className="h-4 w-4" strokeWidth={1.5} />
+				</button>
+			</SidebarViewHeader>
 
-				{isSearching && (
-					<p className="mt-1.5 pl-8 text-xs text-text-light">
-						{visibleSessions.length > 0
-							? `${visibleSessions.length} 条匹配`
-							: "没有匹配的对话"}
-					</p>
-				)}
-			</div>
+			{isSearching && (
+				<p className="shrink-0 px-3 pt-2 pl-9 text-xs text-text-light">
+					{visibleSessions.length > 0
+						? `${visibleSessions.length} 条匹配`
+						: "没有匹配的对话"}
+				</p>
+			)}
 
 			{/* Folder Groups */}
-			<div ref={scrollParentRef} className="flex-1 overflow-y-auto px-2 pb-6">
+			<div
+				ref={scrollParentRef}
+				className="flex-1 overflow-y-auto px-2 pt-2 pb-6"
+			>
 				{shouldVirtualize ? (
 					<VirtualizedThreadList
 						scrollParentRef={scrollParentRef}
@@ -631,7 +634,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 
 								{/* Sessions List — 用 grid-rows trick 做平滑折叠 */}
 								<div
-									className={`grid transition-[grid-template-rows] duration-150 ease-out ${
+									className={`grid transition-[grid-template-rows] duration-150 ease-out-expo ${
 										isCollapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
 									}`}
 								>
@@ -683,7 +686,7 @@ export function ThreadsView({ onNavigateWorkbench }: ThreadsViewProps) {
 									onClick={handleCreateThread}
 									className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
 								>
-									<Plus className="h-3.5 w-3.5" strokeWidth={2} />
+									<Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
 									新建对话
 								</button>
 							}

@@ -5,17 +5,19 @@ import {
 	Image as ImageIcon,
 	Loader2,
 	RefreshCw,
+	Settings,
 	Trash2,
 	Type,
-	X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deleteCard as deleteCardApi, getCardImagePath } from "../../lib/api";
+import { EVENTS, events } from "../../lib/events";
 import { useCardsQuery } from "../../lib/query";
 import { convertFileSrc, invoke } from "../../lib/tauriCompat";
 import type { Card } from "../../types";
 import { AutoVirtualGrid } from "../ui/AutoVirtualGrid";
 import { confirmDialog } from "../ui/ConfirmDialog";
+import { Modal } from "../ui/Modal";
 import { toast } from "../ui/Toast";
 import { IllustratedEmptyState } from "../ui/EmptyState";
 import { Skeleton } from "../ui/Skeleton";
@@ -175,101 +177,81 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 
 	return (
 		<div className="flex flex-col h-full">
-			{/* 卡片预览弹窗 */}
+			{/* 卡片预览弹窗 — 复用 <Modal>（自带 overlayStack / Esc / 焦点回归） */}
 			{cardPreview && (
-				<div
-					className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
-					onClick={() => setCardPreview(null)}
+				<Modal
+					isOpen
+					onClose={() => setCardPreview(null)}
+					title={cardPreview.title}
 				>
-					<div
-						className="bg-surface rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-						onClick={(e) => e.stopPropagation()}
-					>
-						<div className="flex items-center justify-between px-5 py-4 border-b border-border">
-							<div className="flex-1 min-w-0 pr-4">
-								<h3 className="text-base font-semibold text-text-primary truncate">
-									{cardPreview.title}
-								</h3>
-								<p className="text-xs text-text-light mt-0.5">
-									{new Date(cardPreview.created_at).toLocaleString("zh-CN", {
-										year: "numeric",
-										month: "short",
-										day: "numeric",
-										hour: "2-digit",
-										minute: "2-digit",
-									})}
-								</p>
-							</div>
-							<div className="flex items-center gap-1.5 shrink-0">
-								{cardPreview.source_url && (
-									<button
-										onClick={() => handleOpenCardSource(cardPreview)}
-										className="px-3 py-1.5 text-xs font-medium text-focus hover:text-focus hover:bg-focus/8 rounded-lg transition-colors"
-									>
-										访问原文
-									</button>
-								)}
+					<div className="space-y-4">
+						<div className="flex items-center justify-between gap-3">
+							<p className="text-xs text-text-light">
+								{new Date(cardPreview.created_at).toLocaleString("zh-CN", {
+									year: "numeric",
+									month: "short",
+									day: "numeric",
+									hour: "2-digit",
+									minute: "2-digit",
+								})}
+							</p>
+							{cardPreview.source_url && (
 								<button
-									onClick={() => setCardPreview(null)}
-									className="p-2 text-text-light hover:text-text-secondary dark:hover:text-text-light hover:bg-warm-200 rounded-xl transition-colors"
+									onClick={() => handleOpenCardSource(cardPreview)}
+									className="shrink-0 px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-warm-200 rounded-lg transition-colors"
 								>
-									<X className="w-4 h-4" />
+									访问原文
 								</button>
-							</div>
+							)}
 						</div>
 
-						<div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-							<div className="bg-gradient-to-br from-background to-surface">
-								{cardImages[cardPreview.id] ? (
-									<img
-										src={cardImages[cardPreview.id]}
-										alt={cardPreview.title}
-										className="w-full object-contain"
-										onError={(e) => {
-											(e.target as HTMLImageElement).style.display = "none";
-										}}
-									/>
-								) : (
-									<div className="aspect-[4/5] flex items-center justify-center">
-										<div className="text-center">
-											<ImageIcon className="w-10 h-10 text-text-light mx-auto mb-2" />
-											<p className="text-sm text-text-light">图片加载中...</p>
-										</div>
+						<div className="overflow-hidden rounded-xl bg-warm-100">
+							{cardImages[cardPreview.id] ? (
+								<img
+									src={cardImages[cardPreview.id]}
+									alt={cardPreview.title}
+									className="w-full object-contain"
+									onError={(e) => {
+										(e.target as HTMLImageElement).style.display = "none";
+									}}
+								/>
+							) : (
+								<div className="aspect-[4/5] flex items-center justify-center">
+									<div className="text-center">
+										<ImageIcon className="w-10 h-10 text-text-light mx-auto mb-2" />
+										<p className="text-sm text-text-light">图片加载中…</p>
 									</div>
-								)}
-							</div>
-
-							<div className="p-5 space-y-4">
-								<div className="bg-warm-50/50 rounded-xl p-4">
-									<p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
-										{cardPreview.text}
-									</p>
 								</div>
+							)}
+						</div>
 
-								<div className="flex flex-wrap gap-2">
-									{cardPreview.theme_id && (
-										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
-											<span className="w-1.5 h-1.5 rounded-full bg-focus"></span>
-											{cardPreview.theme_id}
-										</span>
-									)}
-									{cardPreview.font_id && (
-										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
-											<Type className="w-3 h-3" />
-											{cardPreview.font_id}
-										</span>
-									)}
-									{cardPreview.aspect_ratio && (
-										<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
-											<ImageIcon className="w-3 h-3" />
-											{cardPreview.aspect_ratio}
-										</span>
-									)}
-								</div>
-							</div>
+						<div className="bg-warm-50/50 rounded-xl p-4">
+							<p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
+								{cardPreview.text}
+							</p>
+						</div>
+
+						<div className="flex flex-wrap gap-2">
+							{cardPreview.theme_id && (
+								<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
+									{cardPreview.theme_id}
+								</span>
+							)}
+							{cardPreview.font_id && (
+								<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
+									<Type className="w-3 h-3" />
+									{cardPreview.font_id}
+								</span>
+							)}
+							{cardPreview.aspect_ratio && (
+								<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-200 rounded-lg text-xs text-text-secondary">
+									<ImageIcon className="w-3 h-3" />
+									{cardPreview.aspect_ratio}
+								</span>
+							)}
 						</div>
 					</div>
-				</div>
+				</Modal>
 			)}
 
 			{/* 嵌入式可选标题区（仅在 hideTitle=false 时显示） */}
@@ -316,6 +298,20 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 						illustration="document"
 						title="暂无分享卡"
 						description="请在浏览器插件中生成并发送分享卡"
+						action={
+							<button
+								type="button"
+								onClick={() =>
+									events.emit(EVENTS.OPEN_SETTINGS, {
+										tab: "integrations.clip",
+									})
+								}
+								className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-warm-200/60 hover:text-text-primary"
+							>
+								<Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
+								查看剪藏服务设置
+							</button>
+						}
 					/>
 				) : (
 					<AutoVirtualGrid
@@ -331,9 +327,9 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 								<div
 									key={card.id}
 									onClick={() => setCardPreview(card)}
-									className="group rounded-2xl bg-surface/50 ring-1 ring-border/50 hover:ring-border/80 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 cursor-pointer overflow-hidden hover:-translate-y-1"
+									className="group rounded-2xl bg-surface/50 ring-1 ring-border/50 hover:ring-border/80 shadow-bai-card hover:shadow-float transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 cursor-pointer overflow-hidden hover:-translate-y-0.5"
 								>
-									<div className="relative bg-gradient-to-br from-background to-surface">
+									<div className="relative bg-warm-100">
 										{imageSrc ? (
 											<img
 												src={imageSrc}
@@ -348,9 +344,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 											<div className="aspect-[4/5] flex items-center justify-center">
 												<div className="text-center">
 													<ImageIcon className="w-8 h-8 text-text-light mx-auto mb-2" />
-													<p className="text-xs text-text-light">
-														图片加载中...
-													</p>
+													<p className="text-xs text-text-light">图片加载中…</p>
 												</div>
 											</div>
 										)}
@@ -387,7 +381,7 @@ export function SharedCardsEmbedded({ hideTitle }: SharedCardsEmbeddedProps) {
 										<div className="flex items-center justify-between pt-2 border-t border-border/50">
 											<div className="flex items-center gap-2 text-xs text-text-light">
 												{card.aspect_ratio && (
-													<span className="px-1.5 py-0.5 bg-warm-200 rounded text-2xs">
+													<span className="px-1.5 py-0.5 bg-warm-200 rounded-lg text-2xs">
 														{card.aspect_ratio}
 													</span>
 												)}

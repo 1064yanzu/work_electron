@@ -70,20 +70,10 @@ export function LoadProgressBar({ loading, className }: LoadProgressBarProps) {
 				<div
 					className={cn(
 						"h-full transition-[width] duration-150 ease-out",
-						"bg-gradient-to-r from-terracotta via-peach-500 to-terracotta",
+						"bg-terracotta",
 					)}
 					style={{ width: `${progress}%` }}
 				/>
-				{/* 微光：在进度条尾部一道细微高光，给"在动"的感觉 */}
-				{loading && progress < 95 ? (
-					<div
-						className="absolute top-0 h-full w-12 -translate-x-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent blur-[1px]"
-						style={{
-							left: `${progress}%`,
-							transition: "left 200ms ease-out",
-						}}
-					/>
-				) : null}
 			</div>
 		</div>
 	);

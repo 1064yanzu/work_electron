@@ -30,9 +30,10 @@ test("SETTINGS_CATEGORIES 固定 5 条", () => {
 	assert.deepEqual(ids, ["general", "ai", "workshop", "integrations", "data"]);
 });
 
-test("SETTINGS_SUBTABS 固定 24 条", () => {
-	// 2026-08 新增「剪藏服务」（integrations.clipService）：23 → 24
-	assert.equal(SETTINGS_SUBTABS.length, 24);
+test("SETTINGS_SUBTABS 固定 25 条", () => {
+	// 2026-08 新增「剪藏服务」（integrations.clip）：23 → 24
+	// 2026-08 新增「AI 代理」（integrations.aiProxy）：24 → 25
+	assert.equal(SETTINGS_SUBTABS.length, 25);
 });
 
 test("SETTINGS_SUBTABS 每条 id 都能被 SUBTAB_ID_SET 命中", () => {

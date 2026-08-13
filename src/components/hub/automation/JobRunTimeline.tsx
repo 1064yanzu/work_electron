@@ -102,7 +102,7 @@ function RunRow({
 						"w-3 h-3 text-text-light shrink-0 transition duration-150",
 						expanded && "rotate-90",
 					)}
-					strokeWidth={1.8}
+					strokeWidth={1.5}
 				/>
 				<span className={cn("w-1.5 h-1.5 rounded-full shrink-0", meta.dot)} />
 				<span className="text-2xs text-text-muted shrink-0">
@@ -163,7 +163,7 @@ function AttemptRow({ attempt }: { attempt: HarnessJobAttemptRow }) {
 				{/* 续跑与重发是完全不同的两件事，必须让用户分得清 */}
 				{attempt.resumed_from ? (
 					<span className="flex items-center gap-0.5 text-2xs text-info">
-						<CornerDownRight className="w-2.5 h-2.5" strokeWidth={2} />
+						<CornerDownRight className="w-2.5 h-2.5" strokeWidth={1.5} />
 						续接上次会话
 					</span>
 				) : (

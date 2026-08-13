@@ -126,7 +126,7 @@ export function CopilotMessageJumper({
 			>
 				{expanded ? (
 					/* 展开态 */
-					<div className="h-full w-full bg-surface/95 backdrop-blur-md border border-border rounded-l-xl shadow-lg overflow-hidden flex flex-col">
+					<div className="h-full w-full bg-surface/95 backdrop-blur-md border border-border rounded-l-xl shadow-lg overflow-hidden flex flex-col animate-in fade-in slide-in-from-right-2 duration-150">
 						<div className="px-3 py-2 text-xs font-medium text-text-muted border-b border-border shrink-0">
 							消息导航
 						</div>
@@ -137,23 +137,28 @@ export function CopilotMessageJumper({
 								return (
 									<div
 										key={msg.id}
-										className={`group flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors ${
+										className={`group flex items-center gap-2 pr-2 transition-colors ${
 											isActive
 												? "bg-primary/8 text-primary"
 												: "hover:bg-warm-200 text-text-secondary"
 										}`}
-										onClick={() => scrollToMessage(msg.id)}
 									>
-										<span
-											className={`shrink-0 rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
-												isActive
-													? "w-2.5 h-0.5 bg-primary"
-													: "w-1.5 h-0.5 bg-current opacity-40"
-											}`}
-										/>
-										<span className="flex-1 text-xs truncate leading-5">
-											{preview || "（空消息）"}
-										</span>
+										<button
+											type="button"
+											onClick={() => scrollToMessage(msg.id)}
+											className="flex-1 min-w-0 flex items-center gap-2 pl-3 py-1.5 text-left"
+										>
+											<span
+												className={`shrink-0 rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
+													isActive
+														? "w-2.5 h-0.5 bg-primary"
+														: "w-1.5 h-0.5 bg-current opacity-40"
+												}`}
+											/>
+											<span className="flex-1 text-xs truncate leading-5">
+												{preview || "（空消息）"}
+											</span>
+										</button>
 										{onDeleteMessage && (
 											<button
 												type="button"
@@ -161,7 +166,7 @@ export function CopilotMessageJumper({
 													e.stopPropagation();
 													onDeleteMessage(msg.id);
 												}}
-												className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-error-muted hover:text-error transition-[color,background-color,border-color,opacity,box-shadow,transform]"
+												className="opacity-0 group-hover:opacity-100 p-0.5 rounded-lg hover:bg-error-muted hover:text-error transition-[color,background-color,border-color,opacity,box-shadow,transform]"
 												title="删除此消息"
 											>
 												<X className="w-3 h-3" />
@@ -174,20 +179,25 @@ export function CopilotMessageJumper({
 					</div>
 				) : (
 					/* 折叠态：一列小横线 */
-					<div className="h-full w-full flex flex-col justify-center items-center gap-1.5 pr-0.5">
+					<div className="h-full w-full flex flex-col justify-center items-center pr-0.5">
 						{userMessages.map((msg) => {
 							const isActive = msg.id === activeId;
 							return (
-								<div
+								<button
 									key={msg.id}
+									type="button"
 									onClick={() => scrollToMessage(msg.id)}
-									className={`rounded-full cursor-pointer transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
-										isActive
-											? "w-2.5 h-1 bg-primary"
-											: "w-2 h-0.5 bg-text-muted/40 hover:bg-text-muted"
-									}`}
+									className="group/line flex items-center justify-center py-1.5 px-2 cursor-pointer"
 									title={msg.content.slice(0, 40)}
-								/>
+								>
+									<span
+										className={`block rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-150 ${
+											isActive
+												? "w-2.5 h-1 bg-primary"
+												: "w-2 h-0.5 bg-text-muted/40 group-hover/line:bg-text-muted"
+										}`}
+									/>
+								</button>
 							);
 						})}
 					</div>

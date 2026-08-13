@@ -61,7 +61,7 @@ export function CopilotFloatingButton({
 			type="button"
 			onClick={onClick}
 			className={[
-				"fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 backdrop-blur-md rounded-full duration-150",
+				"fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 backdrop-blur-md rounded-full duration-150 shadow-bai-pop",
 				springPress
 					? "transition-[background-color,box-shadow,color]"
 					: "transition-[background-color,box-shadow,transform,color] active:scale-[0.98]",
@@ -70,7 +70,6 @@ export function CopilotFloatingButton({
 				backgroundColor: "var(--t-bg-surface)",
 				color: "var(--t-text-primary)",
 				border: "1px solid var(--t-border)",
-				boxShadow: "0 4px 12px 0 rgb(26 26 25 / 0.06)",
 			}}
 			title={`打开 AI 对话 (${shortcutHint})`}
 		>

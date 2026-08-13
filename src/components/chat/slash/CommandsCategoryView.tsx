@@ -207,7 +207,7 @@ export function CommandsCategoryView({
 										className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120
                       ${
 												isSelected && !disabled
-													? "bg-surface dark:bg-warm-800 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+													? "bg-surface dark:bg-warm-800 shadow-bai-card"
 													: "bg-warm-200"
 											}`}
 									>

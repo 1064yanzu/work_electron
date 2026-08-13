@@ -66,7 +66,7 @@ export class PanelErrorBoundary extends Component<
 
 		if (variant === "overlay") {
 			return (
-				<div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/95 backdrop-blur-sm animate-in fade-in duration-150">
+				<div className="fixed inset-0 z-overlay flex items-center justify-center bg-background/95 backdrop-blur-sm animate-in fade-in duration-150">
 					{onClose ? (
 						<button
 							type="button"

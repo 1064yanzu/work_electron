@@ -53,7 +53,7 @@ export function DeviceFrame({
 			<div
 				className={cn(
 					"relative bg-cream-900 dark:bg-cream-950",
-					"shadow-[0_18px_50px_-20px_rgba(26,26,25,0.35),0_2px_4px_0_rgba(26,26,25,0.06)]",
+					"shadow-float",
 					"p-2.5",
 					radius,
 					"transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250 ease-out-expo",

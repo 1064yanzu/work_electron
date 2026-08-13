@@ -77,7 +77,7 @@ export function WebdavBackupListModal({
 										disabled={isRestoring}
 										className="px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded-lg transition-colors duration-150 disabled:opacity-50"
 									>
-										{isRestoring ? "恢复中..." : "恢复"}
+										{isRestoring ? "恢复中…" : "恢复"}
 									</button>
 									<button
 										type="button"

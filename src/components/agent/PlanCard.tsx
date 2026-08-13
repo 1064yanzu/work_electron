@@ -14,6 +14,7 @@ import {
 import { useRef, useState } from "react";
 import { EASE, useGsapMotion } from "../../lib/motion";
 import { cn } from "../../lib/utils";
+import { Button } from "../ui/Button";
 import { PlanStepItem, type PlanStep } from "./PlanStepItem";
 
 /** 计划整体状态 */
@@ -122,7 +123,7 @@ function PlanProgressBar({ steps }: { steps: PlanStep[] }) {
 				)}
 				{executingPct > 0 && (
 					<div
-						className="h-full bg-terracotta animate-pulse transition-[color,background-color,border-color,opacity,box-shadow,transform] [transition-duration:500ms] ease-out"
+						className="h-full bg-terracotta transition-[color,background-color,border-color,opacity,box-shadow,transform] [transition-duration:500ms] ease-out"
 						style={{ width: `${executingPct}%` }}
 					/>
 				)}
@@ -156,19 +157,12 @@ export function PlanCard({
 			className={cn(
 				"relative flex flex-col rounded-xl border overflow-hidden transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-250",
 				isExecuting
-					? "bg-surface/80 border-terracotta/30 shadow-lg shadow-terracotta/5 ring-1 ring-terracotta/20 border-l-[3px] border-l-terracotta/60"
+					? "bg-surface/80 border-terracotta/30 shadow-bai-card ring-1 ring-terracotta/20"
 					: isCompleted
-						? "bg-success/8 border-success/30 border-l-[3px] border-l-success/50"
+						? "bg-success/8 border-success/30"
 						: "bg-surface border-border",
 			)}
 		>
-			{/* 执行中呼吸动画 */}
-			{isExecuting && (
-				<div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
-					<div className="absolute inset-0 bg-primary-muted animate-pulse" />
-				</div>
-			)}
-
 			{/* 头部 */}
 			<div className="relative z-10 flex items-center gap-3 px-4 py-3 border-b border-border">
 				<div
@@ -197,7 +191,7 @@ export function PlanCard({
 						</span>
 						<span
 							className={cn(
-								"px-1.5 py-0.5 rounded text-2xs font-medium",
+								"px-1.5 py-0.5 rounded-lg text-2xs font-medium",
 								statusConfig.className,
 							)}
 						>
@@ -233,19 +227,20 @@ export function PlanCard({
 								rows={2}
 							/>
 							<div className="flex gap-2">
-								<button
-									type="button"
+								<Button
+									variant="action"
+									size="sm"
+									className="flex-1"
+									icon={<MessageSquare className="w-3.5 h-3.5" />}
 									onClick={() => {
 										if (feedback.trim()) onModify?.(feedback.trim());
 										setModifyMode(false);
 										setFeedback("");
 									}}
 									disabled={!feedback.trim()}
-									className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-terracotta text-white hover:bg-terracotta-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 								>
-									<MessageSquare className="w-3.5 h-3.5" />
 									发送修改意见
-								</button>
+								</Button>
 								<button
 									type="button"
 									onClick={() => {
@@ -260,14 +255,15 @@ export function PlanCard({
 						</div>
 					) : (
 						<div className="flex items-center gap-2">
-							<button
-								type="button"
+							<Button
+								variant="action"
+								size="sm"
+								className="flex-1"
+								icon={<Play className="w-3.5 h-3.5" />}
 								onClick={onConfirm}
-								className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-terracotta text-white hover:bg-terracotta-hover transition-colors shadow-sm"
 							>
-								<Play className="w-3.5 h-3.5" />
 								确认执行
-							</button>
+							</Button>
 							<button
 								type="button"
 								onClick={() => setModifyMode(true)}

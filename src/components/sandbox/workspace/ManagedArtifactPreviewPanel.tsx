@@ -11,7 +11,7 @@ import {
 	X,
 	Zap,
 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { buildFileItemContextMenu } from "../../../lib/contextMenu/actions";
 import type { SandboxFile } from "../../../lib/managedModeStore";
@@ -19,6 +19,7 @@ import {
 	sandboxEditorStore,
 	useSandboxEditorStoreSelector,
 } from "../../../lib/sandboxEditorStore";
+import { useRegisterShortcuts } from "../../../lib/shortcuts";
 import { cn } from "../../../lib/utils";
 import { confirmDialog } from "../../ui/ConfirmDialog";
 import { ContextMenu } from "../../ui/ContextMenu";
@@ -44,6 +45,10 @@ interface ManagedArtifactPreviewPanelProps {
 	/** 刷新沙盒文件列表（原 ManagedCenterHeader 的刷新入口，随头部裁撤移入 Tab 栏右端） */
 	onRefreshFiles?: () => void;
 	isRefreshingFiles?: boolean;
+	/**
+	 * dev server 日志流。不传（undefined）时整个底部终端 Dock 不渲染——
+	 * 没有真实数据就不给空壳入口；等真实日志流接入后再传入启用。
+	 */
 	devLogs?: string[];
 	onClearDevLogs?: () => void;
 }
@@ -184,21 +189,33 @@ export const ManagedArtifactPreviewPanel = memo(
 			[onSelectArtifact, selectNeighborId],
 		);
 
-		useEffect(() => {
-			const handleKeyDown = (e: KeyboardEvent) => {
-				if (isTypingElement(e.target)) return;
-				if (e.altKey && e.key === "[") {
-					e.preventDefault();
-					jumpArtifact(-1);
-				}
-				if (e.altKey && e.key === "]") {
-					e.preventDefault();
-					jumpArtifact(1);
-				}
-			};
-			window.addEventListener("keydown", handleKeyDown);
-			return () => window.removeEventListener("keydown", handleKeyDown);
-		}, [jumpArtifact]);
+		useRegisterShortcuts(
+			() => [
+				{
+					id: "sandbox.artifact-prev",
+					keys: "alt+[",
+					label: "上一个产物标签页",
+					group: "沙盒",
+					scope: "sandbox",
+					handler: (e) => {
+						e.preventDefault();
+						jumpArtifact(-1);
+					},
+				},
+				{
+					id: "sandbox.artifact-next",
+					keys: "alt+]",
+					label: "下一个产物标签页",
+					group: "沙盒",
+					scope: "sandbox",
+					handler: (e) => {
+						e.preventDefault();
+						jumpArtifact(1);
+					},
+				},
+			],
+			[jumpArtifact],
+		);
 
 		const handleCloseTab = useCallback(
 			async (tabId: string) => {
@@ -279,9 +296,9 @@ export const ManagedArtifactPreviewPanel = memo(
 										<div
 											key={file.id}
 											className={cn(
-												"group inline-flex items-center gap-1.5 pl-3 pr-1.5 text-xs whitespace-nowrap transition-colors cursor-pointer border-r border-border/60 shrink-0 focus-ring",
+												"group inline-flex items-center gap-1.5 pl-3 pr-1.5 text-xs whitespace-nowrap transition-colors cursor-pointer border-r border-border/60 border-t-2 border-t-transparent shrink-0 focus-ring",
 												isActive
-													? "bg-surface text-text-primary shadow-[inset_0_2px_0_0_rgba(217,108,70,0.6)] dark:bg-cream-800 dark:text-cream-100"
+													? "bg-surface text-text-primary border-t-terracotta dark:bg-cream-800 dark:text-cream-100"
 													: "bg-transparent text-text-muted hover:bg-warm-200/60 hover:text-text-secondary dark:hover:bg-cream-700/40",
 											)}
 											onClick={() => onSelectArtifact(file.id)}
@@ -309,7 +326,7 @@ export const ManagedArtifactPreviewPanel = memo(
 											</span>
 											{isArtifact ? (
 												<span
-													className="shrink-0 text-amber-500"
+													className="shrink-0 text-warning"
 													title="Agent 标记的产物"
 												>
 													<Zap className="w-3 h-3" />
@@ -410,58 +427,72 @@ export const ManagedArtifactPreviewPanel = memo(
 				</div>
 
 				<div className="flex-1 min-h-0">
-					<PanelGroup direction="vertical">
-						<Panel defaultSize={terminalDockCollapsed ? 96 : 70} minSize={30}>
-							<FilePreviewContent
-								file={selectedFile}
-								taskId={taskId}
-								sandboxDir={sandboxDir}
-								previewMode={previewMode}
-								onSetPreviewMode={onSetPreviewMode}
-								onLoadContent={onLoadContent}
-								onRevealFile={onRevealFile}
-								emptyTitle="暂无预览"
-								emptyDescription="从左侧文件树或上方标签页选择文件"
-							/>
-						</Panel>
-						<PanelResizeHandle
-							className={cn(
-								"h-1 bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors",
-								terminalDockCollapsed
-									? "cursor-default opacity-0"
-									: "cursor-row-resize",
-							)}
-							disabled={terminalDockCollapsed}
+					{devLogs === undefined ? (
+						<FilePreviewContent
+							file={selectedFile}
+							taskId={taskId}
+							sandboxDir={sandboxDir}
+							previewMode={previewMode}
+							onSetPreviewMode={onSetPreviewMode}
+							onLoadContent={onLoadContent}
+							onRevealFile={onRevealFile}
+							emptyTitle="暂无预览"
+							emptyDescription="从左侧文件树或上方标签页选择文件"
 						/>
-						<Panel
-							defaultSize={terminalDockCollapsed ? 4 : 30}
-							minSize={terminalDockCollapsed ? 4 : 12}
-							maxSize={terminalDockCollapsed ? 4 : 70}
-						>
-							{terminalDockCollapsed ? (
-								<button
-									type="button"
-									onClick={() => onSetTerminalDockCollapsed(false)}
-									className="w-full h-full flex items-center justify-between px-3 text-xs text-text-muted bg-warm-50 hover:bg-warm-100 dark:bg-cream-900/60 dark:hover:bg-cream-900 border-t border-border transition-colors cursor-pointer"
-									title="展开终端面板"
-								>
-									<span className="inline-flex items-center gap-1.5">
-										<TerminalIcon className="w-3 h-3" />
-										终端 / 日志
-									</span>
-									<span className="text-text-light">点击展开</span>
-								</button>
-							) : (
-								<SandboxTerminalDock
-									taskId={taskId || ""}
-									sandboxDir={sandboxDir || ""}
-									logs={devLogs || []}
-									onClearLogs={onClearDevLogs}
-									onCollapse={() => onSetTerminalDockCollapsed(true)}
+					) : (
+						<PanelGroup direction="vertical">
+							<Panel defaultSize={terminalDockCollapsed ? 96 : 70} minSize={30}>
+								<FilePreviewContent
+									file={selectedFile}
+									taskId={taskId}
+									sandboxDir={sandboxDir}
+									previewMode={previewMode}
+									onSetPreviewMode={onSetPreviewMode}
+									onLoadContent={onLoadContent}
+									onRevealFile={onRevealFile}
+									emptyTitle="暂无预览"
+									emptyDescription="从左侧文件树或上方标签页选择文件"
 								/>
-							)}
-						</Panel>
-					</PanelGroup>
+							</Panel>
+							<PanelResizeHandle
+								className={cn(
+									"h-1 bg-warm-200 hover:bg-warm-300 dark:hover:bg-cream-700 transition-colors",
+									terminalDockCollapsed
+										? "cursor-default opacity-0"
+										: "cursor-row-resize",
+								)}
+								disabled={terminalDockCollapsed}
+							/>
+							<Panel
+								defaultSize={terminalDockCollapsed ? 4 : 30}
+								minSize={terminalDockCollapsed ? 4 : 12}
+								maxSize={terminalDockCollapsed ? 4 : 70}
+							>
+								{terminalDockCollapsed ? (
+									<button
+										type="button"
+										onClick={() => onSetTerminalDockCollapsed(false)}
+										className="w-full h-full flex items-center justify-between px-3 text-xs text-text-muted bg-warm-50 hover:bg-warm-100 dark:bg-cream-900/60 dark:hover:bg-cream-900 border-t border-border transition-colors cursor-pointer"
+										title="展开终端面板"
+									>
+										<span className="inline-flex items-center gap-1.5">
+											<TerminalIcon className="w-3 h-3" />
+											终端 / 日志
+										</span>
+										<span className="text-text-light">点击展开</span>
+									</button>
+								) : (
+									<SandboxTerminalDock
+										taskId={taskId || ""}
+										sandboxDir={sandboxDir || ""}
+										logs={devLogs}
+										onClearLogs={onClearDevLogs}
+										onCollapse={() => onSetTerminalDockCollapsed(true)}
+									/>
+								)}
+							</Panel>
+						</PanelGroup>
+					)}
 				</div>
 
 				{contextMenu && contextMenuItems.length > 0 ? (
@@ -476,14 +507,3 @@ export const ManagedArtifactPreviewPanel = memo(
 		);
 	},
 );
-
-function isTypingElement(target: EventTarget | null): boolean {
-	if (!(target instanceof HTMLElement)) return false;
-	const tag = target.tagName.toLowerCase();
-	return (
-		tag === "input" ||
-		tag === "textarea" ||
-		tag === "select" ||
-		target.isContentEditable
-	);
-}

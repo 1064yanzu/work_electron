@@ -131,7 +131,7 @@ export function TelegramQuickSetup({
 						className={cn(
 							"w-full rounded-xl border bg-surface px-3 py-2.5 font-mono text-sm outline-none transition-[color,background-color,border-color,box-shadow] duration-150 ease-out",
 							isValid
-								? "border-mint-500 ring-2 ring-mint-500/20"
+								? "border-success ring-2 ring-success/20"
 								: trimmed
 									? "border-error/50 ring-2 ring-error/20"
 									: "border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/20",
@@ -144,7 +144,7 @@ export function TelegramQuickSetup({
 						</p>
 					) : null}
 					{isValid ? (
-						<p className="mt-1.5 inline-flex items-center gap-1 text-xs text-mint-600">
+						<p className="mt-1.5 inline-flex items-center gap-1 text-xs text-success">
 							<CheckCircle2 className="h-3 w-3" strokeWidth={1.5} />
 							Token 格式正确
 						</p>
@@ -160,7 +160,7 @@ export function TelegramQuickSetup({
 					loading={saving}
 					onClick={() => void handleConfirm()}
 				>
-					{saving ? "应用中..." : "完成配置"}
+					{saving ? "应用中…" : "完成配置"}
 				</Button>
 			</div>
 		</div>
@@ -178,8 +178,8 @@ export function SuccessCard({
 }) {
 	return (
 		<div className="space-y-5">
-			<div className="flex flex-col items-center gap-4 rounded-2xl border border-mint-500/30 bg-mint-500/[0.06] py-10 text-center">
-				<div className="flex h-14 w-14 items-center justify-center rounded-full bg-mint-500/15 text-mint-600">
+			<div className="flex flex-col items-center gap-4 rounded-2xl border border-success/30 bg-success/8 py-10 text-center">
+				<div className="flex h-14 w-14 items-center justify-center rounded-full bg-success-muted text-success">
 					<CheckCircle2 className="h-7 w-7" strokeWidth={1.5} />
 				</div>
 				<div className="space-y-1">

@@ -31,14 +31,14 @@ export function PairingList(props: {
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
 							props.pending.length > 0
-								? "border-peach-500/30 bg-peach-500/10 text-peach-500"
+								? "border-warning/30 bg-warning-muted text-warning"
 								: "border-border bg-warm-200 text-text-muted"
 						}`}
 					>
 						<span
 							className={`h-1.5 w-1.5 rounded-full ${
 								props.pending.length > 0
-									? "bg-peach-500 animate-pulse"
+									? "bg-warning animate-pulse"
 									: "bg-warm-500"
 							}`}
 						/>
@@ -125,7 +125,7 @@ export function PairingList(props: {
 									<div className="flex items-center justify-between gap-3">
 										<div className="min-w-0">
 											<div className="font-medium text-text-primary flex items-center gap-2">
-												<span className="inline-flex items-center rounded-lg bg-mint-500/10 px-1.5 py-0.5 text-2xs font-semibold text-mint-600 uppercase tracking-wider">
+												<span className="inline-flex items-center rounded-lg bg-success-muted px-1.5 py-0.5 text-2xs font-semibold text-success uppercase tracking-wider">
 													{item.channel_id}
 												</span>
 												{item.peer_name || item.peer_id}

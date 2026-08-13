@@ -8,7 +8,7 @@
 // - 不含 cmdk 依赖，符合 CLAUDE.md "尽量解耦"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Command, CornerDownLeft, History } from "lucide-react";
+import { Command, CornerDownLeft, History, TrendingUp } from "lucide-react";
 import {
 	commandPaletteStore,
 	useCommandPaletteStoreSelector,
@@ -25,6 +25,11 @@ interface CommandPaletteProps {
 }
 
 const RECENT_GROUP = "最近使用";
+const FREQUENT_GROUP = "常用";
+/** 「常用」推荐位条数上限。 */
+const FREQUENT_LIMIT = 5;
+/** 累计执行达到该次数才进推荐位，避免偶发点击被当成习惯。 */
+const FREQUENT_MIN_COUNT = 3;
 
 /** 按命中下标切片高亮标题 */
 function HighlightedTitle({
@@ -73,6 +78,7 @@ export function CommandPalette({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const listRef = useRef<HTMLDivElement>(null);
 	const recentIds = useCommandPaletteStoreSelector((s) => s.recentIds);
+	const usageCounts = useCommandPaletteStoreSelector((s) => s.usageCounts);
 
 	// 打开时重置 + 聚焦输入框
 	useEffect(() => {
@@ -106,8 +112,11 @@ export function CommandPalette({
 		const matched = scored.map((x) => x.command);
 
 		const groups: Array<[string, CommandItem[]]> = [];
-		if (!query && recentIds.length > 0) {
-			// 空查询：最近使用置顶，且不在原分组中重复出现
+		if (
+			!query &&
+			(recentIds.length > 0 || Object.keys(usageCounts).length > 0)
+		) {
+			// 空查询：最近使用置顶、常用推荐次之，且不在原分组中重复出现
 			const byId = new Map(matched.map((c) => [c.id, c]));
 			const recentItems = recentIds
 				.map((id) => byId.get(id))
@@ -116,7 +125,26 @@ export function CommandPalette({
 				groups.push([RECENT_GROUP, recentItems]);
 			}
 			const recentSet = new Set(recentItems.map((c) => c.id));
-			const rest = matched.filter((c) => !recentSet.has(c.id));
+
+			// 常用推荐位：按累计执行次数取 Top N，跳过已在「最近使用」里的命令
+			const frequentItems = Object.entries(usageCounts)
+				.filter(
+					([id, count]) =>
+						count >= FREQUENT_MIN_COUNT && !recentSet.has(id) && byId.has(id),
+				)
+				.sort((a, b) => b[1] - a[1])
+				.slice(0, FREQUENT_LIMIT)
+				.map(([id]) => byId.get(id))
+				.filter((c): c is CommandItem => Boolean(c));
+			if (frequentItems.length > 0) {
+				groups.push([FREQUENT_GROUP, frequentItems]);
+			}
+
+			const pinnedSet = new Set([
+				...recentSet,
+				...frequentItems.map((c) => c.id),
+			]);
+			const rest = matched.filter((c) => !pinnedSet.has(c.id));
 			const map = new Map<string, CommandItem[]>();
 			for (const item of rest) {
 				if (!map.has(item.group)) map.set(item.group, []);
@@ -135,7 +163,7 @@ export function CommandPalette({
 		// flat list 与渲染顺序严格一致（键盘导航依赖）
 		const flat = groups.flatMap(([, items]) => items);
 		return { grouped: groups, flatList: flat, titleIndices: indicesMap };
-	}, [commands, query, recentIds]);
+	}, [commands, query, recentIds, usageCounts]);
 
 	// 选中项越界保护
 	useEffect(() => {
@@ -197,21 +225,21 @@ export function CommandPalette({
 
 	return (
 		<div
-			className="fixed inset-0 z-[9999] flex items-start justify-center pt-[10vh] px-4"
+			className="fixed inset-0 z-modal flex items-start justify-center pt-[10vh] px-4"
 			role="dialog"
 			aria-modal="true"
 			aria-label="命令面板"
 			onKeyDown={handleKeyDown}
 		>
-			{/* Backdrop — 暖色蒙版，不用毛玻璃避免 impeccable glassmorphism 违规 */}
+			{/* Backdrop — 与 Modal 基线统一的暖色蒙版 */}
 			<div
-				className="absolute inset-0 bg-black/30 animate-in fade-in duration-150"
+				className="absolute inset-0 bg-text-primary/20 backdrop-blur-sm animate-in fade-in duration-150"
 				onClick={handleClose}
 				aria-hidden="true"
 			/>
 
 			<FocusTrap active={isOpen}>
-				<div className="relative w-full max-w-[640px] rounded-2xl border border-border bg-surface shadow-[0_20px_50px_-12px_rgb(26_26_25/0.25)] animate-in fade-in slide-in-from-top-4 duration-150 overflow-hidden">
+				<div className="relative w-full max-w-[640px] rounded-2xl border border-border bg-surface shadow-bai-pop animate-in fade-in slide-in-from-top-4 duration-150 overflow-hidden">
 					{/* 输入框 */}
 					<div className="flex items-center gap-3 px-5 py-4 border-b border-border">
 						<Command
@@ -253,7 +281,7 @@ export function CommandPalette({
 							<div className="px-5 py-10 text-center">
 								<p className="text-sm text-text-muted">没有匹配的命令</p>
 								<p className="mt-1 text-xs text-text-light">
-									试试搜索 "新建" / "设置" / "主题"
+									试试搜索「新建」/「设置」/「主题」
 								</p>
 							</div>
 						) : (
@@ -263,6 +291,9 @@ export function CommandPalette({
 										<span className="flex items-center gap-1">
 											{groupName === RECENT_GROUP && (
 												<History className="w-3 h-3" strokeWidth={1.5} />
+											)}
+											{groupName === FREQUENT_GROUP && (
+												<TrendingUp className="w-3 h-3" strokeWidth={1.5} />
 											)}
 											{groupName}
 										</span>
@@ -360,19 +391,19 @@ export function CommandPalette({
 					<div className="flex items-center justify-between px-5 py-2.5 border-t border-border bg-warm-50/50">
 						<div className="flex items-center gap-3 text-2xs text-text-muted">
 							<span className="flex items-center gap-1">
-								<kbd className="px-1.5 py-0.5 rounded text-2xs bg-warm-200">
+								<kbd className="px-1.5 py-0.5 rounded-md text-2xs bg-warm-200">
 									↑↓
 								</kbd>
 								<span>选择</span>
 							</span>
 							<span className="flex items-center gap-1">
-								<kbd className="px-1.5 py-0.5 rounded text-2xs bg-warm-200">
+								<kbd className="px-1.5 py-0.5 rounded-md text-2xs bg-warm-200">
 									⏎
 								</kbd>
 								<span>执行</span>
 							</span>
 							<span className="flex items-center gap-1">
-								<kbd className="px-1.5 py-0.5 rounded text-2xs bg-warm-200">
+								<kbd className="px-1.5 py-0.5 rounded-md text-2xs bg-warm-200">
 									ESC
 								</kbd>
 								<span>关闭</span>

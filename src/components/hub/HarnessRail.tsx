@@ -21,10 +21,10 @@ import { SESSION_DRAG_MIME } from "./hubUtils";
 
 function EntryIcon({ kind }: { kind: HubEntry["kind"] }) {
 	if (kind === "cli")
-		return <Terminal className="w-3.5 h-3.5" strokeWidth={1.6} />;
+		return <Terminal className="w-3.5 h-3.5" strokeWidth={1.5} />;
 	if (kind === "web")
-		return <Globe className="w-3.5 h-3.5" strokeWidth={1.6} />;
-	return <Sparkles className="w-3.5 h-3.5" strokeWidth={1.6} />;
+		return <Globe className="w-3.5 h-3.5" strokeWidth={1.5} />;
+	return <Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />;
 }
 
 export function HarnessRail({
@@ -145,7 +145,7 @@ export function HarnessRail({
 							{entry.blocked && (
 								<AlertTriangle
 									className="w-3 h-3 text-warning shrink-0"
-									strokeWidth={1.8}
+									strokeWidth={1.5}
 								/>
 							)}
 						</div>

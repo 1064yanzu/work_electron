@@ -287,7 +287,8 @@ export default function SandboxWorkspace({
 			}
 			onRefreshFiles={refreshFiles}
 			isRefreshingFiles={isRefreshing}
-			devLogs={[]}
+			// 终端 Dock 暂不启用：当前没有真实的 dev server 日志流可展示，
+			// 不传 devLogs 即不渲染空壳折叠条；待日志流接入后传入真实数据再启用
 		/>
 	);
 
@@ -303,7 +304,7 @@ export default function SandboxWorkspace({
 					<Suspense
 						fallback={
 							<div className="flex-1 flex items-center justify-center bg-warm-50 text-xs text-text-muted">
-								正在加载运行图...
+								正在加载运行图…
 							</div>
 						}
 					>

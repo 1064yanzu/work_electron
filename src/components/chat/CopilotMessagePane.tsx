@@ -74,7 +74,7 @@ function CopilotMessagePaneImpl({
 					<div className="h-full relative">
 						<WelcomeScreen />
 						{currentResearch && currentResearch.status !== "completed" && (
-							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-surface/90 backdrop-blur-md border border-border rounded-2xl shadow-[0_4px_12px_0_rgb(26_26_25/0.06)] animate-in slide-in-from-bottom-2 duration-250">
+							<div className="absolute bottom-0 left-0 right-0 p-3 mx-4 mb-4 bg-surface/90 backdrop-blur-md border border-border rounded-2xl shadow-bai-pop animate-in slide-in-from-bottom-2 duration-250">
 								<div className="flex items-center justify-between">
 									<div className="flex items-center gap-2.5">
 										<div className="w-8 h-8 rounded-full bg-warm-200 flex items-center justify-center">
@@ -107,7 +107,7 @@ function CopilotMessagePaneImpl({
 				) : (
 					/* 中心阅读列：消息不随面板宽度无限拉伸（Codex/Claude 同款约束），
 					   超宽显示器上正文行长保持在舒适阅读范围 */
-					<div className="mx-auto w-full max-w-[44rem] space-y-4">
+					<div className="mx-auto w-full max-w-[44rem] space-y-6">
 						<CopilotMessageList
 							scrollContainerRef={scrollContainerRef}
 							messagesEndRef={messagesEndRef}

@@ -3,8 +3,7 @@
 
 import {
 	AlertTriangle,
-	ChevronDown,
-	ChevronUp,
+	ChevronRight,
 	Clock,
 	Code,
 	FileQuestion,
@@ -67,13 +66,12 @@ function SuggestionButton({
 }) {
 	const Icon = ActionIcons[suggestion.action];
 
-	const colorClasses: Record<RecoverySuggestion["action"], string> = {
-		retry: "bg-focus hover:bg-focus text-white",
-		skip: "bg-warm-200 hover:bg-warm-300 text-text-secondary",
-		alternative: "bg-primary text-primary-foreground hover:bg-primary-hover",
-		manual: "bg-peach-500 hover:bg-peach-500 text-white",
-		abort: "bg-error/16 hover:bg-error/25 text-error",
-	};
+	// 颜色收敛：推荐操作用主色，abort 保留错误语义，其余一律中性
+	const colorClass = suggestion.isRecommended
+		? "bg-primary text-primary-foreground hover:bg-primary-hover"
+		: suggestion.action === "abort"
+			? "bg-error/16 hover:bg-error/25 text-error"
+			: "bg-warm-200 hover:bg-warm-300 text-text-secondary";
 
 	return (
 		<button
@@ -82,10 +80,7 @@ function SuggestionButton({
 			className={cn(
 				"flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform]",
 				"disabled:opacity-50 disabled:cursor-not-allowed",
-				suggestion.isRecommended
-					? "ring-2 ring-offset-2 ring-focus ring-offset-surface"
-					: "",
-				colorClasses[suggestion.action],
+				colorClass,
 			)}
 		>
 			{isLoading ? (
@@ -148,29 +143,25 @@ function ErrorDetails({
 				onClick={onToggle}
 				className="flex items-center gap-1 text-xs text-text-light hover:text-text-secondary dark:hover:text-text-light transition-colors"
 			>
-				{isExpanded ? (
-					<>
-						<ChevronUp className="w-3.5 h-3.5" />
-						收起详情
-					</>
-				) : (
-					<>
-						<ChevronDown className="w-3.5 h-3.5" />
-						查看详情
-					</>
-				)}
+				<ChevronRight
+					className={cn(
+						"w-3.5 h-3.5 transition-transform duration-150 ease-out-expo",
+						isExpanded && "rotate-90",
+					)}
+				/>
+				{isExpanded ? "收起详情" : "查看详情"}
 			</button>
 
 			{/* 详细信息 */}
 			{isExpanded && (
 				<div className="p-3 bg-warm-50/50 rounded-lg text-xs text-text-muted space-y-2 animate-in fade-in slide-in-from-top-2">
 					<div className="flex items-center gap-2">
-						<span className="font-medium">错误类型:</span>
+						<span className="font-medium">错误类型：</span>
 						<span className={config.color}>{config.label}</span>
 					</div>
 					{strategy.canAutoRetry && (
 						<div className="flex items-center gap-2">
-							<span className="font-medium">自动重试:</span>
+							<span className="font-medium">自动重试：</span>
 							<span className="text-success">支持</span>
 							{strategy.retryDelay && (
 								<span className="text-text-light">
@@ -250,7 +241,7 @@ export default function ErrorRecovery({
 
 				{/* 恢复选项 */}
 				<div className="space-y-2">
-					<p className="text-xs font-medium text-text-muted">请选择操作:</p>
+					<p className="text-xs font-medium text-text-muted">请选择操作：</p>
 					<div className="flex flex-wrap gap-2">
 						{strategy.suggestions.map((suggestion) => (
 							<SuggestionButton
@@ -298,9 +289,9 @@ export function ErrorRecoveryInline({
 						key={suggestion.id}
 						onClick={() => onAction(suggestion.action, suggestion)}
 						className={cn(
-							"px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+							"px-3 py-1.5 text-xs font-medium rounded-lg transition-colors",
 							suggestion.isRecommended
-								? "bg-focus text-white hover:bg-focus"
+								? "bg-primary text-primary-foreground hover:bg-primary-hover"
 								: "bg-warm-200 text-text-secondary hover:bg-warm-300",
 						)}
 					>

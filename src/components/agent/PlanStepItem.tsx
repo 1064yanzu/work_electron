@@ -3,14 +3,7 @@
  * 展示步骤序号、标题、描述（可折叠）、预估文件列表和状态
  */
 
-import {
-	Check,
-	ChevronDown,
-	ChevronRight,
-	Circle,
-	Loader2,
-	X,
-} from "lucide-react";
+import { Check, ChevronRight, Circle, Loader2, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
 
@@ -105,12 +98,13 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 						onClick={() => setExpanded(!expanded)}
 						className="flex items-center gap-1 min-w-0 text-left group"
 					>
-						<span className="text-text-light transition-transform">
-							{expanded ? (
-								<ChevronDown className="w-3.5 h-3.5" />
-							) : (
-								<ChevronRight className="w-3.5 h-3.5" />
-							)}
+						<span className="text-text-light">
+							<ChevronRight
+								className={cn(
+									"w-3.5 h-3.5 transition-transform duration-150 ease-out-expo",
+									expanded && "rotate-90",
+								)}
+							/>
 						</span>
 						<span
 							className={cn(
@@ -138,7 +132,7 @@ export function PlanStepItem({ step, index }: PlanStepItemProps) {
 						{step.estimatedFiles.map((file) => (
 							<span
 								key={file}
-								className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-warm-200 text-text-secondary max-w-[200px] truncate"
+								className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-mono bg-warm-200 text-text-secondary max-w-[200px] truncate"
 							>
 								{file}
 							</span>

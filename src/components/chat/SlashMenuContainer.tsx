@@ -700,7 +700,7 @@ export function SlashMenuContainer({
 		return (
 			<div
 				ref={menuRef}
-				className="absolute left-0 bottom-full mb-2 w-[320px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+				className="absolute left-0 bottom-full mb-2 w-[320px] bg-surface rounded-2xl shadow-bai-pop overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 			>
 				<CommandSubmenuView
 					definition={level.command}
@@ -718,7 +718,7 @@ export function SlashMenuContainer({
 		return (
 			<div
 				ref={menuRef}
-				className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+				className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface rounded-2xl shadow-bai-pop overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 			>
 				<CategoryPills
 					selectedId="command"
@@ -767,7 +767,7 @@ export function SlashMenuContainer({
 	return (
 		<div
 			ref={menuRef}
-			className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
+			className="absolute left-0 bottom-full mb-2 w-[340px] bg-surface rounded-2xl shadow-bai-pop overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150"
 		>
 			<CategoryPills
 				selectedId={selectedCategory ?? "command"}
@@ -917,7 +917,7 @@ function GroupSection({
 									className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-120
                     ${
 											isSelected
-												? "bg-surface dark:bg-warm-800 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+												? "bg-surface dark:bg-warm-800 shadow-bai-card"
 												: "bg-warm-200"
 										}`}
 								>

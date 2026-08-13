@@ -215,7 +215,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
 			// 它靠这个标记知道"有浮层要显示，先把自己摘下来"。
 			data-native-overlay="true"
 			className={cn(
-				"fixed z-[9999] min-w-[200px]",
+				"fixed z-popover min-w-[200px]",
 				"bg-surface/95 backdrop-blur-md backdrop-saturate-150",
 				"rounded-2xl border border-border",
 				"shadow-bai-pop",

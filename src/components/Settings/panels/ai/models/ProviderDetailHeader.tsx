@@ -6,9 +6,13 @@
 import { ExternalLink } from "lucide-react";
 import { cn } from "../../../../../lib/utils";
 import type { Provider } from "../../../constants";
-import { Toggle } from "../../../components";
+import { SettingsSwitch } from "../../../ui/SettingsPrimitives";
 import { getProviderIcon } from "../../../providerIcons";
-import { getTemplateForProvider, openUrl } from "../../../utils";
+import {
+	getProviderColorProps,
+	getTemplateForProvider,
+	openUrl,
+} from "../../../utils";
 
 export interface ProviderDetailHeaderProps {
 	provider: Provider;
@@ -20,15 +24,17 @@ export function ProviderDetailHeader({
 	onToggle,
 }: ProviderDetailHeaderProps) {
 	const template = getTemplateForProvider(provider);
+	const colorProps = getProviderColorProps(provider.color);
 
 	return (
 		<div className="mb-10 flex items-center justify-between pr-10">
 			<div className="flex items-center gap-3">
 				<div
 					className={cn(
-						"flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl text-white shadow-sm",
-						provider.color,
+						"flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-sm",
+						colorProps.className,
 					)}
+					style={colorProps.style}
 				>
 					{getProviderIcon(provider.templateId) ? (
 						<img
@@ -58,7 +64,7 @@ export function ProviderDetailHeader({
 					</button>
 				)}
 			</div>
-			<Toggle
+			<SettingsSwitch
 				checked={provider.isEnabled}
 				onChange={() => onToggle(provider.id)}
 			/>

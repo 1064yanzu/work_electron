@@ -4,6 +4,7 @@ import {
 	IframePreview,
 	type IframePreviewHandle,
 } from "../sandbox/preview/IframePreview";
+import { TrafficLights } from "../sandbox/preview/TrafficLights";
 
 interface HtmlFilePreviewProps {
 	fileName: string;
@@ -29,14 +30,10 @@ export const HtmlFilePreview = memo(function HtmlFilePreview({
 	}
 
 	return (
-		<div className="rounded-2xl border border-border/80 overflow-hidden bg-surface shadow-[0_12px_50px_-24px_rgba(0,0,0,0.18)]">
+		<div className="rounded-2xl border border-border/80 overflow-hidden bg-surface shadow-bai-pop">
 			<div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-warm-50/80">
 				<div className="flex items-center gap-2 min-w-0">
-					<div className="flex gap-1.5 mr-1">
-						<span className="w-2.5 h-2.5 rounded-full bg-error/75" />
-						<span className="w-2.5 h-2.5 rounded-full bg-peach-500/75" />
-						<span className="w-2.5 h-2.5 rounded-full bg-success/75" />
-					</div>
+					<TrafficLights className="mr-1" />
 					<span className="text-xs font-medium text-text-secondary truncate">
 						{fileName}
 					</span>

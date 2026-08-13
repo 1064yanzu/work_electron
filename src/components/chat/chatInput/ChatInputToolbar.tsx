@@ -16,7 +16,7 @@
 // 另外：思考程度不是独立控件，而是模型项的次要值（`sonnet-4-5 高`），
 // 与 Codex 的 `5.6 Luna 高 ˅` 同构 —— 强相关的两个设置合成一格。
 
-import { ArrowUp, Sparkles, Square } from "lucide-react";
+import { ArrowUp, Box, Square } from "lucide-react";
 import { THINKING_LEVEL_LABELS } from "../../../lib/models/agentModelConfig";
 import { cn } from "../../../lib/utils";
 import { PlanModeToggle } from "../../agent/PlanModeToggle";
@@ -112,7 +112,7 @@ export function ChatInputToolbar({
 						modelIcon ? (
 							<img src={modelIcon} alt="" className="w-4 h-4 object-contain" />
 						) : (
-							<Sparkles className="w-4 h-4" strokeWidth={1.7} />
+							<Box className="w-4 h-4" strokeWidth={1.5} />
 						)
 					}
 				/>

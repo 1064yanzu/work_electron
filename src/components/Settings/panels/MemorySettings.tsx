@@ -509,10 +509,7 @@ function TabButton({ token, file, active, onClick }: TabButtonProps) {
 							"block h-full rounded-full",
 							isWarn ? "bg-error" : "bg-primary",
 						)}
-						style={{
-							width: `${fillPct}%`,
-							backgroundColor: !isWarn ? style.accent : undefined,
-						}}
+						style={{ width: `${fillPct}%` }}
 					/>
 				</span>
 			) : null}

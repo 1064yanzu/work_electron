@@ -2,6 +2,7 @@ import { Loader2, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { ReaderSearchHit } from "../../lib/api/reader";
+import { useFocusTrap } from "../ui/FocusTrap";
 
 interface ReaderSearchPanelProps {
 	open: boolean;
@@ -20,6 +21,11 @@ export function ReaderSearchPanel({
 	const [hits, setHits] = useState<ReaderSearchHit[]>([]);
 	const [loading, setLoading] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
+	// Esc 只关搜索面板（走 overlayStack，preventDefault 后阅读器快捷键不会再消费）
+	const trapRef = useFocusTrap<HTMLDivElement>({
+		active: open,
+		onEscape: onClose,
+	});
 
 	useEffect(() => {
 		if (!open) return;
@@ -64,7 +70,7 @@ export function ReaderSearchPanel({
 				if (e.target === e.currentTarget) onClose();
 			}}
 		>
-			<div className="reader-search-panel">
+			<div ref={trapRef} className="reader-search-panel">
 				<header className="reader-search-panel__header">
 					<Search className="w-3.5 h-3.5" strokeWidth={1.5} />
 					<input

@@ -356,17 +356,15 @@ function SelectComponent(
 					rounded-xl
 					text-text-primary font-medium
 					cursor-pointer
-					shadow-[0_1px_2px_rgba(0,0,0,0.03)]
+					shadow-bai-card
 					text-left
 
 					hover:bg-background
 					hover:border-border
-					hover:shadow-[0_2px_4px_rgba(0,0,0,0.04)]
 
 					focus:outline-none
-					focus:ring-2
-					focus:ring-primary/10
-					focus:border-primary/50
+					focus-visible:shadow-[0_0_0_3px_var(--t-primary-muted)]
+					focus-visible:border-primary/50
 
 					disabled:opacity-50
 					disabled:cursor-not-allowed

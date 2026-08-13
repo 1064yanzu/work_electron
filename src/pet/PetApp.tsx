@@ -55,6 +55,7 @@ import {
 	PetReminderBubble,
 	PetHistoryBubble,
 	withAlpha,
+	PET_TONE_ERROR,
 } from "./bubbles";
 
 // ── 常量 ──
@@ -993,8 +994,8 @@ export default function PetApp() {
 							right: `${Math.max(10, (SIZE_PRESET_TO_PX[sizePreset] ?? 180) * 0.112)}px`,
 							width: "10px",
 							height: "10px",
-							backgroundColor: "#E0533C",
-							boxShadow: `0 0 0 2px var(--t-bg-surface, #ffffff), 0 4px 8px ${withAlpha("#E0533C", 0.5)}`,
+							backgroundColor: "var(--t-error, #b53333)",
+							boxShadow: `0 0 0 2px var(--t-bg-surface, #ffffff), 0 4px 8px ${withAlpha(PET_TONE_ERROR, 0.5)}`,
 						}}
 					/>
 				)}
@@ -1198,7 +1199,7 @@ function PetContextMenu({
 			>
 				<MenuButton onClick={onCycleSkin} accentColor={accentColor}>
 					<span>切换皮肤</span>
-					<span className="ml-auto text-xs text-[color:var(--t-text-light,#9d9d98)]">
+					<span className="ml-auto text-xs text-[color:var(--t-text-muted,#9d9d98)]">
 						下一个：{nextMascotLabel}
 					</span>
 				</MenuButton>
@@ -1241,11 +1242,13 @@ function MenuButton({
 			onClick={onClick}
 			className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors"
 			style={{
-				color: danger ? "#D9694B" : "var(--t-text-primary, #1a1a19)",
+				color: danger
+					? "var(--t-error, #b53333)"
+					: "var(--t-text-primary, #1a1a19)",
 			}}
 			onMouseEnter={(e) => {
 				e.currentTarget.style.backgroundColor = withAlpha(
-					danger ? "#D9694B" : accentColor,
+					danger ? PET_TONE_ERROR : accentColor,
 					0.08,
 				);
 			}}

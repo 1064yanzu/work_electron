@@ -9,7 +9,7 @@
  * - 写权限的说明直说风险，不含糊。无人值守时开写权限是用户的显式选择。
  * - 完成判据一栏明确写「只判错误信号」，避免用户以为系统会验收任务成果。
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, FolderOpen, X } from "lucide-react";
 import {
 	saveAutomationJob,
@@ -18,6 +18,7 @@ import {
 } from "../../../lib/api/harnessAutomation";
 import { invoke } from "../../../lib/tauriCompat";
 import { cn } from "../../../lib/utils";
+import { useFocusTrap } from "../../ui/FocusTrap";
 import { toast } from "../../ui/Toast";
 import { EXEC_MODE_LABEL } from "./automationUtils";
 
@@ -108,13 +109,8 @@ export function JobEditorDrawer({
 	);
 	const [saving, setSaving] = useState(false);
 
-	useEffect(() => {
-		const onKey = (event: KeyboardEvent) => {
-			if (event.key === "Escape") onClose();
-		};
-		window.addEventListener("keydown", onKey);
-		return () => window.removeEventListener("keydown", onKey);
-	}, [onClose]);
+	// 焦点陷阱：Tab 循环 + Esc（经 overlayStack 只由栈顶消费）+ 关闭后焦点回归
+	const trapRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
 
 	const pickCwd = async () => {
 		try {
@@ -191,7 +187,10 @@ export function JobEditorDrawer({
 			/>
 			{/* 背景必须是实心的。这里曾写成 bg-bg —— 项目里没有这个类名，
 			    结果整个抽屉透明，底层的入口轨道和面板文字全叠上来没法看。 */}
-			<div className="w-[420px] max-w-full h-full bg-surface dark:bg-cream-950 border-l border-border shadow-2xl flex flex-col animate-slide-in-right">
+			<div
+				ref={trapRef}
+				className="w-[420px] max-w-full h-full bg-surface dark:bg-cream-950 border-l border-border shadow-float flex flex-col animate-slide-in-right"
+			>
 				<div className="flex items-center justify-between px-4 py-3 border-b border-border/60 shrink-0">
 					<span className="text-xs font-medium text-text-secondary">
 						{job ? "编辑任务" : "新建自动化任务"}
@@ -276,7 +275,7 @@ export function JobEditorDrawer({
 								title="选择目录"
 								className="px-2 rounded-lg border border-border text-text-light hover:text-text-secondary transition duration-150"
 							>
-								<FolderOpen className="w-3.5 h-3.5" strokeWidth={1.6} />
+								<FolderOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
 							</button>
 						</div>
 					</Field>
@@ -449,7 +448,7 @@ export function JobEditorDrawer({
 									"w-3 h-3 transition duration-150",
 									showAdvanced && "rotate-180",
 								)}
-								strokeWidth={1.8}
+								strokeWidth={1.5}
 							/>
 							失败重试策略
 						</button>

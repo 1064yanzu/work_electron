@@ -150,7 +150,7 @@ export function AppearancePanel() {
 			<SettingsPanelHeader
 				icon={Palette}
 				title="外观与主题"
-				description="配置色彩主题、亮/暗模式、动效偏好与界面语言。"
+				description="配置色彩主题、亮/暗模式与动效偏好。"
 			/>
 
 			{/* 色彩主题 + 亮/暗模式 */}
@@ -189,8 +189,8 @@ export function AppearancePanel() {
 				</div>
 			</SettingsSectionCard>
 
-			{/* 动效与语言 */}
-			<SettingsCardSection title="动效与语言" bodyClassName="p-5">
+			{/* 动效 */}
+			<SettingsCardSection title="动效" bodyClassName="p-5">
 				<div id={ANCHOR.motion} data-settings-anchor={ANCHOR.motion}>
 					<SettingsRow
 						label="动效偏好"

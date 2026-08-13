@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -6,6 +6,7 @@ import {
 	useCardLibraryStoreSelector,
 } from "../../lib/stores/cardLibraryStore";
 import { EASE, useGsapMotion } from "../../lib/motion";
+import { useFocusTrap } from "../ui/FocusTrap";
 
 import { KnowledgeCardsView } from "./KnowledgeCardsView";
 
@@ -24,6 +25,20 @@ export function KnowledgeCardsApp() {
 	const open = useCardLibraryStoreSelector((s) => s.open);
 	const originRect = useCardLibraryStoreSelector((s) => s.originRect);
 	const scopeRef = useRef<HTMLDivElement>(null);
+
+	// Esc 关闭全屏卡片库（useFocusTrap 自动注册 overlayStack，只在栈顶时消费）
+	const handleEscape = useCallback(() => cardLibraryStoreApi.close(), []);
+	const trapRef = useFocusTrap<HTMLDivElement>({
+		active: open,
+		onEscape: handleEscape,
+	});
+	const setOverlayRef = useCallback(
+		(node: HTMLDivElement | null) => {
+			scopeRef.current = node;
+			trapRef.current = node;
+		},
+		[trapRef],
+	);
 
 	useEffect(() => {
 		if (!open) return;
@@ -94,7 +109,7 @@ export function KnowledgeCardsApp() {
 
 	const node = (
 		<div
-			ref={scopeRef}
+			ref={setOverlayRef}
 			className="card-library-overlay"
 			role="dialog"
 			aria-modal="true"

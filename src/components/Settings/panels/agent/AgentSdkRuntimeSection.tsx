@@ -2,9 +2,9 @@ import {
 	SettingsCardSection,
 	SettingsField,
 	SettingsRow,
+	SettingsSwitch,
 	SettingsTextArea,
 } from "../../ui/SettingsPrimitives";
-import { Toggle } from "../../components";
 import { Select } from "../../../ui/Select";
 
 interface AgentSdkRuntimeSectionProps {
@@ -49,11 +49,9 @@ export function AgentSdkRuntimeSection({
 				label="交互审批"
 				description="工具调用与 AskUserQuestion 通过 UI 弹窗确认；关闭后退化为命令行式审批。"
 				action={
-					<Toggle
+					<SettingsSwitch
 						checked={sdkInteractiveApproval}
-						onChange={() =>
-							onInteractiveApprovalChange(!sdkInteractiveApproval)
-						}
+						onChange={onInteractiveApprovalChange}
 					/>
 				}
 			/>
@@ -61,9 +59,9 @@ export function AgentSdkRuntimeSection({
 				label="兼容模式"
 				description="开启后回退到旧路径（acceptEdits + 关闭交互审批），仅排查问题时使用。默认模式下文件编辑会直接保存，并在对话里提供撤销入口。"
 				action={
-					<Toggle
+					<SettingsSwitch
 						checked={sdkCompatMode}
-						onChange={() => onCompatModeChange(!sdkCompatMode)}
+						onChange={onCompatModeChange}
 					/>
 				}
 			/>

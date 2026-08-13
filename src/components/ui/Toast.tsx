@@ -1,4 +1,4 @@
-import { CheckCircle2, Info, X, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, X, XCircle } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -42,7 +42,7 @@ function getToastStyles(type: ToastType) {
 			return {
 				border: "border-warning-muted",
 				iconBg: "bg-warning-muted",
-				icon: <Info size={18} className="text-warning" />,
+				icon: <AlertTriangle size={18} className="text-warning" />,
 				progress: "bg-warning",
 			};
 		default:
@@ -108,7 +108,7 @@ function ToastContainer() {
 	return (
 		<div
 			ref={listRef}
-			className="pointer-events-none fixed right-4 top-4 z-[9999] flex max-w-[min(92vw,420px)] flex-col gap-2"
+			className="pointer-events-none fixed right-4 top-4 z-toast flex max-w-[min(92vw,420px)] flex-col gap-2"
 			aria-live="polite"
 			aria-atomic="false"
 		>

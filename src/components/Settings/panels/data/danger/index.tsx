@@ -67,7 +67,7 @@ export function DataDangerSettings() {
 				</ul>
 			</SettingsHint>
 
-			<SettingsSectionCard className="ring-1 ring-[rgba(181,51,51,0.2)]">
+			<SettingsSectionCard className="ring-1 ring-error/20">
 				<div
 					className="p-5 space-y-4"
 					id="data.danger.clear_all"

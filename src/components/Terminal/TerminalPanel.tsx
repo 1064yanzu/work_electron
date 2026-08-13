@@ -46,10 +46,7 @@ export function TerminalPanel() {
 
 	if (terminals.length === 0) {
 		return (
-			<div
-				className="flex flex-col items-center justify-center h-full text-text-muted"
-				style={{ backgroundColor: "var(--t-bg)" }}
-			>
+			<div className="flex flex-col items-center justify-center h-full text-text-muted bg-background">
 				<button
 					type="button"
 					onClick={() => terminalStore.createTerminal()}

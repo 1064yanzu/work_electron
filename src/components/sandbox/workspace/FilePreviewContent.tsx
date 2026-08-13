@@ -19,7 +19,6 @@ import {
 	useSandboxEditorStoreSelector,
 } from "../../../lib/sandboxEditorStore";
 import { cn } from "../../../lib/utils";
-import { shortcut } from "../../../lib/platform";
 import { convertFileSrc } from "../../../lib/tauriCompat";
 import { isHtmlPreviewExtension } from "../../../lib/frontendPreview";
 import { isReaderSupportedFile } from "../../../lib/reader/formats";
@@ -223,11 +222,11 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 
 	if (!file) {
 		return (
-			<div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-white to-cream-50 dark:from-cream-900 dark:to-cream-900/80">
+			<div className="flex-1 flex flex-col items-center justify-center p-8 bg-warm-50">
 				<div className="text-center space-y-4">
-					{/* 装饰性图标 */}
-					<div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-cream-100 to-cream-200 dark:from-cream-800 dark:to-cream-700 flex items-center justify-center shadow-inner">
-						<Eye className="w-7 h-7 text-text-light" />
+					{/* 装饰性图标 — 用签名色淡底代替灰框，空态也要有温度 */}
+					<div className="mx-auto h-14 w-14 rounded-2xl bg-primary-muted flex items-center justify-center">
+						<Eye className="w-7 h-7 text-primary/80" strokeWidth={1.5} />
 					</div>
 					<h3 className="text-lg font-semibold text-text-primary dark:text-cream-200">
 						{emptyTitle}
@@ -333,9 +332,6 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 										strokeWidth={1.5}
 									/>
 								</div>
-								{/* 呼吸光环 */}
-								<div className="absolute -inset-1.5 rounded-full border border-terracotta/30 animate-pulse-slow" />
-								<div className="absolute -inset-3 rounded-full border border-terracotta/15 animate-pulse-slow" />
 							</div>
 							<h3 className="text-base font-semibold text-text-primary mb-1.5">
 								正在启动开发服务器
@@ -343,11 +339,11 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							<p className="text-xs text-text-secondary leading-relaxed text-center max-w-sm mb-5">
 								Vite / Next 等工程在首次启动时需要安装依赖与编译。
 								<br />
-								通常需要几秒到一分钟，请稍候...
+								通常需要几秒到一分钟，请稍候…
 							</p>
 							{/* 进度条 */}
 							<div className="w-56 h-1 rounded-full bg-cream-200 dark:bg-cream-800 overflow-hidden mb-3">
-								<div className="h-full w-1/3 bg-gradient-to-r from-terracotta via-peach-500 to-terracotta rounded-full animate-swarm-indeterminate" />
+								<div className="h-full w-1/3 bg-terracotta rounded-full animate-swarm-indeterminate" />
 							</div>
 							<div className="inline-flex items-center gap-1.5 text-xs text-text-muted">
 								<TerminalIcon className="w-3 h-3" strokeWidth={1.5} />
@@ -385,7 +381,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 		if (isMarkdown) {
 			return (
 				<div className="flex-1 overflow-auto bg-surface px-8 py-6">
-					<article className="max-w-3xl mx-auto prose prose-zinc dark:prose-invert">
+					<article className="max-w-3xl mx-auto prose prose-stone dark:prose-invert">
 						<MarkdownRenderer
 							content={file.content || ""}
 							className="text-sm leading-relaxed"
@@ -429,8 +425,8 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 						{fileExtensionLabel}
 					</span>
 					{sourceDirty ? (
-						<span className="inline-flex items-center gap-1 text-2xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-md">
-							<span className="w-1 h-1 rounded-full bg-amber-500" />
+						<span className="inline-flex items-center gap-1 text-2xs text-warning bg-warning-muted px-1.5 py-0.5 rounded-md">
+							<span className="w-1 h-1 rounded-full bg-warning" />
 							未保存
 						</span>
 					) : null}
@@ -438,14 +434,14 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 				<div className="flex items-center gap-0.5 flex-wrap justify-end">
 					{copiedLabel ? (
 						<span
-							className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-2xs bg-success/8 text-success dark:bg-emerald-900/20 dark:text-success"
+							className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-2xs bg-success-muted text-success"
 							aria-live="polite"
 						>
 							{copiedLabel}
 						</span>
 					) : null}
 					{isFallbackToSource ? (
-						<span className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-2xs bg-peach-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+						<span className="mr-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-2xs bg-warning-muted text-warning">
 							预览不可用，已降级源码
 						</span>
 					) : null}
@@ -487,7 +483,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							className={cn(
 								"px-2 py-1 inline-flex items-center justify-center gap-1 rounded-md transition-[color,background-color,border-color,opacity,box-shadow,transform] focus-ring text-xs font-medium",
 								sourceDirty
-									? "bg-primary text-white hover:bg-primary/90 shadow-sm"
+									? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
 									: "text-text-muted hover:bg-warm-200",
 								(!sourceDirty || isSaving) &&
 									"opacity-60 cursor-not-allowed hover:bg-transparent",
@@ -508,7 +504,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							!canCopyContent &&
 								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-text-muted",
 						)}
-						title={`复制内容 (${shortcut("C")})`}
+						title="复制内容"
 						aria-label="复制内容"
 					>
 						{copiedAction === "content" ? (
@@ -563,7 +559,7 @@ export const FilePreviewContent = memo(function FilePreviewContent({
 							!canDownload &&
 								"opacity-45 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent hover:text-text-muted",
 						)}
-						title={`下载文件 (${shortcut("D")})`}
+						title="下载文件"
 						aria-label="下载文件"
 					>
 						<Download className="w-3.5 h-3.5" />

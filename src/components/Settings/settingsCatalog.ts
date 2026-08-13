@@ -9,6 +9,7 @@
  * `panels/<category>/<subtab>/index` 的新路径。本次只做结构骨架。
  */
 import {
+	Activity,
 	Archive,
 	BarChart3,
 	BookOpen,
@@ -71,6 +72,7 @@ export type SettingsTabId =
 	| "integrations.remote"
 	| "integrations.harnessHub"
 	| "integrations.clip"
+	| "integrations.aiProxy"
 	| "data.stats"
 	| "data.storage"
 	| "data.backup"
@@ -321,6 +323,16 @@ export const SETTINGS_SUBTABS: readonly SettingsSubtab[] = [
 		load: asDefault(
 			() => import("./panels/integrations/ClipServiceSettings"),
 			"ClipServiceSettings",
+		),
+	},
+	{
+		id: "integrations.aiProxy",
+		category: "integrations",
+		label: "AI 代理",
+		icon: Activity,
+		load: asDefault(
+			() => import("./panels/integrations/AnthropicProxySettings"),
+			"AnthropicProxySettings",
 		),
 	},
 
